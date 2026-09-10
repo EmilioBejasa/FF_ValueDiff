@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "FF ValueDiff",
+  "version": "1.1.0",
+  "description": "Compares 2026 fantasy football ADP across Yahoo, ESPN, Sleeper, and FantasyPros for the top 200 overall players. Sleeper, ESPN, and FantasyPros refresh automatically from BeatADP.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "FF ValueDiff"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["storage", "alarms"],
+  "host_permissions": ["https://www.beatadp.com/*"]
+}

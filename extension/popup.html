@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>FF ValueDiff</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --border: rgba(11, 11, 11, 0.1);
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --series-blue: #2a78d6;
+    --series-red: #e34948;
+    --series-neutral: #52514e;
+    --series-amber: #b8860b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --border: rgba(255, 255, 255, 0.1);
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --series-blue: #3987e5;
+      --series-red: #e66767;
+      --series-neutral: #c3c2b7;
+      --series-amber: #d4a017;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    width: 820px;
+    max-height: 600px;
+    overflow-y: auto;
+    background: var(--page); color: var(--text-primary);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  table { font-variant-numeric: tabular-nums; }
+  select { font-variant-numeric: tabular-nums; }
+
+  /* -------- minimal utility layer (stands in for the Tailwind classes the web app uses) -------- */
+  .flex { display: flex; }
+  .flex-col { flex-direction: column; }
+  .flex-wrap { flex-wrap: wrap; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .gap-1 { gap: 4px; }
+  .gap-1\.5 { gap: 6px; }
+  .gap-2 { gap: 8px; }
+  .gap-3 { gap: 12px; }
+  .gap-4 { gap: 16px; }
+  .gap-5 { gap: 20px; }
+  .relative { position: relative; }
+  .absolute { position: absolute; }
+  .sticky { position: sticky; }
+  .left-0 { left: 0; }
+  .inline-block { display: inline-block; }
+  .w-full { width: 100%; }
+  .h-auto { height: auto; }
+  .max-w-6xl { max-width: 1152px; }
+  .mx-auto { margin-left: auto; margin-right: auto; }
+  .px-2 { padding-left: 8px; padding-right: 8px; }
+  .px-3 { padding-left: 12px; padding-right: 12px; }
+  .px-4 { padding-left: 16px; padding-right: 16px; }
+  .py-1 { padding-top: 4px; padding-bottom: 4px; }
+  .py-1\.5 { padding-top: 6px; padding-bottom: 6px; }
+  .py-2 { padding-top: 8px; padding-bottom: 8px; }
+  .py-4 { padding-top: 16px; padding-bottom: 16px; }
+  .py-6 { padding-top: 24px; padding-bottom: 24px; }
+  .p-4 { padding: 16px; }
+  .p-8 { padding: 32px; }
+  .mb-1 { margin-bottom: 4px; }
+  .mb-2 { margin-bottom: 8px; }
+  .mt-1 { margin-top: 4px; }
+  .mt-2 { margin-top: 8px; }
+  .mt-3 { margin-top: 12px; }
+  .-mt-2 { margin-top: -8px; }
+  .ml-auto { margin-left: auto; }
+  .rounded { border-radius: 6px; }
+  .rounded-md { border-radius: 8px; }
+  .rounded-lg { border-radius: 10px; }
+  .rounded-full { border-radius: 9999px; }
+  .border { border: 1px solid var(--border); }
+  .border-b { border-bottom: 1px solid var(--border); }
+  .border-collapse { border-collapse: collapse; }
+  .overflow-x-auto { overflow-x: auto; }
+  .text-left { text-align: left; }
+  .text-right { text-align: right; }
+  .text-center { text-align: center; }
+  .text-xs { font-size: 12px; }
+  .text-sm { font-size: 14px; }
+  .text-xl { font-size: 20px; }
+  .font-medium { font-weight: 500; }
+  .font-semibold { font-weight: 600; }
+  .underline { text-decoration: underline; }
+  .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+  .pointer-events-none { pointer-events: none; }
+  .outline-none { outline: none; }
+  button { font: inherit; cursor: pointer; background: none; border: none; padding: 0; color: inherit; }
+  a { color: inherit; }
+  tr.row-hover:hover { background: rgba(128,128,128,0.06); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ---------------- platforms ---------------- */
+
+// invertSignal: Yahoo/ESPN/Sleeper are real drafting markets, so a platform
+// sitting well *above* consensus means real drafters are letting him slide —
+// a buy signal (blue). FantasyPros isn't a draft room, it's an aggregated
+// expert-consensus ranking, so the same "above consensus" reading means
+// experts rate him *worse* than the actual market does — the market is
+// overpaying relative to expert opinion, a fade signal (red). Same math,
+// opposite meaning, so the color mapping flips for this one column.
+// stale: BeatADP's own footnote on this board reads "Hidden as no longer
+// maintained: Yahoo (last 2026-05-07)" — Yahoo cells are gone from BeatADP's
+// HTML entirely, not just visually hidden, so background.js can't pull a
+// current Yahoo number from this source at all. The value shown is whatever
+// was last captured before BeatADP dropped it; it does not move on refresh.
+const PLATFORMS = [
+  { key: "yahoo", label: "Yahoo", note: "half-PPR", stale: true, staleSince: "2026-05-07",
+    staleNote: "BeatADP stopped maintaining Yahoo ADP on 2026-05-07 — this is the last known number, frozen, not refreshed live." },
+  { key: "espn", label: "ESPN", note: "PPR" },
+  { key: "sleeper", label: "Sleeper", note: "half-PPR" },
+  { key: "fantasypros", label: "FantasyPros", note: "consensus, half-PPR", invertSignal: true },
+];
+const PLATFORM_LABEL = Object.fromEntries(PLATFORMS.map((p) => [p.key, p.label]));
+
+/* ---------------- sample data ---------------- */
+// Bundled fallback, used until background.js's first live refresh lands in
+// chrome.storage (see "live data" below) — and as the seed background.js
+// merges Yahoo's frozen values out of. ESPN is that platform's native PPR
+// ADP; Yahoo, Sleeper, and FantasyPros are each platform's native half-PPR
+// ADP (Yahoo and Sleeper don't publish a full-PPR line, so this is each
+// platform's own default scoring format, not a single format forced across
+// all four).
+const samplePlayers = [
+  { id: "gibbs", name: "Jahmyr Gibbs", team: "DET", position: "RB", adp: { sleeper: 1.3, yahoo: 1.4, espn: 1, fantasypros: 1.6 } },
+  { id: "robinson-b", name: "Bijan Robinson", team: "ATL", position: "RB", adp: { sleeper: 2.8, yahoo: 2, espn: 2, fantasypros: 2.3 } },
+  { id: "chase", name: "Ja'Marr Chase", team: "CIN", position: "WR", adp: { sleeper: 3.3, yahoo: 3.4, espn: 3, fantasypros: 2.6 } },
+  { id: "nacua", name: "Puka Nacua", team: "LAR", position: "WR", adp: { sleeper: 4.6, yahoo: 4.8, espn: 4, fantasypros: 4.3 } },
+  { id: "mccaffrey", name: "Christian McCaffrey", team: "SF", position: "RB", adp: { sleeper: 5, yahoo: 5.6, espn: 6, fantasypros: 8.4 } },
+  { id: "smithnjigba", name: "Jaxon Smith-Njigba", team: "SEA", position: "WR", adp: { sleeper: 7.9, yahoo: 6.9, espn: 5, fantasypros: 6.1 } },
+  { id: "taylor-j", name: "Jonathan Taylor", team: "IND", position: "RB", adp: { sleeper: 6.6, yahoo: 6.9, espn: 7, fantasypros: 8.6 } },
+  { id: "stbrown", name: "Amon-Ra St. Brown", team: "DET", position: "WR", adp: { sleeper: 7.9, yahoo: 7.9, espn: 8, fantasypros: 6.7 } },
+  { id: "cook", name: "James Cook", team: "BUF", position: "RB", adp: { sleeper: 9.4, yahoo: 9.7, espn: 12, fantasypros: 10.8 } },
+  { id: "lamb", name: "CeeDee Lamb", team: "DAL", position: "WR", adp: { sleeper: 10.3, yahoo: 10.5, espn: 9, fantasypros: 10.3 } },
+  { id: "jefferson", name: "Justin Jefferson", team: "MIN", position: "WR", adp: { sleeper: 12.1, yahoo: 12.9, espn: 11, fantasypros: 11.5 } },
+  { id: "barkley", name: "Saquon Barkley", team: "PHI", position: "RB", adp: { sleeper: 11.8, yahoo: 12.1, espn: 18, fantasypros: 17.1 } },
+  { id: "achane", name: "De'Von Achane", team: "MIA", position: "RB", adp: { sleeper: 14.2, yahoo: 15.6, espn: 10, fantasypros: 18.4 } },
+  { id: "jeanty", name: "Ashton Jeanty", team: "LV", position: "RB", adp: { sleeper: 13, yahoo: 14.5, espn: 13, fantasypros: 23 } },
+  { id: "allen-j", name: "Josh Allen", team: "BUF", position: "QB", adp: { sleeper: 21.3, yahoo: 19.8, espn: 36, fantasypros: 28.4 } },
+  { id: "brown-chase", name: "Chase Brown", team: "CIN", position: "RB", adp: { sleeper: 17.4, yahoo: 16.3, espn: 20, fantasypros: 15.7 } },
+  { id: "hampton", name: "Omarion Hampton", team: "LAC", position: "RB", adp: { sleeper: 15.8, yahoo: 18.6, espn: 22, fantasypros: 20.1 } },
+  { id: "walker-k", name: "Kenneth Walker III", team: "KC", position: "RB", adp: { sleeper: 18, yahoo: 16.3, espn: 21, fantasypros: 21.4 } },
+  { id: "london", name: "Drake London", team: "ATL", position: "WR", adp: { sleeper: 20.3, yahoo: 19.1, espn: 14, fantasypros: 16 } },
+  { id: "bowers", name: "Brock Bowers", team: "LV", position: "TE", adp: { sleeper: 22.8, yahoo: 21.1, espn: 24, fantasypros: 19.2 } },
+  { id: "henry-d", name: "Derrick Henry", team: "BAL", position: "RB", adp: { sleeper: 15.2, yahoo: 17.9, espn: 19, fantasypros: 20.8 } },
+  { id: "brown-aj", name: "A.J. Brown", team: "NE", position: "WR", adp: { sleeper: 19, yahoo: 24.7, espn: 28, fantasypros: 17.1 } },
+  { id: "mcbride", name: "Trey McBride", team: "ARI", position: "TE", adp: { sleeper: 23.2, yahoo: 25.9, espn: 17, fantasypros: 24.4 } },
+  { id: "collins-n", name: "Nico Collins", team: "HOU", position: "WR", adp: { sleeper: 23.1, yahoo: 22.4, espn: 25, fantasypros: 19.1 } },
+  { id: "pickens", name: "George Pickens", team: "DAL", position: "WR", adp: { sleeper: 25.8, yahoo: 22.4, espn: 32, fantasypros: 22.9 } },
+  { id: "jackson-l", name: "Lamar Jackson", team: "BAL", position: "QB", adp: { sleeper: 35.6, yahoo: 37.7, espn: 58, fantasypros: 38.2 } },
+  { id: "olave", name: "Chris Olave", team: "NO", position: "WR", adp: { sleeper: 31.1, yahoo: 32.8, espn: 26, fantasypros: 23.7 } },
+  { id: "nabers", name: "Malik Nabers", team: "NYG", position: "WR", adp: { sleeper: 30, yahoo: 32.1, espn: 29, fantasypros: 28.9 } },
+  { id: "rice", name: "Rashee Rice", team: "KC", position: "WR", adp: { sleeper: 29, yahoo: 34.6, espn: 16, fantasypros: 29.4 } },
+  { id: "love-j", name: "Jeremiyah Love", team: "ARI", position: "RB", adp: { sleeper: 27.1, yahoo: 28.5, espn: null, fantasypros: 41.5 } },
+  { id: "kwilliams", name: "Kyren Williams", team: "LAR", position: "RB", adp: { sleeper: 26.8, yahoo: 29, espn: 39, fantasypros: 33.6 } },
+  { id: "jacobs", name: "Josh Jacobs", team: "GB", position: "RB", adp: { sleeper: 28.7, yahoo: 33.5, espn: 30, fantasypros: 38.8 } },
+  { id: "dsmith", name: "DeVonta Smith", team: "PHI", position: "WR", adp: { sleeper: 34.2, yahoo: 29.5, espn: 35, fantasypros: 29.9 } },
+  { id: "hall-b", name: "Breece Hall", team: "NYJ", position: "RB", adp: { sleeper: 31.6, yahoo: 35.3, espn: 23, fantasypros: 37.9 } },
+  { id: "williams-j", name: "Javonte Williams", team: "DAL", position: "RB", adp: { sleeper: 33.1, yahoo: 34.5, espn: 31, fantasypros: 37.4 } },
+  { id: "maye", name: "Drake Maye", team: "NE", position: "QB", adp: { sleeper: 52.5, yahoo: 47.3, espn: 60, fantasypros: 43.9 } },
+  { id: "higgins-t", name: "Tee Higgins", team: "CIN", position: "WR", adp: { sleeper: 38.8, yahoo: 33.6, espn: 47, fantasypros: 36.4 } },
+  { id: "flowers", name: "Zay Flowers", team: "BAL", position: "WR", adp: { sleeper: 42.1, yahoo: 36.2, espn: 34, fantasypros: 33 } },
+  { id: "mcmillan", name: "Tetairoa McMillan", team: "CAR", position: "WR", adp: { sleeper: 36.4, yahoo: 41.7, espn: 33, fantasypros: 38 } },
+  { id: "loveland", name: "Colston Loveland", team: "CHI", position: "TE", adp: { sleeper: 43.2, yahoo: 39.6, espn: 50, fantasypros: 41.4 } },
+  { id: "burrow", name: "Joe Burrow", team: "CIN", position: "QB", adp: { sleeper: 54.3, yahoo: 49.1, espn: 81, fantasypros: 50.7 } },
+  { id: "mcconkey", name: "Ladd McConkey", team: "LAC", position: "WR", adp: { sleeper: 39.8, yahoo: 45.3, espn: 45, fantasypros: 39.5 } },
+  { id: "egbuka", name: "Emeka Egbuka", team: "TB", position: "WR", adp: { sleeper: 39.4, yahoo: 44, espn: 43, fantasypros: 41.2 } },
+  { id: "skattebo", name: "Cam Skattebo", team: "NYG", position: "RB", adp: { sleeper: 37, yahoo: 41.8, espn: 41, fantasypros: 53.4 } },
+  { id: "wilson-g", name: "Garrett Wilson", team: "NYJ", position: "WR", adp: { sleeper: 44.5, yahoo: 49.4, espn: 27, fantasypros: 39.2 } },
+  { id: "waddle", name: "Jaylen Waddle", team: "DEN", position: "WR", adp: { sleeper: 47.6, yahoo: 41.7, espn: 48, fantasypros: 39.6 } },
+  { id: "etienne", name: "Travis Etienne Jr.", team: "NO", position: "RB", adp: { sleeper: 41, yahoo: 43.1, espn: 38, fantasypros: 45.8 } },
+  { id: "daniels-j", name: "Jayden Daniels", team: "WSH", position: "QB", adp: { sleeper: 65.7, yahoo: 54.1, espn: 56, fantasypros: 57.1 } },
+  { id: "warren-tyler", name: "Tyler Warren", team: "IND", position: "TE", adp: { sleeper: 51.2, yahoo: 47.2, espn: 51, fantasypros: 54.1 } },
+  { id: "irving", name: "Bucky Irving", team: "TB", position: "RB", adp: { sleeper: 45.3, yahoo: 55.3, espn: 42, fantasypros: 54.8 } },
+  { id: "hurts", name: "Jalen Hurts", team: "PHI", position: "QB", adp: { sleeper: 62.3, yahoo: 56.9, espn: 62, fantasypros: 59.7 } },
+  { id: "swift", name: "D'Andre Swift", team: "CHI", position: "RB", adp: { sleeper: 49.1, yahoo: 47.3, espn: 65, fantasypros: 49.9 } },
+  { id: "montgomery", name: "David Montgomery", team: "HOU", position: "RB", adp: { sleeper: 46.4, yahoo: 52.4, espn: 67, fantasypros: 55.8 } },
+  { id: "judkins", name: "Quinshon Judkins", team: "CLE", position: "RB", adp: { sleeper: 47.6, yahoo: 53.2, espn: 40, fantasypros: 55.5 } },
+  { id: "adams-d", name: "Davante Adams", team: "LAR", position: "WR", adp: { sleeper: 55.2, yahoo: 54.1, espn: 44, fantasypros: 49.7 } },
+  { id: "mclaurin", name: "Terry McLaurin", team: "WSH", position: "WR", adp: { sleeper: 53.2, yahoo: 54, espn: 46, fantasypros: 48.4 } },
+  { id: "burden", name: "Luther Burden III", team: "CHI", position: "WR", adp: { sleeper: 58.7, yahoo: 58.8, espn: 54, fantasypros: 51.6 } },
+  { id: "williams-caleb", name: "Caleb Williams", team: "CHI", position: "QB", adp: { sleeper: 75.2, yahoo: 67.9, espn: 104, fantasypros: 69.4 } },
+  { id: "henderson-t", name: "TreVeyon Henderson", team: "NE", position: "RB", adp: { sleeper: 50.1, yahoo: 63.2, espn: 69, fantasypros: 65.2 } },
+  { id: "moore-dj", name: "DJ Moore", team: "BUF", position: "WR", adp: { sleeper: 55.8, yahoo: 61.7, espn: 53, fantasypros: 56.1 } },
+  { id: "williams-jameson", name: "Jameson Williams", team: "DET", position: "WR", adp: { sleeper: 57.1, yahoo: 65.8, espn: 52, fantasypros: 53.8 } },
+  { id: "herbert", name: "Justin Herbert", team: "LAC", position: "QB", adp: { sleeper: 79.2, yahoo: 69.9, espn: 112, fantasypros: 73.7 } },
+  { id: "tuten", name: "Bhayshul Tuten", team: "JAX", position: "RB", adp: { sleeper: 60.7, yahoo: 62.5, espn: 64, fantasypros: 61.3 } },
+  { id: "evans-m", name: "Mike Evans", team: "SF", position: "WR", adp: { sleeper: 61.9, yahoo: 67.3, espn: 87, fantasypros: 57.5 } },
+  { id: "odunze", name: "Rome Odunze", team: "CHI", position: "WR", adp: { sleeper: 63.1, yahoo: 67.5, espn: 49, fantasypros: 58 } },
+  { id: "watson-c", name: "Christian Watson", team: "GB", position: "WR", adp: { sleeper: 68, yahoo: 67.7, espn: 88, fantasypros: 56.6 } },
+  { id: "price-j", name: "Jadarian Price", team: "SEA", position: "RB", adp: { sleeper: 59.2, yahoo: 65.7, espn: null, fantasypros: 65.7 } },
+  { id: "prescott", name: "Dak Prescott", team: "DAL", position: "QB", adp: { sleeper: 84.2, yahoo: 74, espn: 95, fantasypros: 79.8 } },
+  { id: "kraft", name: "Tucker Kraft", team: "GB", position: "TE", adp: { sleeper: 66, yahoo: 60.8, espn: 124, fantasypros: 71.7 } },
+  { id: "laporta", name: "Sam LaPorta", team: "DET", position: "TE", adp: { sleeper: 63.6, yahoo: 63.1, espn: 80, fantasypros: 82.9 } },
+  { id: "tate-c", name: "Carnell Tate", team: "TEN", position: "WR", adp: { sleeper: 67, yahoo: 80.1, espn: null, fantasypros: 74.5 } },
+  { id: "fannin", name: "Harold Fannin Jr.", team: "CLE", position: "TE", adp: { sleeper: 74, yahoo: 71.4, espn: 79, fantasypros: 81.2 } },
+  { id: "lawrence", name: "Trevor Lawrence", team: "JAX", position: "QB", adp: { sleeper: 97.4, yahoo: 84.7, espn: 93, fantasypros: 78.9 } },
+  { id: "warren-jaylen", name: "Jaylen Warren", team: "PIT", position: "RB", adp: { sleeper: 69.9, yahoo: 76.7, espn: 117, fantasypros: 74.3 } },
+  { id: "pitts", name: "Kyle Pitts Sr.", team: "ATL", position: "TE", adp: { sleeper: 70.9, yahoo: 72.8, espn: 78, fantasypros: 84.4 } },
+  { id: "washington-p", name: "Parker Washington", team: "JAX", position: "WR", adp: { sleeper: 71.1, yahoo: 81.7, espn: 76, fantasypros: 69.3 } },
+  { id: "harrison", name: "Marvin Harrison Jr.", team: "ARI", position: "WR", adp: { sleeper: 73.5, yahoo: 78.7, espn: 74, fantasypros: 73.3 } },
+  { id: "stevenson-r", name: "Rhamondre Stevenson", team: "NE", position: "RB", adp: { sleeper: 76.4, yahoo: 80, espn: 70, fantasypros: 73.3 } },
+  { id: "thomas-brian", name: "Brian Thomas Jr.", team: "JAX", position: "WR", adp: { sleeper: 71.9, yahoo: 83.9, espn: 91, fantasypros: 78.9 } },
+  { id: "dart", name: "Jaxson Dart", team: "NYG", position: "QB", adp: { sleeper: 103.3, yahoo: 88.5, espn: 85, fantasypros: 99.1 } },
+  { id: "metcalf", name: "DK Metcalf", team: "PIT", position: "WR", adp: { sleeper: 78.2, yahoo: 86.2, espn: 75, fantasypros: 79.5 } },
+  { id: "pollard", name: "Tony Pollard", team: "TEN", position: "RB", adp: { sleeper: 79.4, yahoo: 85.5, espn: 119, fantasypros: 79.5 } },
+  { id: "dowdle", name: "Rico Dowdle", team: "PIT", position: "RB", adp: { sleeper: 83.5, yahoo: 87, espn: 118, fantasypros: 82.7 } },
+  { id: "mahomes", name: "Patrick Mahomes", team: "KC", position: "QB", adp: { sleeper: 111.3, yahoo: 100.3, espn: 114, fantasypros: 102.7 } },
+  { id: "hubbard", name: "Chuba Hubbard", team: "CAR", position: "RB", adp: { sleeper: 77.1, yahoo: 85.1, espn: 122, fantasypros: 96.3 } },
+  { id: "sutton", name: "Courtland Sutton", team: "DEN", position: "WR", adp: { sleeper: 82, yahoo: 103.4, espn: 72, fantasypros: 85.7 } },
+  { id: "nix", name: "Bo Nix", team: "DEN", position: "QB", adp: { sleeper: 118.5, yahoo: 99.7, espn: 97, fantasypros: 102.4 } },
+  { id: "purdy", name: "Brock Purdy", team: "SF", position: "QB", adp: { sleeper: 121.5, yahoo: 98.3, espn: 99, fantasypros: 96.2 } },
+  { id: "kittle", name: "George Kittle", team: "SF", position: "TE", adp: { sleeper: 87.8, yahoo: 86.3, espn: 125, fantasypros: 97.2 } },
+  { id: "harvey-rj", name: "RJ Harvey", team: "DEN", position: "RB", adp: { sleeper: 81.6, yahoo: 104.3, espn: 152, fantasypros: 100.6 } },
+  { id: "stafford", name: "Matthew Stafford", team: "LAR", position: "QB", adp: { sleeper: 106.5, yahoo: 100.5, espn: 102, fantasypros: 107.4 } },
+  { id: "dobbins", name: "J.K. Dobbins", team: "DEN", position: "RB", adp: { sleeper: 85.1, yahoo: 96.4, espn: 129, fantasypros: 89.8 } },
+  { id: "wilson-michael", name: "Michael Wilson", team: "ARI", position: "WR", adp: { sleeper: 89.8, yahoo: 102.6, espn: 90, fantasypros: 92.9 } },
+  { id: "godwin", name: "Chris Godwin", team: "TB", position: "WR", adp: { sleeper: 94.9, yahoo: 97.7, espn: 158, fantasypros: 83.5 } },
+  { id: "brooks-jonathon", name: "Jonathon Brooks", team: "CAR", position: "RB", adp: { sleeper: 88, yahoo: 96.6, espn: 121, fantasypros: 85.1 } },
+  { id: "kelce", name: "Travis Kelce", team: "KC", position: "TE", adp: { sleeper: 95, yahoo: 94, espn: 127, fantasypros: 104 } },
+  { id: "kincaid", name: "Dalton Kincaid", team: "BUF", position: "TE", adp: { sleeper: 92.7, yahoo: 98.9, espn: 146, fantasypros: 112 } },
+  { id: "corum", name: "Blake Corum", team: "LAR", position: "RB", adp: { sleeper: 93, yahoo: 99.6, espn: 151, fantasypros: 96.7 } },
+  { id: "pierce-alec", name: "Alec Pierce", team: "IND", position: "WR", adp: { sleeper: 95.8, yahoo: 92.7, espn: 77, fantasypros: 98.2 } },
+  { id: "monangai", name: "Kyle Monangai", team: "CHI", position: "RB", adp: { sleeper: 90.6, yahoo: 104.7, espn: 131, fantasypros: 108.3 } },
+  { id: "lemon", name: "Makai Lemon", team: "PHI", position: "WR", adp: { sleeper: 86.7, yahoo: 112.7, espn: null, fantasypros: 112.1 } },
+  { id: "tyson-jordyn", name: "Jordyn Tyson", team: "NO", position: "WR", adp: { sleeper: 91.5, yahoo: 94.9, espn: null, fantasypros: 137.9 } },
+  { id: "goff", name: "Jared Goff", team: "DET", position: "QB", adp: { sleeper: 140.6, yahoo: 114.5, espn: 171, fantasypros: 109.6 } },
+  { id: "johnston-q", name: "Quentin Johnston", team: "LAC", position: "WR", adp: { sleeper: 105.9, yahoo: 109.9, espn: 139, fantasypros: 93.1 } },
+  { id: "pittman", name: "Michael Pittman Jr.", team: "PIT", position: "WR", adp: { sleeper: 103.9, yahoo: 120, espn: 73, fantasypros: 91 } },
+  { id: "downs", name: "Josh Downs", team: "IND", position: "WR", adp: { sleeper: 107.5, yahoo: 108.8, espn: 140, fantasypros: 97.4 } },
+  { id: "croskeymerritt", name: "Jacory Croskey-Merritt", team: "WSH", position: "RB", adp: { sleeper: 98.1, yahoo: 110.5, espn: 132, fantasypros: 100.7 } },
+  { id: "addison", name: "Jordan Addison", team: "MIN", position: "WR", adp: { sleeper: 100.4, yahoo: 117.1, espn: 107, fantasypros: 104.9 } },
+  { id: "reed-jayden", name: "Jayden Reed", team: "GB", position: "WR", adp: { sleeper: 102.7, yahoo: 119, espn: 110, fantasypros: 106.7 } },
+  { id: "mason-jordan", name: "Jordan Mason", team: "MIN", position: "RB", adp: { sleeper: 99.1, yahoo: 115.5, espn: 150, fantasypros: 106.5 } },
+  { id: "diggs", name: "Stefon Diggs", team: "FA", position: "WR", adp: { sleeper: 115.9, yahoo: 107.1, espn: 154, fantasypros: 101.8 } },
+  { id: "ferguson-jake", name: "Jake Ferguson", team: "DAL", position: "TE", adp: { sleeper: 108.5, yahoo: 115.7, espn: 134, fantasypros: 124.8 } },
+  { id: "murray-kyler", name: "Kyler Murray", team: "MIN", position: "QB", adp: { sleeper: 147.2, yahoo: 111.8, espn: 165, fantasypros: 117.4 } },
+  { id: "gainwell", name: "Kenneth Gainwell", team: "TB", position: "RB", adp: { sleeper: 109.8, yahoo: 118.2, espn: 120, fantasypros: 106.2 } },
+  { id: "likely", name: "Isaiah Likely", team: "NYG", position: "TE", adp: { sleeper: 113.2, yahoo: 109.2, espn: 145, fantasypros: 122.4 } },
+  { id: "goedert", name: "Dallas Goedert", team: "PHI", position: "TE", adp: { sleeper: 125.5, yahoo: 106.2, espn: 126, fantasypros: 117.5 } },
+  { id: "mayfield", name: "Baker Mayfield", team: "TB", position: "QB", adp: { sleeper: 151.4, yahoo: 126.3, espn: 192, fantasypros: 124 } },
+  { id: "robinson-wandale", name: "Wan'Dale Robinson", team: "TEN", position: "WR", adp: { sleeper: 116, yahoo: 130.9, espn: 106, fantasypros: 101.3 } },
+  { id: "andrews-mark", name: "Mark Andrews", team: "BAL", position: "TE", adp: { sleeper: 122.2, yahoo: 113.4, espn: 135, fantasypros: 128.3 } },
+  { id: "jones-aaron", name: "Aaron Jones Sr.", team: "MIN", position: "RB", adp: { sleeper: 111.1, yahoo: 123.2, espn: 143, fantasypros: 113.7 } },
+  { id: "meyers", name: "Jakobi Meyers", team: "JAX", position: "WR", adp: { sleeper: 119.6, yahoo: 129.2, espn: 92, fantasypros: 109.8 } },
+  { id: "love-jordan", name: "Jordan Love", team: "GB", position: "QB", adp: { sleeper: 167.1, yahoo: 124.3, espn: 273, fantasypros: 125 } },
+  { id: "white-rachaad", name: "Rachaad White", team: "WSH", position: "RB", adp: { sleeper: 119.9, yahoo: 122.5, espn: 133, fantasypros: 111.9 } },
+  { id: "concepcion", name: "K.C. Concepcion", team: "CLE", position: "WR", adp: { sleeper: 114.4, yahoo: 127.2, espn: null, fantasypros: 123.8 } },
+  { id: "stribling", name: "De'Zhaun Stribling", team: "SF", position: "WR", adp: { sleeper: 126.9, yahoo: 113.3, espn: 160, fantasypros: 133.6 } },
+  { id: "golden-matthew", name: "Matthew Golden", team: "GB", position: "WR", adp: { sleeper: 123.1, yahoo: 128, espn: 89, fantasypros: 131.1 } },
+  { id: "worthy", name: "Xavier Worthy", team: "KC", position: "WR", adp: { sleeper: 127.9, yahoo: 128.9, espn: 111, fantasypros: 128.4 } },
+  { id: "doubs", name: "Romeo Doubs", team: "NE", position: "WR", adp: { sleeper: 127.3, yahoo: 131.9, espn: 159, fantasypros: 130.2 } },
+  { id: "darnold", name: "Sam Darnold", team: "SEA", position: "QB", adp: { sleeper: 169.1, yahoo: 122.8, espn: 280, fantasypros: 149.3 } },
+  { id: "shough", name: "Tyler Shough", team: "NO", position: "QB", adp: { sleeper: 188.5, yahoo: 130.1, espn: 167, fantasypros: 131.6 } },
+  { id: "allgeier", name: "Tyler Allgeier", team: "ARI", position: "RB", adp: { sleeper: 132.7, yahoo: 129.9, espn: 182, fantasypros: 131.9 } },
+  { id: "rodriguez-chris", name: "Chris Rodriguez Jr.", team: "JAX", position: "RB", adp: { sleeper: 129.1, yahoo: 131.8, espn: 180, fantasypros: 127.4 } },
+  { id: "samuel-deebo", name: "Deebo Samuel", team: "FA", position: "WR", adp: { sleeper: 131.6, yahoo: 127.5, espn: 141, fantasypros: 140 } },
+  { id: "shakir", name: "Khalil Shakir", team: "BUF", position: "WR", adp: { sleeper: 143.9, yahoo: 131.4, espn: 108, fantasypros: 132.2 } },
+  { id: "coker", name: "Jalen Coker", team: "CAR", position: "WR", adp: { sleeper: 145.5, yahoo: 133.3, espn: 163, fantasypros: 131.3 } },
+  { id: "marks-woody", name: "Woody Marks", team: "HOU", position: "RB", adp: { sleeper: 142, yahoo: 131.2, espn: 153, fantasypros: 131.9 } },
+  { id: "charbonnet", name: "Zach Charbonnet", team: "SEA", position: "RB", adp: { sleeper: 133.7, yahoo: 129.6, espn: 175, fantasypros: 144.6 } },
+  { id: "willis-malik", name: "Malik Willis", team: "MIA", position: "QB", adp: { sleeper: 194.1, yahoo: 124.7, espn: 195, fantasypros: 141.4 } },
+  { id: "henry-hunter", name: "Hunter Henry", team: "NE", position: "TE", adp: { sleeper: 148.9, yahoo: 127.7, espn: 148, fantasypros: 157.9 } },
+  { id: "strange", name: "Brenton Strange", team: "JAX", position: "TE", adp: { sleeper: 155.6, yahoo: 128.9, espn: 263, fantasypros: 154.7 } },
+  { id: "tracy", name: "Tyrone Tracy Jr.", team: "NYG", position: "RB", adp: { sleeper: 134.5, yahoo: 130.9, espn: 222, fantasypros: 154.9 } },
+  { id: "shaheed", name: "Rashid Shaheed", team: "SEA", position: "WR", adp: { sleeper: 150.9, yahoo: 128.4, espn: 164, fantasypros: 147.9 } },
+  { id: "stroud", name: "C.J. Stroud", team: "HOU", position: "QB", adp: { sleeper: 207.8, yahoo: 125.5, espn: 276, fantasypros: 154.2 } },
+  { id: "coleman-jonah", name: "Jonah Coleman", team: "DEN", position: "RB", adp: { sleeper: 143.7, yahoo: 130, espn: null, fantasypros: 151.4 } },
+  { id: "gadsden", name: "Oronde Gadsden II", team: "LAC", position: "TE", adp: { sleeper: 146.8, yahoo: 126.6, espn: 416, fantasypros: 192.5 } },
+  { id: "johnson-juwan", name: "Juwan Johnson", team: "NO", position: "TE", adp: { sleeper: 186.7, yahoo: 127, espn: 210, fantasypros: 139 } },
+  { id: "kamara", name: "Alvin Kamara", team: "NO", position: "RB", adp: { sleeper: 154.9, yahoo: 126, espn: 176, fantasypros: 162.9 } },
+  { id: "boston-denzel", name: "Denzel Boston", team: "CLE", position: "WR", adp: { sleeper: 158.2, yahoo: 131.4, espn: null, fantasypros: 156.1 } },
+  { id: "robinson-brian", name: "Brian Robinson Jr.", team: "ATL", position: "RB", adp: { sleeper: 172, yahoo: 121.5, espn: 181, fantasypros: 161.1 } },
+  { id: "spears", name: "Tyjae Spears", team: "TEN", position: "RB", adp: { sleeper: 170, yahoo: 133.3, espn: 177, fantasypros: 143.3 } },
+  { id: "jones-daniel", name: "Daniel Jones", team: "IND", position: "QB", adp: { sleeper: 212.7, yahoo: 127.3, espn: 173, fantasypros: 159.1 } },
+  { id: "ward-cameron", name: "Cameron Ward", team: "TEN", position: "QB", adp: { sleeper: 215.9, yahoo: 125, espn: 315, fantasypros: 170.5 } },
+  { id: "washington-mike", name: "Mike Washington Jr.", team: "LV", position: "RB", adp: { sleeper: 159.3, yahoo: 122.4, espn: null, fantasypros: 155.4 } },
+  { id: "mitchell-keaton", name: "Keaton Mitchell", team: "LAC", position: "RB", adp: { sleeper: 162.6, yahoo: 131.8, espn: 200, fantasypros: 145.1 } },
+  { id: "okonkwo", name: "Chig Okonkwo", team: "WSH", position: "TE", adp: { sleeper: 195.8, yahoo: 126.4, espn: 311, fantasypros: 163.8 } },
+  { id: "pacheco", name: "Isiah Pacheco", team: "DET", position: "RB", adp: { sleeper: 171.6, yahoo: 126.3, espn: 202, fantasypros: 155.8 } },
+  { id: "bigsby", name: "Tank Bigsby", team: "PHI", position: "RB", adp: { sleeper: 166.1, yahoo: 130.4, espn: 205, fantasypros: 154.5 } },
+  { id: "schultz-dalton", name: "Dalton Schultz", team: "HOU", position: "TE", adp: { sleeper: 210.5, yahoo: 128.1, espn: 297, fantasypros: 168.3 } },
+  { id: "young-bryce", name: "Bryce Young", team: "CAR", position: "QB", adp: { sleeper: 233.3, yahoo: 121.6, espn: 313, fantasypros: 189.2 } },
+  { id: "sadiq", name: "Kenyon Sadiq", team: "NYJ", position: "TE", adp: { sleeper: 174.5, yahoo: 130, espn: null, fantasypros: 210.8 } },
+  { id: "hockenson", name: "T.J. Hockenson", team: "MIN", position: "TE", adp: { sleeper: 183.7, yahoo: 129.3, espn: 138, fantasypros: 196.5 } },
+  { id: "nailor", name: "Jalen Nailor", team: "LV", position: "WR", adp: { sleeper: 165.9, yahoo: 130.1, espn: 212, fantasypros: 192.7 } },
+  { id: "mendoza", name: "Fernando Mendoza", team: "LV", position: "QB", adp: { sleeper: 187, yahoo: 119.5, espn: null, fantasypros: 266.9 } },
+  { id: "jennings-jauan", name: "Jauan Jennings", team: "MIN", position: "WR", adp: { sleeper: 199.4, yahoo: 126.5, espn: 287, fantasypros: 170.4 } },
+  { id: "higgins-jayden", name: "Jayden Higgins", team: "HOU", position: "WR", adp: { sleeper: 196.6, yahoo: 133.1, espn: null, fantasypros: null } },
+  { id: "lane-jakobi", name: "Ja'Kobi Lane", team: "BAL", position: "WR", adp: { sleeper: 161, yahoo: 126, espn: null, fantasypros: 222.1 } },
+  { id: "lloyd-marshawn", name: "MarShawn Lloyd", team: "GB", position: "RB", adp: { sleeper: 180.7, yahoo: 131.1, espn: 269, fantasypros: 172.7 } },
+  { id: "mcmillan-jalen", name: "Jalen McMillan", team: "TB", position: "WR", adp: { sleeper: 198.1, yahoo: 129.3, espn: 188, fantasypros: 174 } },
+  { id: "barner", name: "AJ Barner", team: "SEA", position: "TE", adp: { sleeper: 193.8, yahoo: 126.1, espn: 312, fantasypros: 196.1 } },
+  { id: "sampson-dylan", name: "Dylan Sampson", team: "CLE", position: "RB", adp: { sleeper: 191.1, yahoo: 179, espn: 220, fantasypros: 154.2 } },
+  { id: "tucker-tre", name: "Tre Tucker", team: "LV", position: "WR", adp: { sleeper: 189.9, yahoo: 149, espn: 199, fantasypros: 168.8 } },
+  { id: "rodgers-aaron", name: "Aaron Rodgers", team: "PIT", position: "QB", adp: { sleeper: 236.8, yahoo: 116.5, espn: 385, fantasypros: 232.9 } },
+  { id: "hunter-travis", name: "Travis Hunter", team: "JAX", position: "WR", adp: { sleeper: 175.4, yahoo: null, espn: 109, fantasypros: 189.7 } },
+  { id: "allen-keenan", name: "Keenan Allen", team: "FA", position: "WR", adp: { sleeper: 202.3, yahoo: 125.2, espn: 213, fantasypros: 200.1 } },
+  { id: "johnson-emmett", name: "Emmett Johnson", team: "KC", position: "RB", adp: { sleeper: 199.6, yahoo: 160, espn: null, fantasypros: 185.3 } },
+  { id: "conner", name: "James Conner", team: "ARI", position: "RB", adp: { sleeper: 220, yahoo: 125.6, espn: 352, fantasypros: 203.7 } },
+  { id: "allen-braelon", name: "Braelon Allen", team: "NYJ", position: "RB", adp: { sleeper: 191.6, yahoo: 171, espn: 260, fantasypros: 164.6 } },
+  { id: "ferguson-terrance", name: "Terrance Ferguson", team: "LAR", position: "TE", adp: { sleeper: 207.4, yahoo: 126.9, espn: 207, fantasypros: 199.3 } },
+  { id: "cooper-omar", name: "Omar Cooper Jr.", team: "NYJ", position: "WR", adp: { sleeper: 177, yahoo: 204, espn: null, fantasypros: 188 } },
+  { id: "mitchell-adonai", name: "Adonai Mitchell", team: "NYJ", position: "WR", adp: { sleeper: 231.6, yahoo: 147, espn: 191, fantasypros: 169.4 } },
+  { id: "jeudy", name: "Jerry Jeudy", team: "CLE", position: "WR", adp: { sleeper: 214.2, yahoo: 196, espn: 184, fantasypros: 175.1 } },
+  { id: "wicks", name: "Dontayvion Wicks", team: "PHI", position: "WR", adp: { sleeper: 206.5, yahoo: 161, espn: 215, fantasypros: 190.5 } },
+  { id: "teslaa", name: "Isaac TeSlaa", team: "DET", position: "WR", adp: { sleeper: 217.4, yahoo: 125.5, espn: 357, fantasypros: 213.3 } },
+  { id: "blue-jaydon", name: "Jaydon Blue", team: "DAL", position: "RB", adp: { sleeper: 213.1, yahoo: 126, espn: 340, fantasypros: 212.7 } },
+  { id: "kupp", name: "Cooper Kupp", team: "SEA", position: "WR", adp: { sleeper: 205.5, yahoo: 120.4, espn: 322, fantasypros: 229.3 } },
+  { id: "washington-malik", name: "Malik Washington", team: "MIA", position: "WR", adp: { sleeper: 181.2, yahoo: 202, espn: 305, fantasypros: 199.1 } },
+  { id: "dulcich", name: "Greg Dulcich", team: "MIA", position: "TE", adp: { sleeper: 244.1, yahoo: 132, espn: 365, fantasypros: 204.7 } },
+  { id: "bryant-pat", name: "Pat Bryant", team: "DEN", position: "WR", adp: { sleeper: 209.6, yahoo: 168, espn: 358, fantasypros: 194.9 } },
+  { id: "davis-ray", name: "Ray Davis", team: "BUF", position: "RB", adp: { sleeper: 211.6, yahoo: 170, espn: 206, fantasypros: 188.2 } },
+  { id: "black-kaelon", name: "Kaelon Black", team: "FA", position: "RB", adp: { sleeper: null, yahoo: 181, espn: null, fantasypros: 222.9 } },
+  { id: "allen-cyrus", name: "Cyrus Allen", team: "FA", position: "WR", adp: { sleeper: null, yahoo: 182, espn: null, fantasypros: 222.5 } },
+  { id: "freiermuth", name: "Pat Freiermuth", team: "PIT", position: "TE", adp: { sleeper: 234.2, yahoo: 124.5, espn: 296, fantasypros: 229.1 } },
+  { id: "njoku", name: "David Njoku", team: "LAC", position: "TE", adp: { sleeper: 230.6, yahoo: 124.4, espn: 413, fantasypros: 242.1 } },
+  { id: "harris-tre", name: "Tre Harris", team: "LAC", position: "WR", adp: { sleeper: 218.8, yahoo: 185, espn: 289, fantasypros: 184.2 } },
+  { id: "brissett", name: "Jacoby Brissett", team: "ARI", position: "QB", adp: { sleeper: 251.2, yahoo: 216, espn: 317, fantasypros: 210.3 } },
+  { id: "singleton-nicholas", name: "Nicholas Singleton", team: "TEN", position: "RB", adp: { sleeper: 197, yahoo: 199, espn: null, fantasypros: 205.9 } },
+  { id: "boutte", name: "Kayshon Boutte", team: "NE", position: "WR", adp: { sleeper: 231.8, yahoo: 183, espn: 304, fantasypros: 182.9 } },
+  { id: "flournoy", name: "Ryan Flournoy", team: "DAL", position: "WR", adp: { sleeper: 241.9, yahoo: 173, espn: 293, fantasypros: 188.5 } },
+  { id: "dell", name: "Tank Dell", team: "HOU", position: "WR", adp: { sleeper: 183.4, yahoo: 254, espn: 162, fantasypros: 208.5 } },
+];
+
+/* ---------------- stats ---------------- */
+
+// A 12-team, 20-round draft runs 240 picks — call it 250 to round up.
+// Beyond that, a platform's number isn't really "when this player gets
+// drafted," it's that platform's filler/default value for someone who
+// wouldn't realistically get drafted in a normal league (ESPN in particular
+// falls back to values like 999+ for these). Those values are still shown
+// (never hidden — every cell traces to its real source), just excluded from
+// the Consensus average and from deviation coloring so one platform's
+// filler number can't drag the whole row's math around.
+const DRAFT_POOL_SIZE = 250;
+function inDraftPool(v) {
+  return v != null && v <= DRAFT_POOL_SIZE;
+}
+
+function mean(values) {
+  return values.reduce((a, b) => a + b, 0) / values.length;
+}
+
+// A platform's cell is flagged only when it deviates *meaningfully* from
+// the consensus average, not just whichever platform happens to be the
+// literal min/max — the threshold scales with the pick itself (15%) but
+// never drops below 3 picks, since top-of-draft ADPs sit within a few
+// tenths of each other and would otherwise look "significant" for noise.
+function deviationThreshold(avg) {
+  return Math.max(3, avg * 0.15);
+}
+
+// posRank ("RB1", "WR12", ...) is derived from each player's own Consensus
+// average, not scraped from anywhere — so it updates automatically whenever
+// Consensus does (e.g. after background.js's next refresh), with no extra
+// data source needed.
+function computeStats(players) {
+  const withAvg = players.map((p) => {
+    const entries = PLATFORMS.map((pl) => [pl.key, p.adp[pl.key]]).filter(([, v]) => inDraftPool(v));
+    const values = entries.map(([, v]) => v);
+    const avg = values.length ? mean(values) : null;
+    const deviation = {};
+    if (avg != null) {
+      const threshold = deviationThreshold(avg);
+      entries.forEach(([k, v]) => {
+        const diff = v - avg;
+        deviation[k] = diff >= threshold ? "high" : diff <= -threshold ? "low" : "neutral";
+      });
+    }
+    return { ...p, avg, deviation };
+  });
+
+  const posRankByPosition = {};
+  withAvg.forEach((p) => {
+    (posRankByPosition[p.position] ||= []).push(p);
+  });
+  const posRankById = {};
+  Object.values(posRankByPosition).forEach((group) => {
+    group
+      .slice()
+      .sort((a, b) => (a.avg == null) - (b.avg == null) || (a.avg ?? 0) - (b.avg ?? 0))
+      .forEach((p, i) => { posRankById[p.id] = p.avg == null ? null : i + 1; });
+  });
+
+  return withAvg.map((p) => ({ ...p, posRank: posRankById[p.id] }));
+}
+
+/* ---------------- pairwise diff buckets (for the chart) ---------------- */
+
+const NEUTRAL_BAND = 3; // picks
+
+function bucketFor(diff) {
+  if (diff > NEUTRAL_BAND) return "aEarlier";
+  if (diff < -NEUTRAL_BAND) return "bEarlier";
+  return "neutral";
+}
+
+const BUCKET_COLOR = {
+  aEarlier: "var(--series-red)",
+  bEarlier: "var(--series-blue)",
+  neutral: "var(--series-neutral)",
+};
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+/* ---------------- value chart (hand-rolled SVG scatter) ---------------- */
+// x = platform A's ADP, y = platform B's ADP. The diagonal is "A and B
+// agree"; below it, A drafts him earlier than B; above it, B drafts him
+// earlier than A.
+
+const CHART_W = 640;
+const CHART_H = 380;
+const MARGIN = { top: 16, right: 20, bottom: 40, left: 44 };
+
+function niceTicks(min, max, maxCount) {
+  const range = max - min || 1;
+  const rawStep = range / maxCount;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const norm = rawStep / mag;
+  const step = (norm > 5 ? 10 : norm > 2 ? 5 : norm > 1 ? 2 : 1) * mag;
+  const ticks = [];
+  for (let t = Math.ceil(min / step) * step; t <= max; t += step) ticks.push(Math.round(t * 10) / 10);
+  return ticks;
+}
+
+function renderChart(container, players, platformA, platformB) {
+  const labelA = PLATFORM_LABEL[platformA];
+  const labelB = PLATFORM_LABEL[platformB];
+
+  // FantasyPros isn't a real draft room, it's an aggregated expert-consensus
+  // ranking (see the table's † note) — so "later than the other platform"
+  // means experts rate him worse than the market does (fade, red), not that
+  // he's a bargain (buy, blue) the way it would for two real markets. Only
+  // platformA needs a flip: when B is FantasyPros the raw bucketFor(b - a)
+  // sign already lands on the right color, verified by hand for both cases.
+  const invertA = !!PLATFORMS.find((pl) => pl.key === platformA)?.invertSignal;
+  const involvesFantasyPros = platformA === "fantasypros" || platformB === "fantasypros";
+  function colorFor(diff) {
+    return BUCKET_COLOR[bucketFor(invertA ? -diff : diff)];
+  }
+
+  const pts = players
+    .map((p) => ({ p, a: p.adp[platformA], b: p.adp[platformB] }))
+    .filter((d) => inDraftPool(d.a) && inDraftPool(d.b));
+
+  if (pts.length === 0) {
+    container.innerHTML = `
+      <div class="rounded-lg border p-8 text-center text-sm" style="border-color: var(--border); color: var(--text-muted);">
+        No players have both ${escapeHtml(labelA)} and ${escapeHtml(labelB)} ADP within a normal draft's range in the current filter.
+      </div>`;
+    return;
+  }
+
+  const allValues = pts.flatMap((d) => [d.a, d.b]);
+  const axisMin = 1;
+  const axisMax = Math.max(...allValues) * 1.05;
+  const plotW = CHART_W - MARGIN.left - MARGIN.right;
+  const plotH = CHART_H - MARGIN.top - MARGIN.bottom;
+  const sx = (v) => MARGIN.left + ((v - axisMin) / (axisMax - axisMin)) * plotW;
+  const sy = (v) => MARGIN.top + plotH - ((v - axisMin) / (axisMax - axisMin)) * plotH;
+  const ticks = niceTicks(axisMin, axisMax, 6);
+
+  const buckets = ["aEarlier", "neutral", "bEarlier"];
+  const bucketLabel = {
+    aEarlier: `${labelA} earlier`,
+    bEarlier: `${labelB} earlier`,
+    neutral: "In agreement",
+  };
+
+  const legendHtml = buckets
+    .map((b) => {
+      const color = b === "neutral" ? BUCKET_COLOR.neutral : colorFor(b === "aEarlier" ? 1 : -1);
+      return `<span class="flex items-center gap-1.5 text-xs" style="color: var(--text-secondary);">
+        <span class="inline-block rounded-full" style="width:8px;height:8px;background:${color};"></span>
+        ${escapeHtml(bucketLabel[b])}
+      </span>`;
+    })
+    .join("");
+
+  const gridLines = ticks.map((t) => `<line x1="${MARGIN.left}" x2="${CHART_W - MARGIN.right}" y1="${sy(t)}" y2="${sy(t)}" stroke="var(--grid)" stroke-width="1" />`).join("");
+  const yLabels = ticks.map((t) => `<text x="${MARGIN.left - 8}" y="${sy(t)}" dy="0.32em" text-anchor="end" font-size="10" fill="var(--text-muted)">${t}</text>`).join("");
+  const xLabels = ticks.map((t) => `<text x="${sx(t)}" y="${CHART_H - MARGIN.bottom + 16}" text-anchor="middle" font-size="10" fill="var(--text-muted)">${t}</text>`).join("");
+  const circles = pts.map(({ a, b }, i) => `<circle data-idx="${i}" cx="${sx(a)}" cy="${sy(b)}" r="5" fill="${colorFor(b - a)}" stroke="var(--surface-1)" stroke-width="2" style="cursor:pointer;" />`).join("");
+
+  container.innerHTML = `
+    <div class="rounded-lg border p-4" style="border-color: var(--border); background: var(--surface-1);">
+      <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+        <h2 class="text-sm font-semibold" style="color: var(--text-primary);">${escapeHtml(labelA)} ADP vs. ${escapeHtml(labelB)} ADP</h2>
+        <div class="flex items-center gap-4 flex-wrap">${legendHtml}</div>
+      </div>
+      <div class="relative w-full chart-wrap">
+        <svg viewBox="0 0 ${CHART_W} ${CHART_H}" class="w-full h-auto">
+          ${gridLines}${yLabels}${xLabels}
+          <text x="${MARGIN.left + plotW / 2}" y="${CHART_H - 6}" text-anchor="middle" font-size="11" fill="var(--text-muted)">${escapeHtml(labelA)} ADP (1 = drafted first)</text>
+          <text x="12" y="${MARGIN.top + plotH / 2}" text-anchor="middle" font-size="11" fill="var(--text-muted)" transform="rotate(-90 12 ${MARGIN.top + plotH / 2})">${escapeHtml(labelB)} ADP (1 = drafted first)</text>
+          <line x1="${sx(axisMin)}" y1="${sy(axisMin)}" x2="${sx(axisMax)}" y2="${sy(axisMax)}" stroke="var(--baseline)" stroke-width="1" />
+          ${circles}
+        </svg>
+        <div class="chart-tooltip absolute rounded-md border px-3 py-2 text-xs shadow-sm pointer-events-none" style="display:none; background: var(--surface-1); border-color: var(--border); color: var(--text-primary); width:180px;"></div>
+      </div>
+      ${
+        involvesFantasyPros
+          ? `<p class="text-xs mt-3" style="color: var(--text-muted);">† FantasyPros is an aggregated expert-consensus ranking, not a real draft room, so its colors run the opposite way from a real platform: FantasyPros earlier than ${escapeHtml(platformA === "fantasypros" ? labelB : labelA)} is a buy signal (blue); later is a fade signal (red).</p>`
+          : ""
+      }
+    </div>`;
+
+  const wrap = container.querySelector(".chart-wrap");
+  const tooltip = container.querySelector(".chart-tooltip");
+  wrap.querySelectorAll("circle").forEach((circle) => {
+    const idx = Number(circle.getAttribute("data-idx"));
+    const { p, a, b } = pts[idx];
+    function show(e) {
+      const rect = wrap.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const diff = b - a;
+      tooltip.style.display = "block";
+      tooltip.style.left = Math.min(x + 12, rect.width - 190) + "px";
+      tooltip.style.top = Math.max(y - 70, 0) + "px";
+      tooltip.innerHTML = `
+        <div class="font-semibold mb-1">${escapeHtml(p.name)} <span style="color: var(--text-muted);">· ${escapeHtml(p.position)} · ${escapeHtml(p.team)}</span></div>
+        <div style="color: var(--text-secondary);">${escapeHtml(labelA)}: ${a.toFixed(1)}</div>
+        <div style="color: var(--text-secondary);">${escapeHtml(labelB)}: ${b.toFixed(1)}</div>
+        <div class="mt-1 font-medium" style="color: ${colorFor(diff)};">${diff > 0 ? "+" : ""}${diff.toFixed(1)} picks · ${escapeHtml(bucketLabel[bucketFor(diff)])}</div>
+      `;
+    }
+    circle.addEventListener("mouseenter", show);
+    circle.addEventListener("mousemove", show);
+    circle.addEventListener("mouseleave", () => {
+      tooltip.style.display = "none";
+    });
+  });
+}
+
+/* ---------------- board table ---------------- */
+
+function renderTable(container, players, state, onSort) {
+  const sorted = [...players].sort((a, b) => {
+    let cmp;
+    if (state.sortKey === "name") cmp = a.name.localeCompare(b.name);
+    else {
+      const av = a[state.sortKey],
+        bv = b[state.sortKey];
+      if (av == null && bv == null) cmp = 0;
+      else if (av == null) cmp = 1;
+      else if (bv == null) cmp = -1;
+      else cmp = av - bv;
+    }
+    return state.sortDesc ? -cmp : cmp;
+  });
+
+  function headerButtonHtml(key, label) {
+    const active = state.sortKey === key;
+    const arrow = active ? (state.sortDesc ? "↓" : "↑") : "";
+    return `<button type="button" data-sort="${key}" class="flex items-center gap-1 text-xs font-semibold ml-auto" style="color: ${active ? "var(--text-primary)" : "var(--text-muted)"};">${escapeHtml(label)}${arrow ? `<span>${arrow}</span>` : ""}</button>`;
+  }
+
+  const platformHeaders = PLATFORMS.map(
+    (pl) => `
+    <th class="px-2 py-2 text-right" title="${escapeHtml(pl.stale ? pl.staleNote : pl.invertSignal ? "Colors are inverted for this column — see note below the table." : "")}">
+      ${headerButtonHtml(pl.key, pl.label)}${pl.invertSignal ? `<span style="color: var(--text-muted);">&nbsp;†</span>` : ""}${pl.stale ? `<span style="color: var(--text-muted);">&nbsp;⏸</span>` : ""}
+    </th>`
+  ).join("");
+
+  const rows = sorted
+    .map((p) => {
+      const platformCells = PLATFORMS.map((pl) => {
+        const value = p.adp[pl.key];
+        const outOfPool = value != null && !inDraftPool(value);
+        let status = p.deviation[pl.key];
+        if (pl.invertSignal) status = status === "high" ? "low" : status === "low" ? "high" : status;
+        const color = value == null || outOfPool ? "var(--text-muted)" : status === "high" ? "var(--series-blue)" : status === "low" ? "var(--series-red)" : "var(--text-primary)";
+        const title = outOfPool ? ` title="Outside a normal ${DRAFT_POOL_SIZE}-pick draft — excluded from Consensus and coloring"` : "";
+        return `<td class="px-2 py-1.5 text-right font-medium" style="color:${color};"${title}>${value != null ? value.toFixed(1) : "–"}</td>`;
+      }).join("");
+
+      return `<tr class="border-b row-hover" style="border-color: var(--border);">
+        <td class="px-3 py-1.5 sticky left-0" style="background: var(--surface-1);">
+          <div class="font-medium" style="color: var(--text-primary);">${escapeHtml(p.name)}</div>
+          <div class="text-xs" style="color: var(--text-muted);">${escapeHtml(p.position)}${p.posRank != null ? p.posRank : ""} · ${escapeHtml(p.team)}</div>
+        </td>
+        <td class="px-3 py-1.5 text-right font-semibold" style="color: var(--text-primary);">${p.avg != null ? p.avg.toFixed(1) : "–"}</td>
+        ${platformCells}
+      </tr>`;
+    })
+    .join("");
+
+  container.innerHTML = `
+    <div class="rounded-lg border overflow-x-auto" style="border-color: var(--border); background: var(--surface-1);">
+      <table class="w-full border-collapse text-sm">
+        <thead>
+          <tr class="border-b" style="border-color: var(--border);">
+            <th class="text-left px-3 py-2 sticky left-0" style="background: var(--surface-1);">
+              <button type="button" data-sort="name" class="flex items-center gap-1 text-xs font-semibold" style="color: ${state.sortKey === "name" ? "var(--text-primary)" : "var(--text-muted)"};">
+                Player${state.sortKey === "name" ? `<span>${state.sortDesc ? "↓" : "↑"}</span>` : ""}
+              </button>
+            </th>
+            <th class="px-3 py-2 text-right">${headerButtonHtml("avg", "Consensus")}</th>
+            ${platformHeaders}
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <p class="text-xs mt-2" style="color: var(--text-muted);">
+      † FantasyPros' colors run the other way from Yahoo/ESPN/Sleeper: those three are real drafting
+      markets, so sitting well above consensus means real drafters are letting him slide — a buy signal
+      (blue). FantasyPros is an aggregated expert-consensus ranking, not a draft room, so the same
+      "above consensus" reading there means experts rate him worse than the market does — a fade signal
+      (red) instead.
+    </p>
+    <p class="text-xs mt-2" style="color: var(--text-muted);">
+      ⏸ Yahoo is frozen at its last known ADP — BeatADP, this tool's data source, stopped maintaining Yahoo
+      numbers on ${escapeHtml(PLATFORMS.find((p) => p.key === "yahoo").staleSince)}, so there's no live number
+      left to pull. Sleeper, ESPN, and FantasyPros refresh normally.
+    </p>`;
+
+  container.querySelectorAll("[data-sort]").forEach((btn) => {
+    btn.addEventListener("click", () => onSort(btn.getAttribute("data-sort")));
+  });
+}
+
+/* ---------------- app ---------------- */
+
+const POSITIONS = ["ALL", "QB", "RB", "WR", "TE"];
+
+const state = {
+  positionFilter: "ALL",
+  platformA: "yahoo",
+  platformB: "espn",
+  sortKey: "avg",
+  sortDesc: false,
+  players: samplePlayers,
+  refreshedAt: null,
+  refreshError: null,
+  refreshing: false,
+};
+
+function getFiltered() {
+  const scored = computeStats(state.players);
+  return state.positionFilter === "ALL" ? scored : scored.filter((p) => p.position === state.positionFilter);
+}
+
+function relativeTime(ms) {
+  if (ms == null) return null;
+  const mins = Math.round((Date.now() - ms) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
+function update() {
+  const filtered = getFiltered();
+  renderChart(document.getElementById("chart"), filtered, state.platformA, state.platformB);
+  renderTable(document.getElementById("table"), filtered, state, (key) => {
+    if (state.sortKey === key) state.sortDesc = !state.sortDesc;
+    else {
+      state.sortKey = key;
+      state.sortDesc = key !== "name";
+    }
+    update();
+  });
+}
+
+function renderPlatformOptions(select, excludeKey) {
+  select.innerHTML = PLATFORMS.filter((pl) => pl.key !== excludeKey)
+    .map((pl) => `<option value="${pl.key}">${escapeHtml(pl.label)}${pl.stale ? " (frozen)" : ""}</option>`)
+    .join("");
+}
+
+function buildFilterButtons() {
+  const filterContainer = document.getElementById("position-filters");
+  filterContainer.querySelectorAll("[data-pos]").forEach((btn) => {
+    const pos = btn.getAttribute("data-pos");
+    const active = pos === state.positionFilter;
+    btn.style.background = active ? "var(--series-blue)" : "transparent";
+    btn.style.color = active ? "#ffffff" : "var(--text-secondary)";
+  });
+}
+
+function buildApp() {
+  const root = document.getElementById("app");
+  root.innerHTML = `
+    <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-5">
+      <header>
+        <h1 class="text-xl font-semibold" style="color: var(--text-primary);">FF ValueDiff</h1>
+        <p class="text-sm mt-1" style="color: var(--text-secondary);">
+          Compares each player's Average Draft Position across Yahoo, ESPN, Sleeper, and FantasyPros'
+          consensus, so you can catch cases where platforms disagree on when a player actually gets drafted.
+        </p>
+        <p class="text-xs mt-1" style="color: var(--text-muted);">
+          Real 2026 redraft ADP for the top 200 overall players. Sleeper, ESPN, and FantasyPros refresh
+          automatically from BeatADP every 6 hours. Yahoo is frozen at its last known value
+          (${escapeHtml(PLATFORMS.find((p) => p.key === "yahoo").staleSince)}) since BeatADP stopped
+          maintaining it. ESPN's ADP is that platform's native full-PPR format; Yahoo, Sleeper, and
+          FantasyPros are each shown in their own native half-PPR format. Every cell here is read-only,
+          matching its source exactly.
+        </p>
+        <p class="text-xs mt-1 flex items-center gap-2" style="color: var(--text-muted);">
+          <span id="refresh-status"></span>
+          <button type="button" id="refresh-now" class="text-xs underline">Refresh now</button>
+        </p>
+      </header>
+
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div class="flex items-center gap-1" id="position-filters"></div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <label class="flex items-center gap-2 text-xs">
+            <span style="color: var(--text-secondary);">Compare</span>
+            <select id="platform-a" class="rounded border px-2 py-1 text-sm outline-none" style="border-color: var(--border); background: var(--page); color: var(--text-primary);"></select>
+          </label>
+          <span class="text-xs" style="color: var(--text-muted);">vs.</span>
+          <select id="platform-b" class="rounded border px-2 py-1 text-sm outline-none" style="border-color: var(--border); background: var(--page); color: var(--text-primary);"></select>
+        </div>
+      </div>
+
+      <div id="chart"></div>
+      <div id="table"></div>
+    </div>`;
+
+  const filterContainer = document.getElementById("position-filters");
+  filterContainer.innerHTML = POSITIONS.map(
+    (pos) => `
+    <button type="button" data-pos="${pos}" class="rounded-full px-3 py-1 text-xs font-medium border" style="border-color: var(--border); background: ${pos === state.positionFilter ? "var(--series-blue)" : "transparent"}; color: ${pos === state.positionFilter ? "#ffffff" : "var(--text-secondary)"};">${pos}</button>
+  `
+  ).join("");
+  filterContainer.querySelectorAll("[data-pos]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.positionFilter = btn.getAttribute("data-pos");
+      buildFilterButtons();
+      update();
+    });
+  });
+
+  const selectA = document.getElementById("platform-a");
+  const selectB = document.getElementById("platform-b");
+  function syncSelects() {
+    renderPlatformOptions(selectA, state.platformB);
+    renderPlatformOptions(selectB, state.platformA);
+    selectA.value = state.platformA;
+    selectB.value = state.platformB;
+  }
+  syncSelects();
+  selectA.addEventListener("change", () => {
+    state.platformA = selectA.value;
+    syncSelects();
+    update();
+  });
+  selectB.addEventListener("change", () => {
+    state.platformB = selectB.value;
+    syncSelects();
+    update();
+  });
+
+  document.getElementById("refresh-now").addEventListener("click", () => {
+    if (state.refreshing) return;
+    state.refreshing = true;
+    renderRefreshStatus();
+    chrome.runtime.sendMessage({ type: "refresh-now" }, (result) => {
+      state.refreshing = false;
+      if (result?.ok) {
+        loadFromStorage(() => {
+          buildFilterButtons();
+          syncSelects();
+          update();
+        });
+      } else {
+        state.refreshError = result?.error || "Refresh failed";
+        renderRefreshStatus();
+      }
+    });
+  });
+
+  renderRefreshStatus();
+  update();
+}
+
+function renderRefreshStatus() {
+  const el = document.getElementById("refresh-status");
+  if (!el) return;
+  if (state.refreshing) {
+    el.textContent = "Refreshing…";
+  } else if (state.refreshError) {
+    el.textContent = `Last refresh failed: ${state.refreshError}`;
+  } else if (state.refreshedAt) {
+    el.textContent = `Sleeper/ESPN/FantasyPros updated ${relativeTime(state.refreshedAt)}`;
+  } else {
+    el.textContent = "Showing bundled sample data — refreshing…";
+  }
+}
+
+/* ---------------- live data (chrome.storage, filled in by background.js) ---------------- */
+
+const STORAGE_KEYS = {
+  players: "ff-valuediff:live-players",
+  refreshedAt: "ff-valuediff:refreshed-at",
+  refreshError: "ff-valuediff:refresh-error",
+};
+
+function loadFromStorage(done) {
+  chrome.storage.local.get(
+    [STORAGE_KEYS.players, STORAGE_KEYS.refreshedAt, STORAGE_KEYS.refreshError],
+    (result) => {
+      state.players = result[STORAGE_KEYS.players] || samplePlayers;
+      state.refreshedAt = result[STORAGE_KEYS.refreshedAt] || null;
+      state.refreshError = result[STORAGE_KEYS.refreshError] || null;
+      done();
+    }
+  );
+}
+
+loadFromStorage(buildApp);
+</script>
+</body>
+</html>

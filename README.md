@@ -75,8 +75,24 @@ below).
 
 ## Other pages
 
-The app has three tabs, all sharing the same player pool: **ADP Comparison**
-(above), **Waiver Wire Targets**, and **Trade Calculator**.
+The app has four tabs, all sharing the same player pool: **ADP Comparison**
+(above), **Weekly Scores**, **Waiver Wire Targets**, and **Trade Calculator**.
+
+### Weekly Scores
+
+Every player in the database for a given week (1-18), ranked highest to
+lowest by that week's actual PPR fantasy points. Each week's tab also shows
+that week's real bye teams (the full 2026 schedule, Weeks 5-14, hard-coded
+in `BYE_WEEKS` in `index.html`) — that part is known for the whole season in
+advance, so it's shown regardless of whether the week's games have happened.
+
+Scores themselves are **real results, not projections or fabricated
+numbers** — pulled from FantasyPros' Week 1 2026 stats tables and stored in
+`WEEKLY_SCORES` in `index.html`. Only weeks that have actually been played
+get an entry there; a week with no entry shows an explicit "hasn't been
+played yet" state instead of a guess, same pattern as Waiver Wire Targets
+below. As of this writing, only Week 1 is filled in — add each following
+week's key to `WEEKLY_SCORES` once it's actually been played.
 
 ### Waiver Wire Targets
 

@@ -87,11 +87,11 @@ in `BYE_WEEKS` in `index.html`) — that part is known for the whole season in
 advance, so it's shown regardless of whether the week's games have happened.
 
 Scores themselves are **real results, not projections or fabricated
-numbers** — pulled from FantasyPros' Week 1 2026 stats tables and stored in
+numbers** — pulled from FantasyPros' Week 1/2 2026 stats tables and stored in
 `WEEKLY_SCORES` in `index.html`. Only weeks that have actually been played
 get an entry there; a week with no entry shows an explicit "hasn't been
 played yet" state instead of a guess, same pattern as Waiver Wire Targets
-below. As of this writing, only Week 1 is filled in — add each following
+below. As of this writing, Weeks 1-2 are filled in — add each following
 week's key to `WEEKLY_SCORES` once it's actually been played.
 
 ### Waiver Wire Targets
@@ -110,8 +110,10 @@ depth-chart moves, snap counts) comes in.
 A week with no entry in `WAIVER_TARGETS` shows an explicit "nothing added
 yet" state rather than a guess — only weeks that have actually been filled
 in by hand show a list, so nothing on the page is presented as current when
-it isn't. As of this writing, only Week 1 is seeded, with a small example
-set of preseason committee/handcuff situations.
+it isn't. As of this writing, Weeks 1-2 are seeded: Week 1 with a small
+example set of preseason committee/handcuff situations, Week 2 with real
+Week 3 waiver targets driven by actual Week 1-2 results (injury vacancies,
+snap-share breakouts).
 
 ### Trade Calculator
 

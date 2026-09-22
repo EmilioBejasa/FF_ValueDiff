@@ -300,7 +300,7 @@ const samplePlayers = [
 // Only weeks with an entry below show targets — a week intentionally has no
 // entry here until it's actually been updated, rather than showing guessed
 // or stale info as if it were current.
-const WAIVER_TARGETS_UPDATED_ON = "2026-09-08";
+const WAIVER_TARGETS_UPDATED_ON = "2026-09-22";
 const WAIVER_PRIORITIES = ["Must Add", "Speculative", "Streamer", "Deep League"];
 const WAIVER_PRIORITY_COLOR = {
   "Must Add": "var(--series-red)",
@@ -327,7 +327,25 @@ const WAIVER_TARGETS = {
     { id: "doubs", name: "Romeo Doubs", team: "NE", position: "WR", priority: "Deep League",
       note: "Depth piece who could see a bump in target share if the WR room shakes out in his favor." },
   ],
-  // Weeks 2-18: add entries here as the season plays out.
+  2: [
+    { id: "rashod-bateman", name: "Rashod Bateman", team: "BAL", position: "WR", priority: "Must Add",
+      note: "Zay Flowers banged up — Bateman drew 9 targets and dropped 21.8 points in Week 2 as the clear beneficiary." },
+    { id: "schultz-dalton", name: "Dalton Schultz", team: "HOU", position: "TE", priority: "Must Add",
+      note: "Nico Collins out — Schultz cashed in with 14 targets, 140 yards, and 26.0 points in Week 2." },
+    { id: "bigsby", name: "Tank Bigsby", team: "PHI", position: "RB", priority: "Speculative",
+      note: "Took over after Saquon Barkley left Week 2 with a stinger — direct handcuff to a bell-cow role." },
+    { id: "coleman-jonah", name: "Jonah Coleman", team: "DEN", position: "RB", priority: "Speculative",
+      note: "Broke out for 14.8 points in Week 2 as Denver's early-down work started shifting his way." },
+    { id: "wicks", name: "Dontayvion Wicks", team: "PHI", position: "WR", priority: "Speculative",
+      note: "Ran an 82% route share and 90% of the snaps in Week 1, then backed it up with 12.4 points in Week 2." },
+    { id: "shough", name: "Tyler Shough", team: "NO", position: "QB", priority: "Streamer",
+      note: "Averaging 23.8 points per game running the league's fastest-paced offense — a real streaming option." },
+    { id: "johnson-emmett", name: "Emmett Johnson", team: "KC", position: "RB", priority: "Deep League",
+      note: "Clear RB2 behind an injury-prone Kenneth Walker III — stash for handcuff insurance." },
+    { id: "young-bryce", name: "Bryce Young", team: "CAR", position: "QB", priority: "Streamer",
+      note: "113.3 passer rating and 8.9 YPA through two weeks, plus rushing equity — startable if your QB1 is out." },
+  ],
+  // Weeks 3-18: add entries here as the season plays out.
 };
 
 /* ---------------- weekly scores ---------------- */
@@ -347,10 +365,10 @@ const BYE_WEEKS = {
 const ALL_WEEKS = Array.from({ length: 18 }, (_, i) => i + 1);
 
 // Actual fantasy points scored (PPR), by player id, for weeks that have
-// actually been played — pulled from FantasyPros' Week 1 2026 stats tables.
+// actually been played — pulled from FantasyPros' Week 1/2 2026 stats tables.
 // A week with no key here hasn't been played yet, so it isn't guessed at;
 // see WeeklyScores below for how that's shown.
-const WEEKLY_SCORES_UPDATED_ON = "2026-09-14";
+const WEEKLY_SCORES_UPDATED_ON = "2026-09-22";
 const WEEKLY_SCORES = {
   1: {
     "achane": 10.6, "adams-d": 5.6, "addison": 0, "allen-braelon": 4, "allen-cyrus": 0,
@@ -394,7 +412,49 @@ const WEEKLY_SCORES = {
     "wicks": 15.3, "williams-caleb": 37.3, "williams-j": 24.2, "williams-jameson": 8.5, "willis-malik": 17.7,
     "wilson-g": 13.9, "wilson-michael": 10.6, "worthy": 0, "young-bryce": 32.4, "zachariah-branch": 0,
   },
-  // Weeks 2-18: add entries here once those weeks have actually been played.
+  2: {
+    "achane": 12.3, "adams-d": 39.5, "addison": 4.1, "allen-braelon": 8.5, "allen-cyrus": 0,
+    "allen-j": 40.8, "allen-keenan": 1.5, "allgeier": 3.9, "andrews-mark": 10.9, "antonio-williams": 5.4,
+    "barkley": 3, "barner": 7.9, "bigsby": 11.8, "black-kaelon": 2.5, "boston-denzel": 20.5,
+    "boutte": 6.7, "bowers": 0, "brooks-jonathon": 2.1, "brown-aj": 0, "brown-chase": 11.2,
+    "burden": 6.2, "burrow": 16.2, "caleb-douglas": 3.9, "calvin-ridley": 5.5, "charbonnet": 0,
+    "chase": 26.5, "coker": 14.6, "coleman-jonah": 14.8, "collins-n": 0, "concepcion": 8.2,
+    "cook": 20.9, "cooper-omar": 0, "corum": 10.2, "croskeymerritt": 5.8, "daniels-j": 14.7,
+    "darnold": 0, "dart": 0.8, "davis-ray": 0, "dell": 0, "diggs": 21.7,
+    "dobbins": 3.6, "doubs": 12.6, "dowdle": 6.4, "downs": 14.2, "dsmith": 27.7,
+    "egbuka": 10.3, "etienne": 7.1, "evans-m": 8.4, "fannin": 10.4, "ferguson-jake": 20.3,
+    "ferguson-terrance": 17.4, "flournoy": 7.3, "flowers": 0, "gainwell": 4.5, "germie-bernard": 7.5,
+    "gibbs": 23.3, "godwin": 8.8, "goedert": 1.4, "goff": 29.8, "golden-matthew": 9.8,
+    "hall-b": 14.2, "hampton": 17.5, "harris-tre": 6.3, "harrison": 0, "harvey-rj": 0,
+    "henderson-t": 13.6, "henry-d": 17.7, "henry-hunter": 7, "herbert": 9.9, "higgins-jayden": 0,
+    "higgins-t": 14.5, "hockenson": 5.9, "hubbard": 14.4, "hunter-travis": 0, "hurts": 18.2,
+    "irving": 13, "jackson-l": 15.8, "jacobs": 0, "jaylin-noel": 5.4, "jeanty": 10.3,
+    "jefferson": 8.5, "jelani-woods": 0, "jennings-jauan": 0, "jeudy": 0, "johnson-emmett": 5.5,
+    "johnson-juwan": 10.6, "johnston-q": 2.4, "jones-aaron": 10.5, "jones-daniel": 12.4, "judkins": 9.8,
+    "kamara": 7.2, "kaytron-allen": 2.4, "kelce": 25.1, "kincaid": 22.5, "kittle": 18,
+    "kraft": 3.5, "kwilliams": 15.7, "lamb": 35.3, "lane-jakobi": 0, "laporta": 17.2,
+    "lawrence": 7.2, "lemon": 1.9, "likely": 8.3, "lloyd-marshawn": 8.6, "london": 8.9,
+    "love-j": 7.5, "love-jordan": 13.8, "loveland": 1.3, "mahomes": 29, "malachi-corley": 0,
+    "malachi-fields": 5, "marks-woody": 8.5, "mason-jordan": 0, "maye": 9, "mayfield": 13.2,
+    "mcbride": 18.1, "mccaffrey": 22.6, "mcconkey": 6.5, "mclaurin": 7, "mcmillan": 15.1,
+    "mcmillan-jalen": 0, "mendoza": 0, "metcalf": 6.7, "meyers": 3.8, "mitchell-adonai": 12.3,
+    "mitchell-keaton": 4.9, "monangai": 7.8, "montgomery": 4.4, "moore-dj": -0.1, "murray-kyler": 0,
+    "nabers": 1.1, "nacua": 0, "nailor": 1.9, "nix": 15.1, "odunze": 7.3,
+    "okonkwo": 0, "olave": 22.6, "pacheco": 0, "pickens": 10, "pierce-alec": 2.1,
+    "pittman": 0, "pitts": 2.5, "pollard": 7.5, "prescott": 29.8, "price-j": 5,
+    "purdy": 28.5, "rashod-bateman": 21.8, "reed-jayden": 1.4, "rice": 12.3, "robinson-b": 11.1,
+    "robinson-brian": 8.7, "robinson-wandale": 1.9, "rodriguez-chris": 1.3, "ross-dwelley": 0, "sadiq": 3.7,
+    "sampson-dylan": 0, "samuel-deebo": 6.5, "schultz-dalton": 26, "shaheed": 6.9, "shakir": 6.8,
+    "shough": 22.4, "singleton-nicholas": 1, "skattebo": 9.5, "smithnjigba": 42.5, "spears": 9,
+    "stafford": 28, "stbrown": 35.2, "stevenson-r": 3.6, "strange": 3.7, "stribling": 0,
+    "stroud": 17, "sutton": 5.5, "swift": 12.9, "tate-c": 5.7, "taylor-j": 29.2,
+    "thomas-brian": 7, "tracy": 0, "tucker-tre": 22.9, "tuten": 14.2, "tyson-jordyn": 0,
+    "waddle": 21.8, "walker-k": 23.8, "ward-cameron": 20, "warren-jaylen": 9.7, "warren-tyler": 14.4,
+    "washington-malik": 8.7, "washington-mike": 0.7, "washington-p": 16.8, "watson-c": 14.1, "white-rachaad": 14.3,
+    "wicks": 12.4, "williams-caleb": 8.7, "williams-j": 8, "williams-jameson": 5.3, "willis-malik": 12.5,
+    "wilson-g": 16.7, "wilson-michael": 3.8, "worthy": 13.5, "young-bryce": 24.1, "zachariah-branch": 3.4,
+  },
+  // Weeks 3-18: add entries here once those weeks have actually been played.
 };
 
 /* ---------------- trade calculator ---------------- */
@@ -585,7 +645,7 @@ function ValueChart({ players, platformA, platformB }) {
         <div className="flex items-center gap-4 flex-wrap">
           {buckets.map((b) => (
             <span key={b} className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-secondary)" }}>
-              <span className="inline-block rounded-full" style={{ width: 8, height: 8, background: b === "neutral" ? BUCKET_COLOR.neutral : colorFor(b === "aEarlier" ? 1 : -1) }} />
+              <span className="inline-block rounded-full" style={{ width: 8, height: 8, background: b === "neutral" ? BUCKET_COLOR.neutral : colorFor(b === "aEarlier" ? NEUTRAL_BAND + 1 : -(NEUTRAL_BAND + 1)) }} />
               {bucketLabel[b]}
             </span>
           ))}
@@ -917,8 +977,8 @@ function SeasonGrid({ players, positionFilter }) {
                 {w}
               </th>
             ))}
-            <SortHeader label="AVG" active={sortBy === "avg"} onClick={() => setSortBy("avg")} />
             <SortHeader label="TTL" active={sortBy === "ttl"} onClick={() => setSortBy("ttl")} />
+            <SortHeader label="AVG" active={sortBy === "avg"} onClick={() => setSortBy("avg")} />
           </tr>
         </thead>
         <tbody>
@@ -940,11 +1000,11 @@ function SeasonGrid({ players, positionFilter }) {
                     {c.type === "score" ? c.value.toFixed(1) : c.type === "bye" ? "BYE" : "–"}
                   </td>
                 ))}
-                <td className="px-3 py-1.5 text-right tabular-nums" style={{ color: sortBy === "avg" ? "var(--text-primary)" : "var(--text-secondary)", fontWeight: sortBy === "avg" ? 600 : 400 }}>
-                  {p.avg === null ? "–" : p.avg.toFixed(1)}
-                </td>
                 <td className="px-3 py-1.5 text-right tabular-nums" style={{ color: sortBy === "ttl" ? "var(--text-primary)" : "var(--text-secondary)", fontWeight: sortBy === "ttl" ? 600 : 400 }}>
                   {p.ttl.toFixed(1)}
+                </td>
+                <td className="px-3 py-1.5 text-right tabular-nums" style={{ color: sortBy === "avg" ? "var(--text-primary)" : "var(--text-secondary)", fontWeight: sortBy === "avg" ? 600 : 400 }}>
+                  {p.avg === null ? "–" : p.avg.toFixed(1)}
                 </td>
               </tr>
             );

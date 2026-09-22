@@ -52,7 +52,7 @@
 <div id="root"></div>
 
 <script type="text/babel" data-presets="react">
-const { useState, useMemo, useRef } = React;
+const { useState, useMemo, useRef, useEffect } = React;
 
 /* ---------------- platforms ---------------- */
 
@@ -292,14 +292,12 @@ const samplePlayers = [
 
 /* ---------------- waiver wire targets ---------------- */
 // Unlike ADP (pulled live from BeatADP), there's no CORS-friendly live source
-// for weekly ownership/trending-add data, so this list is hand-curated —
-// same pattern as samplePlayers before a refresh script existed for it.
-// Update it yourself each week as real in-season news (injuries, depth-chart
-// shakeups, snap counts) comes in; there's no "refresh" button for this one.
-//
-// Only weeks with an entry below show targets — a week intentionally has no
-// entry here until it's actually been updated, rather than showing guessed
-// or stale info as if it were current.
+// for this kind of vetted, reasoned pickup list (the live Sleeper panel above
+// it covers raw add/drop counts — see SleeperTrending), so this is
+// hand-curated — same pattern as samplePlayers before a refresh script
+// existed for it. This isn't split by week; it's a single always-current
+// list — replace it wholesale with the latest real targets as the season
+// moves on, rather than piling up a new dated list every week.
 const WAIVER_TARGETS_UPDATED_ON = "2026-09-22";
 const WAIVER_PRIORITIES = ["Must Add", "Speculative", "Streamer", "Deep League"];
 const WAIVER_PRIORITY_COLOR = {
@@ -308,49 +306,35 @@ const WAIVER_PRIORITY_COLOR = {
   "Streamer": "var(--series-blue)",
   "Deep League": "var(--text-muted)",
 };
-const WAIVER_TARGETS = {
-  // Originally seeded preseason (before Week 1 kicked off) with committee/
-  // handcuff guesses. Retroactively replaced once Week 1 actually played
-  // out — these are the real Week 2 pickups that Week 1's results actually
-  // pointed to (injury vacancies, snap-share winners), not speculation.
-  1: [
-    { id: "black-kaelon", name: "Kaelon Black", team: "SF", position: "RB", priority: "Must Add",
-      note: "Emerged as the clear RB2 with 15 opportunities in Week 1, plus goal-line upside in a high-scoring offense." },
-    { id: "doubs", name: "Romeo Doubs", team: "NE", position: "WR", priority: "Must Add",
-      note: "Signed a lucrative new deal and is running a high route share after A.J. Brown's high-ankle sprain." },
-    { id: "holani", name: "George Holani", team: "SEA", position: "RB", priority: "Speculative",
-      note: "Handles all of Seattle's passing-down and third-down work — role grows further if Darnold's injury lingers." },
-    { id: "vele", name: "Devaughn Vele", team: "NO", position: "WR", priority: "Speculative",
-      note: "Second read behind Chris Olave with 10 targets in Week 1; elevated role if Olave misses time." },
-    { id: "wicks", name: "Dontayvion Wicks", team: "PHI", position: "WR", priority: "Speculative",
-      note: "Playing an every-down WR2 role in a passing offense leaning into more deep shots." },
-    { id: "gesicki", name: "Mike Gesicki", team: "CIN", position: "TE", priority: "Speculative",
-      note: "Ran 81% of his routes from the slot in Cincinnati's high-powered offense, with 7 targets in Week 1." },
-    { id: "shough", name: "Tyler Shough", team: "NO", position: "QB", priority: "Streamer",
-      note: "Expect a similar game script to Week 1 as a big underdog who has to throw early and often." },
-    { id: "douglas-demario", name: "DeMario Douglas", team: "NE", position: "WR", priority: "Deep League",
-      note: "Heavily targeted out of the slot — pure PPR floor play if you need bodies." },
-  ],
-  2: [
-    { id: "rashod-bateman", name: "Rashod Bateman", team: "BAL", position: "WR", priority: "Must Add",
-      note: "Zay Flowers banged up — Bateman drew 9 targets and dropped 21.8 points in Week 2 as the clear beneficiary." },
-    { id: "schultz-dalton", name: "Dalton Schultz", team: "HOU", position: "TE", priority: "Must Add",
-      note: "Nico Collins out — Schultz cashed in with 14 targets, 140 yards, and 26.0 points in Week 2." },
-    { id: "bigsby", name: "Tank Bigsby", team: "PHI", position: "RB", priority: "Speculative",
-      note: "Took over after Saquon Barkley left Week 2 with a stinger — direct handcuff to a bell-cow role." },
-    { id: "coleman-jonah", name: "Jonah Coleman", team: "DEN", position: "RB", priority: "Speculative",
-      note: "Broke out for 14.8 points in Week 2 as Denver's early-down work started shifting his way." },
-    { id: "wicks", name: "Dontayvion Wicks", team: "PHI", position: "WR", priority: "Speculative",
-      note: "Ran an 82% route share and 90% of the snaps in Week 1, then backed it up with 12.4 points in Week 2." },
-    { id: "shough", name: "Tyler Shough", team: "NO", position: "QB", priority: "Streamer",
-      note: "Averaging 23.8 points per game running the league's fastest-paced offense — a real streaming option." },
-    { id: "johnson-emmett", name: "Emmett Johnson", team: "KC", position: "RB", priority: "Deep League",
-      note: "Clear RB2 behind an injury-prone Kenneth Walker III — stash for handcuff insurance." },
-    { id: "young-bryce", name: "Bryce Young", team: "CAR", position: "QB", priority: "Streamer",
-      note: "113.3 passer rating and 8.9 YPA through two weeks, plus rushing equity — startable if your QB1 is out." },
-  ],
-  // Weeks 3-18: add entries here as the season plays out.
-};
+// Current as of Week 2's results — real Week 3 pickups that Week 1-2's
+// results actually point to (injury vacancies, snap-share winners), not
+// preseason speculation.
+const WAIVER_TARGETS = [
+  { id: "rashod-bateman", name: "Rashod Bateman", team: "BAL", position: "WR", priority: "Must Add",
+    note: "Zay Flowers banged up — Bateman drew 9 targets and dropped 21.8 points in Week 2 as the clear beneficiary." },
+  { id: "schultz-dalton", name: "Dalton Schultz", team: "HOU", position: "TE", priority: "Must Add",
+    note: "Nico Collins out — Schultz cashed in with 14 targets, 140 yards, and 26.0 points in Week 2." },
+  { id: "bigsby", name: "Tank Bigsby", team: "PHI", position: "RB", priority: "Speculative",
+    note: "Took over after Saquon Barkley left Week 2 with a stinger — direct handcuff to a bell-cow role." },
+  { id: "coleman-jonah", name: "Jonah Coleman", team: "DEN", position: "RB", priority: "Speculative",
+    note: "Broke out for 14.8 points in Week 2 as Denver's early-down work started shifting his way." },
+  { id: "wicks", name: "Dontayvion Wicks", team: "PHI", position: "WR", priority: "Speculative",
+    note: "Ran an 82% route share and 90% of the snaps in Week 1, then backed it up with 12.4 points in Week 2." },
+  { id: "shough", name: "Tyler Shough", team: "NO", position: "QB", priority: "Streamer",
+    note: "Averaging 23.8 points per game running the league's fastest-paced offense — a real streaming option." },
+  { id: "johnson-emmett", name: "Emmett Johnson", team: "KC", position: "RB", priority: "Deep League",
+    note: "Clear RB2 behind an injury-prone Kenneth Walker III — stash for handcuff insurance." },
+  { id: "young-bryce", name: "Bryce Young", team: "CAR", position: "QB", priority: "Streamer",
+    note: "113.3 passer rating and 8.9 YPA through two weeks, plus rushing equity — startable if your QB1 is out." },
+  { id: "tucker-tre", name: "Tre Tucker", team: "LV", position: "WR", priority: "Speculative",
+    note: "5 catches for 119 yards and a 40-yard score in Week 2 after a quiet opener." },
+  { id: "boston-denzel", name: "Denzel Boston", team: "CLE", position: "WR", priority: "Speculative",
+    note: "Top-10 in yards per route run, with a long touchdown in each of his first two games." },
+  { id: "wilson-emanuel", name: "Emanuel Wilson", team: "SEA", position: "RB", priority: "Speculative",
+    note: "Banked 92 yards on 21 carries after rookie Jadarian Price went down with a chest injury." },
+  { id: "johnson-juwan", name: "Juwan Johnson", team: "NO", position: "TE", priority: "Deep League",
+    note: "Back-to-back double-digit weeks, catching all 4 targets for 66 yards in Week 2." },
+];
 
 /* ---------------- weekly scores ---------------- */
 // Real 2026 bye week per team (regular season runs Weeks 1-18; there are no
@@ -461,11 +445,11 @@ const WEEKLY_SCORES = {
   // Weeks 3-18: add entries here once those weeks have actually been played.
 };
 
-// Only weeks with a real entry above get a "By Week" tab — same reasoning
-// as WAIVER_WEEKS below: no point offering Week 3 through Week 18 as
-// choices when none of them have real scores yet. The season grid still
-// shows all 18 weeks as columns (blank until played), since that's meant
-// to show the whole season's shape at a glance.
+// Only weeks with a real entry above get a "By Week" tab — no point
+// offering Week 3 through Week 18 as choices when none of them have real
+// scores yet. The season grid still shows all 18 weeks as columns (blank
+// until played), since that's meant to show the whole season's shape at a
+// glance.
 const PLAYED_WEEKS = Object.keys(WEEKLY_SCORES).map(Number).sort((a, b) => a - b);
 
 /* ---------------- stats ---------------- */
@@ -815,51 +799,157 @@ function BoardTable({ players }) {
   );
 }
 
-/* ---------------- waiver targets page ---------------- */
-// Only weeks with a real entry in WAIVER_TARGETS get a tab — there's no
-// point offering Week 7 through Week 18 as choices when none of them have
-// been filled in yet. Add a new week's key to WAIVER_TARGETS and its tab
-// shows up here automatically; nothing else in this component needs to
-// change as the season progresses.
-const WAIVER_WEEKS = Object.keys(WAIVER_TARGETS).map(Number).sort((a, b) => a - b);
+/* ---------------- sleeper trending (live) ---------------- */
+// Unlike the hand-curated list above, this part IS live: Sleeper's API sends
+// an open CORS header (unlike BeatADP), so a browser tab can call it
+// directly — no refresh script or extension needed. Two endpoints:
+// - /players/nfl/trending/add — which player IDs are being added across
+//   Sleeper leagues right now, and how many times in the lookback window.
+// - /players/nfl — every player Sleeper knows about, to turn those IDs into
+//   names/teams/positions. Sleeper's own docs say this second one is a
+//   large (~5MB+) payload meant to be cached and refreshed at most once a
+//   day, not called per-request — so it's trimmed to skill positions
+//   (QB/RB/WR/TE) and cached in localStorage before being reused.
+const SLEEPER_PLAYERS_CACHE_KEY = "ff-valuediff:sleeper-players-cache";
+const SLEEPER_PLAYERS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const SLEEPER_TRENDING_LOOKBACK_HOURS = 24;
+const SLEEPER_TRENDING_LIMIT = 15;
+const SKILL_POSITIONS = ["QB", "RB", "WR", "TE"];
+
+async function fetchSleeperPlayerMap() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(SLEEPER_PLAYERS_CACHE_KEY) || "null");
+    if (cached && Date.now() - cached.fetchedAt < SLEEPER_PLAYERS_CACHE_TTL_MS) return cached.players;
+  } catch (e) {}
+
+  const res = await fetch("https://api.sleeper.app/v1/players/nfl");
+  if (!res.ok) throw new Error(`Sleeper player lookup failed (${res.status})`);
+  const all = await res.json();
+  const trimmed = {};
+  for (const id in all) {
+    const p = all[id];
+    if (p && SKILL_POSITIONS.includes(p.position) && p.team) {
+      trimmed[id] = { name: p.full_name, position: p.position, team: p.team, status: p.injury_status || null };
+    }
+  }
+  try {
+    localStorage.setItem(SLEEPER_PLAYERS_CACHE_KEY, JSON.stringify({ fetchedAt: Date.now(), players: trimmed }));
+  } catch (e) {
+    // Quota exceeded or storage unavailable — fine, this session just won't cache it.
+  }
+  return trimmed;
+}
+
+async function fetchSleeperTrending(direction) {
+  const url = `https://api.sleeper.app/v1/players/nfl/trending/${direction}?lookback_hours=${SLEEPER_TRENDING_LOOKBACK_HOURS}&limit=${SLEEPER_TRENDING_LIMIT * 3}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Sleeper trending fetch failed (${res.status})`);
+  return res.json();
+}
+
+function SleeperTrending() {
+  const [direction, setDirection] = useState("add");
+  const [state, setState] = useState({ status: "loading", rows: [] });
+
+  useEffect(() => {
+    let cancelled = false;
+    setState({ status: "loading", rows: [] });
+
+    Promise.all([fetchSleeperTrending(direction), fetchSleeperPlayerMap()])
+      .then(([trending, playerMap]) => {
+        if (cancelled) return;
+        const rows = trending
+          .map((t) => ({ ...playerMap[t.player_id], count: t.count }))
+          // Trending includes D/STs and non-skill players too — that entry
+          // just won't have matched anything in the trimmed player map.
+          .filter((r) => r.name)
+          .slice(0, SLEEPER_TRENDING_LIMIT);
+        setState({ status: "ready", rows });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setState({ status: "error", rows: [], message: err.message });
+      });
+
+    return () => { cancelled = true; };
+  }, [direction]);
+
+  return (
+    <div className="rounded-lg border p-4" style={{ borderColor: "var(--border)", background: "var(--surface-1)" }}>
+      <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
+        <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+          Trending on Sleeper <span className="font-normal" style={{ color: "var(--text-muted)" }}>· live</span>
+        </h3>
+        <div className="flex items-center gap-1">
+          {["add", "drop"].map((d) => (
+            <button key={d} type="button" onClick={() => setDirection(d)}
+              className="rounded-full px-2.5 py-1 text-xs font-medium border capitalize"
+              style={{
+                borderColor: "var(--border)",
+                background: direction === d ? "var(--series-blue)" : "transparent",
+                color: direction === d ? "#ffffff" : "var(--text-secondary)",
+              }}>
+              {d === "add" ? "Adds" : "Drops"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
+        Real-time — how many Sleeper fantasy teams have {direction === "add" ? "added" : "dropped"} each player
+        in the last {SLEEPER_TRENDING_LOOKBACK_HOURS}h, straight from Sleeper's public API. This is raw
+        community activity, not a vetted pick — no reasoning behind why a name is moving, unlike the hand-curated
+        list below.
+      </p>
+
+      {state.status === "loading" && (
+        <p className="text-sm py-4 text-center" style={{ color: "var(--text-muted)" }}>Loading live data from Sleeper…</p>
+      )}
+      {state.status === "error" && (
+        <p className="text-sm py-4 text-center" style={{ color: "var(--text-muted)" }}>
+          Couldn't reach Sleeper's API ({state.message}). This needs the page served over http(s) with network
+          access — it won't work from a plain double-clicked file.
+        </p>
+      )}
+      {state.status === "ready" && (
+        <div className="flex flex-wrap gap-2">
+          {state.rows.map((r, i) => (
+            <div key={i} className="rounded-md border px-2.5 py-1.5 text-xs flex items-center gap-2"
+              style={{ borderColor: "var(--border)" }}>
+              <span className="font-medium" style={{ color: "var(--text-primary)" }}>{r.name}</span>
+              <span style={{ color: "var(--text-muted)" }}>{r.position} · {r.team}{r.status ? ` · ${r.status}` : ""}</span>
+              <span className="tabular-nums font-semibold" style={{ color: direction === "add" ? "var(--series-blue)" : "var(--series-red)" }}>
+                {r.count.toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function WaiverTargets() {
-  const [week, setWeek] = useState(WAIVER_WEEKS[WAIVER_WEEKS.length - 1] ?? 1);
-  const targets = WAIVER_TARGETS[week] || [];
-
   return (
     <div className="flex flex-col gap-5">
       <header>
         <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Waiver Wire Targets</h2>
         <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
-          Hand-curated pickup targets by week — priority reflects how urgently they're worth a roster spot,
-          not raw talent.
+          Current pickup targets — priority reflects how urgently they're worth a roster spot, not raw talent.
         </p>
         <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-          Last updated {WAIVER_TARGETS_UPDATED_ON}. There's no live ownership/trending-add source wired up here
-          (unlike ADP), so this list only reflects whatever week has actually been filled in by hand — update
-          the <code>WAIVER_TARGETS</code> object in <code>index.html</code> as real in-season news comes in.
+          The list below is hand-curated (last updated {WAIVER_TARGETS_UPDATED_ON}) and always reflects the
+          current week's best targets, not a per-week archive — update the <code>WAIVER_TARGETS</code> array in{" "}
+          <code>index.html</code> wholesale as real in-season news comes in. The panel above it, though, pulls
+          live add/drop activity straight from Sleeper's API on every page load.
         </p>
       </header>
 
-      <div className="flex items-center gap-2 flex-wrap">
-        {WAIVER_WEEKS.map((w) => (
-          <button key={w} type="button" onClick={() => setWeek(w)}
-            className="rounded-full px-3 py-1 text-xs font-medium border relative"
-            style={{
-              borderColor: "var(--border)",
-              background: week === w ? "var(--series-blue)" : "transparent",
-              color: week === w ? "#ffffff" : (WAIVER_TARGETS[w] ? "var(--text-secondary)" : "var(--text-muted)"),
-            }}>
-            Wk {w}
-          </button>
-        ))}
-      </div>
+      <SleeperTrending />
 
-      {targets.length === 0 ? (
+      {WAIVER_TARGETS.length === 0 ? (
         <div className="rounded-lg border p-8 text-center text-sm" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
-          No targets added yet for Week {week}. This list is filled in by hand week to week — nothing's been
-          entered for this one, so nothing fabricated is shown in its place.
+          No targets added yet. This list is filled in by hand — nothing's been entered, so nothing fabricated
+          is shown in its place.
         </div>
       ) : (
         <div className="rounded-lg border overflow-x-auto" style={{ borderColor: "var(--border)", background: "var(--surface-1)" }}>
@@ -872,7 +962,7 @@ function WaiverTargets() {
               </tr>
             </thead>
             <tbody>
-              {targets.map((t) => (
+              {WAIVER_TARGETS.map((t) => (
                 <tr key={t.id} className="border-b" style={{ borderColor: "var(--border)" }}>
                   <td className="px-3 py-2 align-top">
                     <div className="font-medium" style={{ color: "var(--text-primary)" }}>{t.name}</div>

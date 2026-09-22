@@ -102,26 +102,44 @@ automatically.
 
 ### Waiver Wire Targets
 
-A weekly pickup list — pick a week (1-18) to see that week's hand-picked
-targets, each tagged with a priority (Must Add / Speculative / Streamer /
-Deep League) and a one-line reason.
+Two parts, one live and one hand-curated:
 
-Unlike ADP, there's **no live source** for this: ownership %, trending-add
-rate, and snap-share data aren't things BeatADP (or any CORS-friendly source)
-publishes, so nothing here is scraped. It's edited by hand, the same way
-`samplePlayers` was before `refresh-adp.js` existed for it — update the
-`WAIVER_TARGETS` object in `index.html` as real in-season news (injuries,
+**Trending on Sleeper** (top of the page) is a **live** panel — unlike
+BeatADP, Sleeper's API sends an open CORS header, so a browser tab can call
+it directly with no refresh script or extension needed. It shows the top
+players being added (or, via the toggle, dropped) across real Sleeper
+leagues in the last 24 hours, straight from Sleeper's own trending-add/drop
+endpoint, refetched on every page load. This is raw community activity —
+add/drop counts only, no reasoning — which is what distinguishes it from the
+curated list below. It needs the page served over http(s) with network
+access, so it won't work from a plain double-clicked `index.html` file
+(`node scripts/refresh-adp.js`'s caveats don't apply here — this part just
+needs any static file server, e.g. `python -m http.server`).
+
+Turning player IDs into names requires Sleeper's `/players/nfl` endpoint,
+which its own docs describe as a large (~5MB+) payload meant to be fetched
+at most once a day, not per-request — so the app trims that response down to
+skill positions (QB/RB/WR/TE) before caching it in `localStorage` for 24
+hours (`SLEEPER_PLAYERS_CACHE_KEY` in `index.html`), and only the small
+trending-list request re-fires when you toggle Adds/Drops.
+
+Below that is the **hand-picked** list, each entry tagged with a priority
+(Must Add / Speculative / Streamer / Deep League) and a one-line reason.
+Unlike Weekly Scores, this isn't split by week — it's a single
+**always-current** list (`WAIVER_TARGETS` in `index.html`, now a flat array
+rather than a per-week object) meant to reflect this week's best targets,
+replaced wholesale as the season moves on rather than accumulating a new
+dated list every week. There's no live ownership/snap-share source to pull
+this part from (that's what the Sleeper panel above is for), so it's edited
+by hand, the same way `samplePlayers` was before `refresh-adp.js` existed
+for it — update `WAIVER_TARGETS` as real in-season news (injuries,
 depth-chart moves, snap counts) comes in.
 
-A week with no entry in `WAIVER_TARGETS` shows an explicit "nothing added
-yet" state rather than a guess — only weeks that have actually been filled
-in by hand show a list, so nothing on the page is presented as current when
-it isn't. As of this writing, Weeks 1-2 are seeded, both with real targets
-driven by actual results rather than preseason guesses: Week 1 holds the
-real Week 2 pickups that Week 1's results pointed to (injury vacancies,
-snap-share winners), retroactively replacing an original preseason
-committee/handcuff placeholder list; Week 2 holds the real Week 3 pickups
-that Week 1-2's results pointed to.
+If `WAIVER_TARGETS` is ever emptied out, the page shows an explicit
+"nothing added yet" state rather than a guess. As of this writing it holds
+12 targets, driven by actual results rather than preseason guesses — the
+real Week 3 pickups that Week 1-2's results actually point to (injury
+vacancies, snap-share winners).
 
 ## Keeping data fresh
 

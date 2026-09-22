@@ -54,39 +54,13 @@
 <script type="text/babel" data-presets="react">
 const { useState, useMemo, useRef, useEffect } = React;
 
-/* ---------------- platforms ---------------- */
-
-// invertSignal: Yahoo/ESPN/Sleeper are real drafting markets, so a platform
-// sitting well *above* consensus means real drafters are letting him slide —
-// a buy signal (blue). FantasyPros isn't a draft room, it's an aggregated
-// expert-consensus ranking, so the same "above consensus" reading means
-// experts rate him *worse* than the actual market does — the market is
-// overpaying relative to expert opinion, a fade signal (red). Same math,
-// opposite meaning, so the color mapping flips for this one column.
-// stale: BeatADP's own footnote on this board reads "Hidden as no longer
-// maintained: Yahoo (last 2026-05-07)" — Yahoo cells are gone from BeatADP's
-// HTML entirely, not just visually hidden, so refresh-adp.js can't pull a
-// current Yahoo number from this source at all. The value shown is whatever
-// was last captured before BeatADP dropped it; it does not move on refresh.
-const PLATFORMS = [
-  { key: "yahoo", label: "Yahoo", note: "half-PPR", stale: true, staleSince: "2026-05-07",
-    staleNote: "BeatADP stopped maintaining Yahoo ADP on 2026-05-07 — this is the last known number, frozen, not refreshed live." },
-  { key: "espn", label: "ESPN", note: "PPR" },
-  { key: "sleeper", label: "Sleeper", note: "half-PPR" },
-  { key: "fantasypros", label: "FantasyPros", note: "consensus, half-PPR", invertSignal: true },
-];
-const PLATFORM_LABEL = Object.fromEntries(PLATFORMS.map((p) => [p.key, p.label]));
-
 /* ---------------- sample data ---------------- */
-// Real 2026 redraft ADP for the top 200 overall players. Sleeper, ESPN, and
-// FantasyPros are refreshed live from BeatADP's platform-comparison board by
-// running `node scripts/refresh-adp.js` (see README "Keeping data fresh");
-// Yahoo is frozen at its last known value — see the "stale" note on PLATFORMS
-// above. ESPN is that platform's native PPR ADP; Yahoo, Sleeper, and
-// FantasyPros are each platform's native half-PPR ADP (Yahoo and Sleeper
-// don't publish a full-PPR line, so this is each platform's own default
-// scoring format, not a single format forced across all four).
-const DATA_REFRESHED_ON = "2026-09-08";
+// The shared player pool behind every tab (Weekly Scores, Waiver Wire
+// Targets, Props) — id/name/team/position for the top 200 overall players.
+// Each entry also still carries an `adp` field from this app's original
+// ADP-comparison tool (since removed); nothing reads it anymore, but it's
+// left in place rather than stripped from all 200 rows for no functional
+// gain.
 const samplePlayers = [
   { id: "gibbs", name: "Jahmyr Gibbs", team: "DET", position: "RB", adp: { sleeper: 1.6, yahoo: 1.4, espn: 1, fantasypros: 2.5 } },
   { id: "chase", name: "Ja'Marr Chase", team: "CIN", position: "WR", adp: { sleeper: 3, yahoo: 3.4, espn: 3, fantasypros: 1.6 } },
@@ -452,353 +426,6 @@ const WEEKLY_SCORES = {
 // glance.
 const PLAYED_WEEKS = Object.keys(WEEKLY_SCORES).map(Number).sort((a, b) => a - b);
 
-/* ---------------- stats ---------------- */
-
-// A 12-team, 20-round draft runs 240 picks — call it 250 to round up.
-// Beyond that, a platform's number isn't really "when this player gets
-// drafted," it's that platform's filler/default value for someone who
-// wouldn't realistically get drafted in a normal league (ESPN in particular
-// falls back to values like 999+ for these). Those values are still shown
-// (never hidden — every cell traces to its real source), just excluded from
-// the Consensus average and from deviation coloring so one platform's
-// filler number can't drag the whole row's math around.
-const DRAFT_POOL_SIZE = 250;
-function inDraftPool(v) {
-  return v != null && v <= DRAFT_POOL_SIZE;
-}
-
-function mean(values) {
-  return values.reduce((a, b) => a + b, 0) / values.length;
-}
-
-// A platform's cell is flagged only when it deviates *meaningfully* from
-// the consensus average, not just whichever platform happens to be the
-// literal min/max — the threshold scales with the pick itself (15%) but
-// never drops below 3 picks, since top-of-draft ADPs sit within a few
-// tenths of each other and would otherwise look "significant" for noise.
-function deviationThreshold(avg) {
-  return Math.max(3, avg * 0.15);
-}
-
-// posRank ("RB1", "WR12", ...) is derived from each player's own Consensus
-// average, not scraped from anywhere — so it updates automatically whenever
-// Consensus does (e.g. after running scripts/refresh-adp.js), with no extra
-// data source needed.
-function computeStats(players) {
-  const withAvg = players.map((p) => {
-    const entries = PLATFORMS.map((pl) => [pl.key, p.adp[pl.key]]).filter(([, v]) => inDraftPool(v));
-    const values = entries.map(([, v]) => v);
-    const avg = values.length ? mean(values) : null;
-    const deviation = {};
-    if (avg != null) {
-      const threshold = deviationThreshold(avg);
-      entries.forEach(([k, v]) => {
-        const diff = v - avg;
-        deviation[k] = diff >= threshold ? "high" : diff <= -threshold ? "low" : "neutral";
-      });
-    }
-    return { ...p, avg, deviation };
-  });
-
-  const posRankByPosition = {};
-  withAvg.forEach((p) => {
-    (posRankByPosition[p.position] ||= []).push(p);
-  });
-  const posRankById = {};
-  Object.values(posRankByPosition).forEach((group) => {
-    group
-      .slice()
-      .sort((a, b) => (a.avg == null) - (b.avg == null) || (a.avg ?? 0) - (b.avg ?? 0))
-      .forEach((p, i) => { posRankById[p.id] = p.avg == null ? null : i + 1; });
-  });
-
-  return withAvg.map((p) => ({ ...p, posRank: posRankById[p.id] }));
-}
-
-/* ---------------- pairwise diff buckets (for the chart) ---------------- */
-
-const NEUTRAL_BAND = 3; // picks
-
-function bucketFor(diff) {
-  if (diff > NEUTRAL_BAND) return "aEarlier";
-  if (diff < -NEUTRAL_BAND) return "bEarlier";
-  return "neutral";
-}
-
-const BUCKET_COLOR = {
-  aEarlier: "var(--series-red)",
-  bEarlier: "var(--series-blue)",
-  neutral: "var(--series-neutral)",
-};
-
-/* ---------------- value chart (hand-rolled SVG scatter) ---------------- */
-// x = platform A's ADP, y = platform B's ADP. The diagonal is "A and B
-// agree"; below it, A drafts him earlier than B; above it, B drafts him
-// earlier than A.
-
-const CHART_W = 640;
-const CHART_H = 380;
-const MARGIN = { top: 16, right: 20, bottom: 40, left: 44 };
-
-function niceTicks(min, max, maxCount) {
-  const range = max - min || 1;
-  const rawStep = range / maxCount;
-  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
-  const norm = rawStep / mag;
-  const step = (norm > 5 ? 10 : norm > 2 ? 5 : norm > 1 ? 2 : 1) * mag;
-  const ticks = [];
-  for (let t = Math.ceil(min / step) * step; t <= max; t += step) ticks.push(Math.round(t * 10) / 10);
-  return ticks;
-}
-
-function ValueChart({ players, platformA, platformB }) {
-  const containerRef = useRef(null);
-  const [hover, setHover] = useState(null);
-
-  const pts = players
-    .map((p) => ({ p, a: p.adp[platformA], b: p.adp[platformB] }))
-    .filter((d) => inDraftPool(d.a) && inDraftPool(d.b));
-
-  const labelA = PLATFORM_LABEL[platformA];
-  const labelB = PLATFORM_LABEL[platformB];
-
-  // FantasyPros isn't a real draft room, it's an aggregated expert-consensus
-  // ranking (see the table's † note) — so "later than the other platform"
-  // means experts rate him worse than the market does (fade, red), not that
-  // he's a bargain (buy, blue) the way it would for two real markets. Only
-  // platformA needs a flip: when B is FantasyPros the raw bucketFor(b - a)
-  // sign already lands on the right color, verified by hand for both cases.
-  const invertA = !!PLATFORMS.find((pl) => pl.key === platformA)?.invertSignal;
-  const involvesFantasyPros = platformA === "fantasypros" || platformB === "fantasypros";
-  function colorFor(diff) {
-    return BUCKET_COLOR[bucketFor(invertA ? -diff : diff)];
-  }
-
-  if (pts.length === 0) {
-    return (
-      <div className="rounded-lg border p-8 text-center text-sm" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
-        No players have both {labelA} and {labelB} ADP within a normal draft's range in the current filter.
-      </div>
-    );
-  }
-
-  const allValues = pts.flatMap((d) => [d.a, d.b]);
-  const axisMin = 1;
-  const axisMax = Math.max(...allValues) * 1.05;
-
-  const plotW = CHART_W - MARGIN.left - MARGIN.right;
-  const plotH = CHART_H - MARGIN.top - MARGIN.bottom;
-  const sx = (v) => MARGIN.left + ((v - axisMin) / (axisMax - axisMin)) * plotW;
-  const sy = (v) => MARGIN.top + plotH - ((v - axisMin) / (axisMax - axisMin)) * plotH;
-
-  const ticks = niceTicks(axisMin, axisMax, 6);
-  const buckets = ["aEarlier", "neutral", "bEarlier"];
-  const bucketLabel = {
-    aEarlier: `${labelA} earlier`,
-    bEarlier: `${labelB} earlier`,
-    neutral: "In agreement",
-  };
-
-  function handleEnter(e, d) {
-    const rect = containerRef.current.getBoundingClientRect();
-    setHover({ d, x: e.clientX - rect.left, y: e.clientY - rect.top });
-  }
-
-  return (
-    <div className="rounded-lg border p-4" style={{ borderColor: "var(--border)", background: "var(--surface-1)" }}>
-      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-        <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-          {labelA} ADP vs. {labelB} ADP
-        </h2>
-        <div className="flex items-center gap-4 flex-wrap">
-          {buckets.map((b) => (
-            <span key={b} className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-secondary)" }}>
-              <span className="inline-block rounded-full" style={{ width: 8, height: 8, background: b === "neutral" ? BUCKET_COLOR.neutral : colorFor(b === "aEarlier" ? NEUTRAL_BAND + 1 : -(NEUTRAL_BAND + 1)) }} />
-              {bucketLabel[b]}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div ref={containerRef} className="relative w-full">
-        <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="w-full h-auto" onMouseLeave={() => setHover(null)}>
-          {ticks.map((t) => (
-            <line key={"gy" + t} x1={MARGIN.left} x2={CHART_W - MARGIN.right} y1={sy(t)} y2={sy(t)} stroke="var(--grid)" strokeWidth="1" />
-          ))}
-          {ticks.map((t) => (
-            <text key={"ly" + t} x={MARGIN.left - 8} y={sy(t)} dy="0.32em" textAnchor="end" fontSize="10" fill="var(--text-muted)">{t}</text>
-          ))}
-          {ticks.map((t) => (
-            <text key={"lx" + t} x={sx(t)} y={CHART_H - MARGIN.bottom + 16} textAnchor="middle" fontSize="10" fill="var(--text-muted)">{t}</text>
-          ))}
-          <text x={MARGIN.left + plotW / 2} y={CHART_H - 6} textAnchor="middle" fontSize="11" fill="var(--text-muted)">
-            {labelA} ADP (1 = drafted first)
-          </text>
-          <text x={12} y={MARGIN.top + plotH / 2} textAnchor="middle" fontSize="11" fill="var(--text-muted)" transform={`rotate(-90 12 ${MARGIN.top + plotH / 2})`}>
-            {labelB} ADP (1 = drafted first)
-          </text>
-          <line x1={sx(axisMin)} y1={sy(axisMin)} x2={sx(axisMax)} y2={sy(axisMax)} stroke="var(--baseline)" strokeWidth="1" />
-
-          {pts.map(({ p, a, b }) => {
-            return (
-              <circle
-                key={p.id}
-                cx={sx(a)}
-                cy={sy(b)}
-                r={5}
-                fill={colorFor(b - a)}
-                stroke="var(--surface-1)"
-                strokeWidth="2"
-                style={{ cursor: "pointer" }}
-                onMouseEnter={(e) => handleEnter(e, { p, a, b })}
-                onMouseMove={(e) => handleEnter(e, { p, a, b })}
-              />
-            );
-          })}
-        </svg>
-
-        {hover && (
-          <div
-            className="absolute rounded-md border px-3 py-2 text-xs shadow-sm pointer-events-none"
-            style={{
-              left: Math.min(hover.x + 12, containerRef.current ? containerRef.current.clientWidth - 190 : hover.x),
-              top: Math.max(hover.y - 70, 0),
-              background: "var(--surface-1)",
-              borderColor: "var(--border)",
-              color: "var(--text-primary)",
-              width: 180,
-            }}
-          >
-            <div className="font-semibold mb-1">
-              {hover.d.p.name} <span style={{ color: "var(--text-muted)" }}>· {hover.d.p.position} · {hover.d.p.team}</span>
-            </div>
-            <div style={{ color: "var(--text-secondary)" }}>{labelA}: {hover.d.a.toFixed(1)}</div>
-            <div style={{ color: "var(--text-secondary)" }}>{labelB}: {hover.d.b.toFixed(1)}</div>
-            <div className="mt-1 font-medium" style={{ color: colorFor(hover.d.b - hover.d.a) }}>
-              {(hover.d.b - hover.d.a) > 0 ? "+" : ""}{(hover.d.b - hover.d.a).toFixed(1)} picks · {bucketLabel[bucketFor(hover.d.b - hover.d.a)]}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {involvesFantasyPros && (
-        <p className="text-xs mt-3" style={{ color: "var(--text-muted)" }}>
-          † FantasyPros is an aggregated expert-consensus ranking, not a real draft room, so its colors run
-          the opposite way from a real platform: FantasyPros earlier than {platformA === "fantasypros" ? labelB : labelA} is a buy signal (blue); later is a fade signal (red).
-        </p>
-      )}
-    </div>
-  );
-}
-
-/* ---------------- platform picker ---------------- */
-
-function PlatformSelect({ label, value, onChange, exclude }) {
-  return (
-    <label className="flex items-center gap-2 text-xs">
-      <span style={{ color: "var(--text-secondary)" }}>{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="rounded border px-2 py-1 text-sm outline-none"
-        style={{ borderColor: "var(--border)", background: "var(--page)", color: "var(--text-primary)" }}
-      >
-        {PLATFORMS.filter((pl) => pl.key !== exclude).map((pl) => (
-          <option key={pl.key} value={pl.key}>{pl.label}{pl.stale ? " (frozen)" : ""}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-/* ---------------- board table ---------------- */
-
-function BoardTable({ players }) {
-  const [sortKey, setSortKey] = useState("avg");
-  const [sortDesc, setSortDesc] = useState(false);
-
-  function toggleSort(key) {
-    if (key === sortKey) setSortDesc((d) => !d);
-    else { setSortKey(key); setSortDesc(key !== "name"); }
-  }
-
-  const sorted = [...players].sort((a, b) => {
-    let cmp;
-    if (sortKey === "name") cmp = a.name.localeCompare(b.name);
-    else {
-      const av = a[sortKey], bv = b[sortKey];
-      if (av == null && bv == null) cmp = 0;
-      else if (av == null) cmp = 1;
-      else if (bv == null) cmp = -1;
-      else cmp = av - bv;
-    }
-    return sortDesc ? -cmp : cmp;
-  });
-
-  function headerButton(key, label) {
-    const active = sortKey === key;
-    return (
-      <button type="button" onClick={() => toggleSort(key)} className="flex items-center gap-1 text-xs font-semibold ml-auto"
-        style={{ color: active ? "var(--text-primary)" : "var(--text-muted)" }}>
-        {label}{active && <span>{sortDesc ? "↓" : "↑"}</span>}
-      </button>
-    );
-  }
-
-  return (
-    <div className="rounded-lg border overflow-x-auto" style={{ borderColor: "var(--border)", background: "var(--surface-1)" }}>
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr style={{ borderBottom: "1px solid var(--border)" }}>
-            <th className="text-left px-3 py-2 sticky left-0" style={{ background: "var(--surface-1)" }}>
-              <button type="button" onClick={() => toggleSort("name")} className="flex items-center gap-1 text-xs font-semibold"
-                style={{ color: sortKey === "name" ? "var(--text-primary)" : "var(--text-muted)" }}>
-                Player{sortKey === "name" && <span>{sortDesc ? "↓" : "↑"}</span>}
-              </button>
-            </th>
-            <th className="px-3 py-2 text-right">{headerButton("avg", "Consensus")}</th>
-            {PLATFORMS.map((pl) => (
-              <th key={pl.key} className="px-2 py-2 text-right"
-                title={pl.stale ? pl.staleNote : pl.invertSignal ? "Colors are inverted for this column — see note below the table." : undefined}>
-                {headerButton(pl.key, pl.label)}
-                {pl.invertSignal && <span style={{ color: "var(--text-muted)" }}>&nbsp;†</span>}
-                {pl.stale && <span style={{ color: "var(--text-muted)" }}>&nbsp;⏸</span>}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((p) => (
-            <tr key={p.id} className="border-b hover:bg-black/[0.02]" style={{ borderColor: "var(--border)" }}>
-              <td className="px-3 py-1.5 sticky left-0" style={{ background: "var(--surface-1)" }}>
-                <div className="font-medium" style={{ color: "var(--text-primary)" }}>{p.name}</div>
-                <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  {p.position}{p.posRank != null ? p.posRank : ""} · {p.team}
-                </div>
-              </td>
-              <td className="px-3 py-1.5 text-right font-semibold" style={{ color: "var(--text-primary)" }}>
-                {p.avg != null ? p.avg.toFixed(1) : "–"}
-              </td>
-              {PLATFORMS.map((pl) => {
-                const value = p.adp[pl.key];
-                const outOfPool = value != null && !inDraftPool(value);
-                let status = p.deviation[pl.key];
-                if (pl.invertSignal) status = status === "high" ? "low" : status === "low" ? "high" : status;
-                const color = value == null || outOfPool ? "var(--text-muted)" : status === "high" ? "var(--series-blue)" : status === "low" ? "var(--series-red)" : "var(--text-primary)";
-                return (
-                  <td key={pl.key} className="px-2 py-1.5 text-right font-medium" style={{ color }} title={outOfPool ? `Outside a normal ${DRAFT_POOL_SIZE}-pick draft — excluded from Consensus and coloring` : undefined}>
-                    {value != null ? value.toFixed(1) : "–"}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 /* ---------------- sleeper trending (live) ---------------- */
 // Unlike the hand-curated list above, this part IS live: Sleeper's API sends
 // an open CORS header (unlike BeatADP), so a browser tab can call it
@@ -1101,10 +728,15 @@ const WEEKLY_VIEWS = [
   { key: "grid", label: "Season Grid" },
 ];
 
+// RB/WR ahead of QB/TE, ALL last rather than first — matches how this app's
+// audience actually scans a position filter (skill positions people are
+// picking waivers/streamers for first, the full unfiltered view last).
+const POSITIONS = ["RB", "WR", "QB", "TE", "ALL"];
+
 function WeeklyScores({ players }) {
   const [view, setView] = useState("byWeek");
   const [week, setWeek] = useState(1);
-  const [positionFilter, setPositionFilter] = useState("ALL");
+  const [positionFilter, setPositionFilter] = useState("RB");
 
   const scores = WEEKLY_SCORES[week];
   const byeTeams = useMemo(
@@ -1417,114 +1049,24 @@ function PropsComparison({ players }) {
   );
 }
 
-/* ---------------- app ---------------- */
-
-const PLAYERS_KEY = "ff-valuediff:adp-players";
-
-function loadPlayers() {
-  try {
-    const raw = localStorage.getItem(PLAYERS_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {}
-  return samplePlayers;
-}
-
-const POSITIONS = ["ALL", "QB", "RB", "WR", "TE"];
-
-function AdpTool({ scored, resetToSample }) {
-  const [positionFilter, setPositionFilter] = useState("ALL");
-  const [platformA, setPlatformA] = useState("yahoo");
-  const [platformB, setPlatformB] = useState("espn");
-
-  const filtered = useMemo(
-    () => (positionFilter === "ALL" ? scored : scored.filter((p) => p.position === positionFilter)),
-    [scored, positionFilter]
-  );
-
-  return (
-    <div className="flex flex-col gap-5">
-      <header>
-        <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>ADP Comparison</h2>
-        <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
-          Compares each player's Average Draft Position across Yahoo, ESPN, Sleeper, and FantasyPros'
-          consensus, so you can catch cases where platforms disagree on when a player actually gets drafted.
-        </p>
-        <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-          Real 2026 redraft ADP for the top 200 overall players. Sleeper, ESPN, and FantasyPros last
-          refreshed {DATA_REFRESHED_ON} — run <code>node scripts/refresh-adp.js</code> to pull current numbers
-          (see README "Keeping data fresh"). Yahoo is frozen at its last known value
-          ({PLATFORMS.find((p) => p.key === "yahoo").staleSince}) since BeatADP stopped maintaining it. ESPN's
-          ADP is that platform's native full-PPR format; Yahoo, Sleeper, and FantasyPros are each shown in
-          their own native half-PPR format, since Yahoo and Sleeper don't publish full-PPR ADP — so this isn't
-          a single scoring format forced across all four, it's each platform's own default. Every cell here is
-          read-only, matching its source exactly.
-        </p>
-      </header>
-
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-1">
-          {POSITIONS.map((pos) => (
-            <button key={pos} type="button" onClick={() => setPositionFilter(pos)}
-              className="rounded-full px-3 py-1 text-xs font-medium border"
-              style={{
-                borderColor: "var(--border)",
-                background: positionFilter === pos ? "var(--series-blue)" : "transparent",
-                color: positionFilter === pos ? "#ffffff" : "var(--text-secondary)",
-              }}>
-              {pos}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <PlatformSelect label="Compare" value={platformA} onChange={setPlatformA} exclude={platformB} />
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>vs.</span>
-          <PlatformSelect label="" value={platformB} onChange={setPlatformB} exclude={platformA} />
-        </div>
-        <button type="button" onClick={resetToSample} className="text-xs underline" style={{ color: "var(--text-muted)" }}>
-          Reset to sample data
-        </button>
-      </div>
-
-      <ValueChart players={filtered} platformA={platformA} platformB={platformB} />
-      <BoardTable players={filtered} />
-      <p className="text-xs -mt-2" style={{ color: "var(--text-muted)" }}>
-        † FantasyPros' colors run the other way from Yahoo/ESPN/Sleeper: those three are real drafting
-        markets, so sitting well above consensus means real drafters are letting him slide — a buy signal
-        (blue). FantasyPros is an aggregated expert-consensus ranking, not a draft room, so the same
-        "above consensus" reading there means experts rate him worse than the market does — a fade signal
-        (red) instead.
-      </p>
-      <p className="text-xs -mt-2" style={{ color: "var(--text-muted)" }}>
-        ⏸ Yahoo is frozen at its last known ADP — BeatADP, this tool's data source, stopped maintaining Yahoo
-        numbers on {PLATFORMS.find((p) => p.key === "yahoo").staleSince}, so there's no live number left to
-        pull. Sleeper, ESPN, and FantasyPros refresh normally.
-      </p>
-    </div>
-  );
-}
-
 /* ---------------- root app: header + tab nav ---------------- */
 
 const PAGES = [
-  { key: "adp", label: "ADP Comparison" },
   { key: "weekly", label: "Weekly Scores" },
   { key: "waivers", label: "Waiver Wire Targets" },
   { key: "props", label: "Props" },
 ];
 
 function App() {
-  const [page, setPage] = useState("adp");
-  const [players, setPlayers] = useState(loadPlayers);
-  const scored = useMemo(() => computeStats(players), [players]);
-
-  function resetToSample() { setPlayers(samplePlayers); localStorage.removeItem(PLAYERS_KEY); }
+  const [page, setPage] = useState("weekly");
+  const players = samplePlayers;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col gap-5">
       <header>
         <h1 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>FF ValueDiff</h1>
         <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
-          ADP comparison, waiver wire targets, and a props-vs-rankings comparison, built on the same player pool.
+          Weekly scores, waiver wire targets, and a props-vs-rankings comparison, built on the same player pool.
         </p>
       </header>
 
@@ -1541,7 +1083,6 @@ function App() {
         ))}
       </nav>
 
-      {page === "adp" && <AdpTool scored={scored} resetToSample={resetToSample} />}
       {page === "weekly" && <WeeklyScores players={players} />}
       {page === "waivers" && <WaiverTargets />}
       {page === "props" && <PropsComparison players={players} />}

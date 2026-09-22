@@ -75,8 +75,8 @@ below).
 
 ## Other pages
 
-The app has three tabs, all sharing the same player pool: **ADP Comparison**
-(above), **Weekly Scores**, and **Waiver Wire Targets**.
+The app has four tabs, all sharing the same player pool: **ADP Comparison**
+(above), **Weekly Scores**, **Waiver Wire Targets**, and **Props**.
 
 ### Weekly Scores
 
@@ -140,6 +140,29 @@ If `WAIVER_TARGETS` is ever emptied out, the page shows an explicit
 12 targets, driven by actual results rather than preseason guesses — the
 real Week 3 pickups that Week 1-2's results actually point to (injury
 vacancies, snap-share winners).
+
+### Props
+
+Sportsbook yardage and anytime-touchdown prop lines for the next unplayed
+week (`WEEK_PROPS` in `index.html`, currently Week 3), next to each player's
+own recent scoring rank and points-per-game — computed live from the real
+results already in `WEEKLY_SCORES`, the same math as Weekly Scores' Season
+Grid AVG column, so it stays in sync automatically as more weeks get added.
+The idea is a quick read on whether the market's expectation for a player
+this week (a short anytime-TD price, a big yardage number) lines up with how
+they've actually been producing, or is out ahead of / behind what the box
+scores say.
+
+Player-prop odds are commercial sportsbook data gated behind paid odds
+providers — there's no free, CORS-friendly live endpoint for it the way
+Sleeper's trending-add data is — so, same pattern as Waiver Wire Targets'
+hand-picked list, this is a hand-curated snapshot pulled from public
+sportsbook/prop-analysis write-ups (BettorsInsider, Mile High Sports,
+BetMGM's blog, Sharp Football Analysis), not a live feed. Replace
+`WEEK_PROPS` wholesale once the season moves past the week it currently
+covers. Every entry uses a player ID that already exists in `samplePlayers`,
+so no separate ID-mapping layer is needed the way Sleeper's numeric IDs
+required.
 
 ## Keeping data fresh
 

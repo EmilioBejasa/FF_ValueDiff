@@ -309,23 +309,27 @@ const WAIVER_PRIORITY_COLOR = {
   "Deep League": "var(--text-muted)",
 };
 const WAIVER_TARGETS = {
+  // Originally seeded preseason (before Week 1 kicked off) with committee/
+  // handcuff guesses. Retroactively replaced once Week 1 actually played
+  // out — these are the real Week 2 pickups that Week 1's results actually
+  // pointed to (injury vacancies, snap-share winners), not speculation.
   1: [
-    { id: "warren-jaylen", name: "Jaylen Warren", team: "PIT", position: "RB", priority: "Speculative",
-      note: "Passing-down role behind the starter — one injury away from a full workload." },
-    { id: "dowdle", name: "Rico Dowdle", team: "PIT", position: "RB", priority: "Speculative",
-      note: "Committee back in a backfield that could tilt suddenly with one bad game from the starter." },
-    { id: "mason-jordan", name: "Jordan Mason", team: "MIN", position: "RB", priority: "Deep League",
-      note: "Handcuff value behind the lead back — roster only if you need direct injury insurance." },
-    { id: "gainwell", name: "Kenneth Gainwell", team: "TB", position: "RB", priority: "Deep League",
-      note: "Passing-down/change-of-pace role; touches depend on game script." },
-    { id: "marks-woody", name: "Woody Marks", team: "HOU", position: "RB", priority: "Speculative",
-      note: "Rookie mixed into a crowded backfield — watch early-season snap share before committing FAAB." },
-    { id: "tucker-tre", name: "Tre Tucker", team: "LV", position: "WR", priority: "Deep League",
-      note: "Field-stretcher with boom-bust weekly upside; touchdown-dependent." },
-    { id: "coker", name: "Jalen Coker", team: "CAR", position: "WR", priority: "Speculative",
-      note: "Route-share sleeper if he separates from the rest of Carolina's WR room early." },
-    { id: "doubs", name: "Romeo Doubs", team: "NE", position: "WR", priority: "Deep League",
-      note: "Depth piece who could see a bump in target share if the WR room shakes out in his favor." },
+    { id: "black-kaelon", name: "Kaelon Black", team: "SF", position: "RB", priority: "Must Add",
+      note: "Emerged as the clear RB2 with 15 opportunities in Week 1, plus goal-line upside in a high-scoring offense." },
+    { id: "doubs", name: "Romeo Doubs", team: "NE", position: "WR", priority: "Must Add",
+      note: "Signed a lucrative new deal and is running a high route share after A.J. Brown's high-ankle sprain." },
+    { id: "holani", name: "George Holani", team: "SEA", position: "RB", priority: "Speculative",
+      note: "Handles all of Seattle's passing-down and third-down work — role grows further if Darnold's injury lingers." },
+    { id: "vele", name: "Devaughn Vele", team: "NO", position: "WR", priority: "Speculative",
+      note: "Second read behind Chris Olave with 10 targets in Week 1; elevated role if Olave misses time." },
+    { id: "wicks", name: "Dontayvion Wicks", team: "PHI", position: "WR", priority: "Speculative",
+      note: "Playing an every-down WR2 role in a passing offense leaning into more deep shots." },
+    { id: "gesicki", name: "Mike Gesicki", team: "CIN", position: "TE", priority: "Speculative",
+      note: "Ran 81% of his routes from the slot in Cincinnati's high-powered offense, with 7 targets in Week 1." },
+    { id: "shough", name: "Tyler Shough", team: "NO", position: "QB", priority: "Streamer",
+      note: "Expect a similar game script to Week 1 as a big underdog who has to throw early and often." },
+    { id: "douglas-demario", name: "DeMario Douglas", team: "NE", position: "WR", priority: "Deep League",
+      note: "Heavily targeted out of the slot — pure PPR floor play if you need bodies." },
   ],
   2: [
     { id: "rashod-bateman", name: "Rashod Bateman", team: "BAL", position: "WR", priority: "Must Add",
@@ -457,32 +461,12 @@ const WEEKLY_SCORES = {
   // Weeks 3-18: add entries here once those weeks have actually been played.
 };
 
-/* ---------------- trade calculator ---------------- */
-// Trade "value" here is derived entirely from each player's own Consensus
-// ADP (see computeStats above) — not a separate dynasty/keeper value chart.
-// It's an exponential decay curve (early picks are worth much more than
-// mid-round ones, tapering toward near-zero by the deep end of a draft), so
-// it stays in sync automatically with whatever Consensus reads, including
-// after a `node scripts/refresh-adp.js` refresh. It's meant for redraft
-// leagues only — it says nothing about age, contracts, or future draft
-// picks, which is what a real dynasty trade value chart would need.
-const TRADE_VALUE_DECAY = 0.982;
-const TRADE_VALUE_SCALE = 1000;
-function tradeValue(avgAdp) {
-  if (avgAdp == null) return 1;
-  return Math.max(1, Math.round(TRADE_VALUE_SCALE * Math.pow(TRADE_VALUE_DECAY, avgAdp - 1)));
-}
-
-// A 3-for-1 (or any lopsided-count) trade isn't just a raw value swap: the
-// side walking away with more bodies than they gave up has to cut someone
-// from their existing roster to make room, since roster spots are fixed.
-// That cut player has some value even if he's a fringe/waiver-caliber
-// roster piece, so it's modeled as a flat deduction per "extra" player
-// received — not the full tradeValue() of a top player, but not zero
-// either. Priced at a replacement-level ADP rather than a made-up constant
-// so it moves with the same Consensus data everything else here uses.
-const REPLACEMENT_LEVEL_ADP = 180;
-const ROSTER_CRUNCH_COST = tradeValue(REPLACEMENT_LEVEL_ADP);
+// Only weeks with a real entry above get a "By Week" tab — same reasoning
+// as WAIVER_WEEKS below: no point offering Week 3 through Week 18 as
+// choices when none of them have real scores yet. The season grid still
+// shows all 18 weeks as columns (blank until played), since that's meant
+// to show the whole season's shape at a glance.
+const PLAYED_WEEKS = Object.keys(WEEKLY_SCORES).map(Number).sort((a, b) => a - b);
 
 /* ---------------- stats ---------------- */
 
@@ -1055,8 +1039,8 @@ function WeeklyScores({ players }) {
           Week 1-18 season grid with a running total.
         </p>
         <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-          Real Week 1 results as of {WEEKLY_SCORES_UPDATED_ON} (FantasyPros' Week 1 2026 stats tables). Weeks
-          2-18 haven't been played yet, so nothing fabricated is shown for them — only <code>WEEKLY_SCORES</code>{" "}
+          Real Weeks 1-2 results as of {WEEKLY_SCORES_UPDATED_ON} (FantasyPros' Week 1/2 2026 stats tables). Weeks
+          3-18 haven't been played yet, so nothing fabricated is shown for them — only <code>WEEKLY_SCORES</code>{" "}
           entries that actually exist are rendered as results; add a week's key in <code>index.html</code> once
           it's actually been played. Bye weeks are the real 2026 schedule and show up regardless of whether
           that week's scores are in yet — "BYE" in the grid, or the bye list below in the by-week view.
@@ -1097,7 +1081,7 @@ function WeeklyScores({ players }) {
       ) : (
         <>
           <div className="flex items-center gap-1 flex-wrap">
-            {ALL_WEEKS.map((w) => (
+            {PLAYED_WEEKS.map((w) => (
               <button key={w} type="button" onClick={() => setWeek(w)}
                 className="rounded-full px-3 py-1 text-xs font-medium border"
                 style={{
@@ -1170,147 +1154,6 @@ function WeeklyScores({ players }) {
           )}
         </>
       )}
-    </div>
-  );
-}
-
-/* ---------------- trade calculator page ---------------- */
-
-function PlayerPicker({ scored, exclude, onAdd }) {
-  const [query, setQuery] = useState("");
-
-  const matches = useMemo(() => {
-    if (!query.trim()) return [];
-    const q = query.trim().toLowerCase();
-    return scored
-      .filter((p) => !exclude.has(p.id) && p.name.toLowerCase().includes(q))
-      .sort((a, b) => (a.avg ?? 9999) - (b.avg ?? 9999))
-      .slice(0, 8);
-  }, [scored, query, exclude]);
-
-  return (
-    <div className="relative">
-      <input type="text" value={query} onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search a player to add…"
-        className="w-full rounded-md border px-3 py-1.5 text-sm"
-        style={{ borderColor: "var(--border)", background: "var(--page)", color: "var(--text-primary)" }} />
-      {matches.length > 0 && (
-        <div className="absolute z-10 mt-1 w-full rounded-md border shadow-sm overflow-hidden"
-          style={{ borderColor: "var(--border)", background: "var(--surface-1)" }}>
-          {matches.map((p) => (
-            <button key={p.id} type="button"
-              onClick={() => { onAdd(p.id); setQuery(""); }}
-              className="w-full text-left px-3 py-1.5 text-sm flex items-center justify-between hover:bg-black/[0.04]"
-              style={{ color: "var(--text-primary)" }}>
-              <span>{p.name} <span style={{ color: "var(--text-muted)" }}>· {p.position} {p.team}</span></span>
-              <span className="text-xs" style={{ color: "var(--text-muted)" }}>{tradeValue(p.avg)}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function TradeSide({ label, scored, ids, setIds, crunchCount }) {
-  const idSet = useMemo(() => new Set(ids), [ids]);
-  const players = ids.map((id) => scored.find((p) => p.id === id)).filter(Boolean);
-  const rawTotal = players.reduce((sum, p) => sum + tradeValue(p.avg), 0);
-  const crunchPenalty = crunchCount * ROSTER_CRUNCH_COST;
-  const adjTotal = Math.max(0, rawTotal - crunchPenalty);
-
-  function addPlayer(id) { setIds((prev) => (prev.includes(id) ? prev : [...prev, id])); }
-  function removePlayer(id) { setIds((prev) => prev.filter((x) => x !== id)); }
-
-  return (
-    <div className="rounded-lg border p-4 flex flex-col gap-3" style={{ borderColor: "var(--border)", background: "var(--surface-1)" }}>
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{label}</h3>
-        <span className="text-sm font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>{adjTotal.toLocaleString()} pts</span>
-      </div>
-      <PlayerPicker scored={scored} exclude={idSet} onAdd={addPlayer} />
-      <div className="flex flex-col gap-1.5 min-h-[2rem]">
-        {players.length === 0 && (
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>No players added yet.</p>
-        )}
-        {players.map((p) => (
-          <div key={p.id} className="flex items-center justify-between rounded-md border px-2.5 py-1.5"
-            style={{ borderColor: "var(--border)" }}>
-            <div>
-              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{p.name}</span>
-              <span className="text-xs ml-1.5" style={{ color: "var(--text-muted)" }}>{p.position} · {p.team}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs tabular-nums" style={{ color: "var(--text-muted)" }}>{tradeValue(p.avg)}</span>
-              <button type="button" onClick={() => removePlayer(p.id)} className="text-xs" style={{ color: "var(--series-red)" }}>
-                Remove
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-      {crunchCount > 0 && (
-        <p className="text-xs" style={{ color: "var(--series-amber)" }} title="Receiving more players than this side gives up means dropping someone from the existing roster to make room.">
-          Nets {crunchCount} extra body{crunchCount > 1 ? "ies" : ""} in this trade → {crunchCount} roster cut{crunchCount > 1 ? "s" : ""} required,
-          −{crunchPenalty.toLocaleString()} pts ({rawTotal.toLocaleString()} raw).
-        </p>
-      )}
-    </div>
-  );
-}
-
-function tradeVerdict(totalA, totalB) {
-  if (totalA === 0 && totalB === 0) return { text: "Add players to both sides to evaluate the trade.", color: "var(--text-muted)" };
-  const bigger = Math.max(totalA, totalB);
-  const diff = Math.abs(totalA - totalB);
-  const pct = bigger === 0 ? 0 : (diff / bigger) * 100;
-  if (pct <= 8) return { text: `Roughly even trade (within ${pct.toFixed(0)}% value, after roster-cut adjustment).`, color: "var(--series-neutral)" };
-  const winner = totalA > totalB ? "Side A" : "Side B";
-  return { text: `${winner} gets the better end of this trade by ${pct.toFixed(0)}% value (${diff.toLocaleString()} pts, after roster-cut adjustment).`,
-    color: "var(--series-amber)" };
-}
-
-function TradeCalculator({ scored }) {
-  const [sideA, setSideA] = useState([]);
-  const [sideB, setSideB] = useState([]);
-
-  const rawTotalA = sideA.reduce((sum, id) => { const p = scored.find((x) => x.id === id); return sum + (p ? tradeValue(p.avg) : 0); }, 0);
-  const rawTotalB = sideB.reduce((sum, id) => { const p = scored.find((x) => x.id === id); return sum + (p ? tradeValue(p.avg) : 0); }, 0);
-
-  // Whichever side ends up with more players than it gave away has to cut
-  // someone from its existing roster to make room — see ROSTER_CRUNCH_COST.
-  const crunchA = Math.max(0, sideA.length - sideB.length);
-  const crunchB = Math.max(0, sideB.length - sideA.length);
-  const adjTotalA = Math.max(0, rawTotalA - crunchA * ROSTER_CRUNCH_COST);
-  const adjTotalB = Math.max(0, rawTotalB - crunchB * ROSTER_CRUNCH_COST);
-  const verdict = tradeVerdict(adjTotalA, adjTotalB);
-
-  return (
-    <div className="flex flex-col gap-5">
-      <header>
-        <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Trade Calculator</h2>
-        <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
-          Add players to each side to compare trade value. Values are derived from each player's Consensus ADP
-          above (an exponential curve — early picks are worth much more than late ones), so they stay in sync
-          with the ADP table and any refresh you run.
-        </p>
-        <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-          If one side nets more players than it gives up (a 2-for-1, say), that side pays a flat, per-extra-player
-          deduction ({ROSTER_CRUNCH_COST} pts, priced at a replacement-level ADP of {REPLACEMENT_LEVEL_ADP}) to
-          account for having to cut a roster spot to make room — raw value alone would overstate what a
-          consolidation trade like that is actually worth. Redraft-only: this doesn't account for age, contract
-          situation, or future draft picks, which a real dynasty/keeper trade chart would need.
-        </p>
-      </header>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <TradeSide label="Side A" scored={scored} ids={sideA} setIds={setSideA} crunchCount={crunchA} />
-        <TradeSide label="Side B" scored={scored} ids={sideB} setIds={setSideB} crunchCount={crunchB} />
-      </div>
-
-      <div className="rounded-lg border p-3 text-sm font-medium text-center" style={{ borderColor: "var(--border)", color: verdict.color }}>
-        {verdict.text}
-      </div>
     </div>
   );
 }
@@ -1407,7 +1250,6 @@ const PAGES = [
   { key: "adp", label: "ADP Comparison" },
   { key: "weekly", label: "Weekly Scores" },
   { key: "waivers", label: "Waiver Wire Targets" },
-  { key: "trade", label: "Trade Calculator" },
 ];
 
 function App() {
@@ -1422,7 +1264,7 @@ function App() {
       <header>
         <h1 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>FF ValueDiff</h1>
         <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
-          ADP comparison, waiver wire targets, and a trade calculator, all built on the same player pool.
+          ADP comparison and waiver wire targets, built on the same player pool.
         </p>
       </header>
 
@@ -1442,7 +1284,6 @@ function App() {
       {page === "adp" && <AdpTool scored={scored} resetToSample={resetToSample} />}
       {page === "weekly" && <WeeklyScores players={players} />}
       {page === "waivers" && <WaiverTargets />}
-      {page === "trade" && <TradeCalculator scored={scored} />}
     </div>
   );
 }

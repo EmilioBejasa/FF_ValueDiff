@@ -75,24 +75,30 @@ below).
 
 ## Other pages
 
-The app has four tabs, all sharing the same player pool: **ADP Comparison**
-(above), **Weekly Scores**, **Waiver Wire Targets**, and **Trade Calculator**.
+The app has three tabs, all sharing the same player pool: **ADP Comparison**
+(above), **Weekly Scores**, and **Waiver Wire Targets**.
 
 ### Weekly Scores
 
-Every player in the database for a given week (1-18), ranked highest to
-lowest by that week's actual PPR fantasy points. Each week's tab also shows
-that week's real bye teams (the full 2026 schedule, Weeks 5-14, hard-coded
-in `BYE_WEEKS` in `index.html`) — that part is known for the whole season in
+Every player in the database for a given week, ranked highest to lowest by
+that week's actual PPR fantasy points, or as a full Week 1-18 season grid
+with a running total/average. Each week's by-week view also shows that
+week's real bye teams (the full 2026 schedule, Weeks 5-14, hard-coded in
+`BYE_WEEKS` in `index.html`) — that part is known for the whole season in
 advance, so it's shown regardless of whether the week's games have happened.
 
 Scores themselves are **real results, not projections or fabricated
 numbers** — pulled from FantasyPros' Week 1/2 2026 stats tables and stored in
 `WEEKLY_SCORES` in `index.html`. Only weeks that have actually been played
-get an entry there; a week with no entry shows an explicit "hasn't been
-played yet" state instead of a guess, same pattern as Waiver Wire Targets
-below. As of this writing, Weeks 1-2 are filled in — add each following
-week's key to `WEEKLY_SCORES` once it's actually been played.
+get an entry there; the by-week selector only offers a tab for weeks that
+actually have an entry (`PLAYED_WEEKS` in `index.html`, derived from
+`WEEKLY_SCORES`'s own keys), same pattern as Waiver Wire Targets below — so
+there's nothing to click into that would just show an empty state. The
+season grid still shows all 18 week columns regardless, blank until played,
+since that view is meant to show the whole season's shape at a glance. As of
+this writing, Weeks 1-2 are filled in — add each following week's key to
+`WEEKLY_SCORES` once it's actually been played, and its tab appears
+automatically.
 
 ### Waiver Wire Targets
 
@@ -110,40 +116,12 @@ depth-chart moves, snap counts) comes in.
 A week with no entry in `WAIVER_TARGETS` shows an explicit "nothing added
 yet" state rather than a guess — only weeks that have actually been filled
 in by hand show a list, so nothing on the page is presented as current when
-it isn't. As of this writing, Weeks 1-2 are seeded: Week 1 with a small
-example set of preseason committee/handcuff situations, Week 2 with real
-Week 3 waiver targets driven by actual Week 1-2 results (injury vacancies,
-snap-share breakouts).
-
-### Trade Calculator
-
-Add players to "Side A" and "Side B" (search by name) and it totals a trade
-value for each side and calls whether the trade is roughly even or lopsided.
-
-Values aren't a separate chart — they're **derived from each player's own
-Consensus ADP** (the same number shown in the ADP Comparison table), run
-through an exponential decay curve (`tradeValue()` in `index.html`: early
-picks are worth much more than late ones, tapering toward near-zero by the
-back of a draft). That means trade values update automatically whenever
-Consensus does, including after running `refresh-adp.js` — there's nothing
-separate to keep in sync.
-
-**Uneven player counts (2-for-1, 3-for-2, ...) get a roster-crunch
-deduction.** Whichever side ends up with more players than it gave up has to
-cut someone from its existing roster to make room, since roster spots are
-fixed — raw value alone would overstate what a consolidation trade is worth,
-since it ignores that cost. Each side pays a flat deduction per "extra"
-player received, priced at a replacement-level ADP (`REPLACEMENT_LEVEL_ADP`,
-currently 180 → `ROSTER_CRUNCH_COST` in `index.html`) rather than a made-up
-constant, so it's a fringe/waiver-caliber player's worth, not zero and not a
-real player's actual value (there's no way to know who specifically gets
-cut). Each side's box shows both the adjusted total (what's compared in the
-verdict) and, when a deduction applies, the raw total it was adjusted from.
-
-This is **redraft-only**. It says nothing about age, contract/rookie-deal
-situations, or future draft picks, which a real dynasty or keeper trade
-chart would need to account for — those would require a different value
-model entirely, not just a different curve on the same ADP input.
+it isn't. As of this writing, Weeks 1-2 are seeded, both with real targets
+driven by actual results rather than preseason guesses: Week 1 holds the
+real Week 2 pickups that Week 1's results pointed to (injury vacancies,
+snap-share winners), retroactively replacing an original preseason
+committee/handcuff placeholder list; Week 2 holds the real Week 3 pickups
+that Week 1-2's results pointed to.
 
 ## Keeping data fresh
 

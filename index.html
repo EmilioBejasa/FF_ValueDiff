@@ -272,7 +272,7 @@ const samplePlayers = [
 // existed for it. This isn't split by week; it's a single always-current
 // list — replace it wholesale with the latest real targets as the season
 // moves on, rather than piling up a new dated list every week.
-const WAIVER_TARGETS_UPDATED_ON = "2026-09-22";
+const WAIVER_TARGETS_UPDATED_ON = "2026-09-23";
 const WAIVER_PRIORITIES = ["Must Add", "Speculative", "Streamer", "Deep League"];
 const WAIVER_PRIORITY_COLOR = {
   "Must Add": "var(--series-red)",
@@ -280,32 +280,44 @@ const WAIVER_PRIORITY_COLOR = {
   "Streamer": "var(--series-blue)",
   "Deep League": "var(--text-muted)",
 };
-// Current as of Week 2's results — real Week 3 pickups that Week 1-2's
-// results actually point to (injury vacancies, snap-share winners), not
-// preseason speculation.
+// Current as of the Week 3 injury report (2026-09-23) — real pickups that
+// Week 1-2's results and the latest injury news actually point to (injury
+// vacancies, QB changes, snap-share winners), not preseason speculation.
 const WAIVER_TARGETS = [
   { id: "rashod-bateman", name: "Rashod Bateman", team: "BAL", position: "WR", priority: "Must Add",
-    note: "Zay Flowers banged up — Bateman drew 9 targets and dropped 21.8 points in Week 2 as the clear beneficiary." },
+    note: "Zay Flowers is still nursing a hamstring — Bateman drew 9 targets for 21.8 points in Week 2, and BAL-DAL carries the week's highest total." },
   { id: "schultz-dalton", name: "Dalton Schultz", team: "HOU", position: "TE", priority: "Must Add",
-    note: "Nico Collins out — Schultz cashed in with 14 targets, 140 yards, and 26.0 points in Week 2." },
+    note: "Nico Collins (hamstring) is expected to miss Week 3 — Schultz had 14 targets, 12 catches, and 140 yards without him in Week 2." },
   { id: "bigsby", name: "Tank Bigsby", team: "PHI", position: "RB", priority: "Speculative",
-    note: "Took over after Saquon Barkley left Week 2 with a stinger — direct handcuff to a bell-cow role." },
+    note: "Saquon Barkley is day-to-day with a stinger — Bigsby turned 15 opportunities into 41 yards and a TD after Barkley left Week 2." },
+  { id: "coleman-keon", name: "Keon Coleman", team: "BUF", position: "WR", priority: "Speculative",
+    note: "DJ Moore is day-to-day with a shoulder injury — Coleman had 6 catches for 63 yards on a 25% target share and would step into a bigger role." },
+  { id: "mariota", name: "Marcus Mariota", team: "WSH", position: "QB", priority: "Speculative",
+    note: "Jayden Daniels dislocated his elbow in Week 2 and could be out long-term — Mariota is the confirmed starter, with rushing upside." },
   { id: "coleman-jonah", name: "Jonah Coleman", team: "DEN", position: "RB", priority: "Speculative",
-    note: "Broke out for 14.8 points in Week 2 as Denver's early-down work started shifting his way." },
+    note: "RJ Harvey (hamstring) was inactive and J.K. Dobbins is also nursing a hamstring — Coleman broke out for 14.8 points in Week 2." },
   { id: "wicks", name: "Dontayvion Wicks", team: "PHI", position: "WR", priority: "Speculative",
-    note: "Ran an 82% route share and 90% of the snaps in Week 1, then backed it up with 12.4 points in Week 2." },
-  { id: "shough", name: "Tyler Shough", team: "NO", position: "QB", priority: "Streamer",
-    note: "Averaging 23.8 points per game running the league's fastest-paced offense — a real streaming option." },
-  { id: "johnson-emmett", name: "Emmett Johnson", team: "KC", position: "RB", priority: "Deep League",
-    note: "Clear RB2 behind an injury-prone Kenneth Walker III — stash for handcuff insurance." },
-  { id: "young-bryce", name: "Bryce Young", team: "CAR", position: "QB", priority: "Streamer",
-    note: "113.3 passer rating and 8.9 YPA through two weeks, plus rushing equity — startable if your QB1 is out." },
+    note: "90% of snaps and an 82% route share in Week 1, then 5 catches for 74 yards in Week 2 — and Dallas Goedert (MCL) is out for multiple weeks." },
   { id: "tucker-tre", name: "Tre Tucker", team: "LV", position: "WR", priority: "Speculative",
     note: "5 catches for 119 yards and a 40-yard score in Week 2 after a quiet opener." },
   { id: "boston-denzel", name: "Denzel Boston", team: "CLE", position: "WR", priority: "Speculative",
     note: "Top-10 in yards per route run, with a long touchdown in each of his first two games." },
   { id: "wilson-emanuel", name: "Emanuel Wilson", team: "SEA", position: "RB", priority: "Speculative",
-    note: "Banked 92 yards on 21 carries after rookie Jadarian Price went down with a chest injury." },
+    note: "21 carries for 92 yards in Week 2 with Jadarian Price (shoulder) banged up and Zach Charbonnet still on PUP." },
+  { id: "shough", name: "Tyler Shough", team: "NO", position: "QB", priority: "Streamer",
+    note: "Averaging 23.5 points per game in Kellen Moore's fast-paced offense — a real streaming option." },
+  { id: "young-bryce", name: "Bryce Young", team: "CAR", position: "QB", priority: "Streamer",
+    note: "113.3 passer rating and 8.9 YPA through two weeks, plus rushing equity — startable if your QB1 is out." },
+  { id: "willis-malik", name: "Malik Willis", team: "MIA", position: "QB", priority: "Streamer",
+    note: "Rushing floor (39 yards and a TD on the ground in Week 1), and his schedule softens after a tough opening stretch." },
+  { id: "freiermuth", name: "Pat Freiermuth", team: "PIT", position: "TE", priority: "Streamer",
+    note: "Route share jumped from 72% to 82% in Week 2, and Cincinnati has allowed the most TE fantasy points in the league." },
+  { id: "johnson-emmett", name: "Emmett Johnson", team: "KC", position: "RB", priority: "Deep League",
+    note: "Clear RB2 behind an injury-prone Kenneth Walker III — stash for handcuff insurance." },
+  { id: "kamara", name: "Alvin Kamara", team: "NO", position: "RB", priority: "Deep League",
+    note: "Still catching passes (5 grabs on 6 targets in Week 1) in the league's fastest offense — a PPR bench piece." },
+  { id: "winston", name: "Jameis Winston", team: "NYG", position: "QB", priority: "Deep League",
+    note: "Jaxson Dart's knee injury is season-ending, so Winston starts — but he went 11-of-27 for 111 yards in relief. Superflex only." },
   { id: "johnson-juwan", name: "Juwan Johnson", team: "NO", position: "TE", priority: "Deep League",
     note: "Back-to-back double-digit weeks, catching all 4 targets for 66 yards in Week 2." },
 ];
@@ -887,53 +899,407 @@ function WeeklyScores({ players }) {
   );
 }
 
-/* ---------------- props vs recent rankings ---------------- */
-// Sportsbook player props (yards + anytime-TD lines) for the next unplayed
-// week, compared against each player's own recent scoring rank — computed
-// live from the real results already sitting in WEEKLY_SCORES, the same way
-// SeasonGrid's AVG column is. Unlike Sleeper's trending endpoint, there's no
-// free CORS-friendly live odds API to pull from (player-prop data is
-// commercial sportsbook data, gated behind paid providers) — so, same
-// pattern as Waiver Wire Targets, this is a hand-curated snapshot pulled
-// from public sportsbook write-ups, not a live feed. Replace it wholesale
-// once the season moves past Week 3.
+/* ---------------- props-implied points vs fantasy site projections ---------------- */
+// Sportsbook player props (yards, receptions, passing TDs, INTs, anytime TD)
+// for the current week, converted into the PPR fantasy points they imply,
+// then set against what fantasy sites project for the same player.
+//
+// The two halves come from different places:
+// - WEEK_PROPS is a snapshot written by `node scripts/refresh-props.js`,
+//   which pulls every posted line from RotoWire's props board (RotoWire
+//   sends no CORS header, so the browser can't fetch it directly). Books
+//   post lines game by game through the week, so rerun it closer to kickoff
+//   to fill in games that weren't up yet. Don't hand-edit — it's
+//   regenerated wholesale.
+// - Site projections are fetched live on page load from Sleeper's and
+//   ESPN's projection APIs, both of which allow cross-origin requests.
 const PROPS_WEEK = 3;
-const PROPS_UPDATED_ON = "2026-09-22";
+const PROPS_UPDATED_ON = "2026-09-23";
+// Each over/under is [line, overOdds, underOdds] (the median line across
+// books, priced at BetMGM/DraftKings/FanDuel where available); tdOdds is the
+// median anytime-TD price. A field is absent when no book has posted it.
 const WEEK_PROPS = [
-  { id: "stafford", propType: "Passing Yds", line: 239.5, oddsOver: -113, tdOdds: null },
-  { id: "love-jordan", propType: "Passing Yds", line: 226.5, oddsOver: -114, tdOdds: null },
-  { id: "dart", propType: "Passing Yds", line: 213.5, oddsOver: -113, tdOdds: null },
-  { id: "allen-j", propType: null, line: null, oddsOver: null, tdOdds: -140 },
-  { id: "taylor-j", propType: "Rushing Yds", line: 84.5, oddsOver: -113, tdOdds: -210 },
-  { id: "mccaffrey", propType: "Rushing Yds", line: 61.5, oddsOver: -125, tdOdds: -250 },
-  { id: "hall-b", propType: "Rushing Yds", line: 65.5, oddsOver: -113, tdOdds: 100 },
-  { id: "henry-d", propType: "Rushing Yds", line: 92.5, oddsOver: -114, tdOdds: -260 },
-  { id: "gibbs", propType: null, line: null, oddsOver: null, tdOdds: -245 },
-  { id: "robinson-b", propType: "Rushing Yds", line: 79.5, oddsOver: -115, tdOdds: null },
-  { id: "kwilliams", propType: "Rushing Yds", line: 63.5, oddsOver: -113, tdOdds: null },
-  { id: "skattebo", propType: "Rushing Yds", line: 51.5, oddsOver: -113, tdOdds: null },
-  { id: "corum", propType: "Rushing Yds", line: 48.5, oddsOver: -111, tdOdds: null },
-  { id: "walker-k", propType: "Rushing Yds", line: 79.5, oddsOver: null, tdOdds: null },
-  { id: "smithnjigba", propType: "Receiving Yds", line: 81.5, oddsOver: -113, tdOdds: null },
-  { id: "lamb", propType: "Receiving Yds", line: 75.5, oddsOver: -114, tdOdds: null },
-  { id: "jefferson", propType: "Receiving Yds", line: 79.5, oddsOver: -115, tdOdds: null },
-  { id: "metcalf", propType: "Receiving Yds", line: 56.5, oddsOver: null, tdOdds: null, side: "Under" },
-  { id: "godwin", propType: "Receiving Yds", line: 42.5, oddsOver: -113, tdOdds: null },
-  { id: "watson-c", propType: "Receiving Yds", line: 66.5, oddsOver: -114, tdOdds: null },
-  { id: "adams-d", propType: "Receiving Yds", line: 63.5, oddsOver: -114, tdOdds: null },
-  { id: "london", propType: "Receiving Yds", line: 63.5, oddsOver: -115, tdOdds: null },
-  { id: "stbrown", propType: null, line: null, oddsOver: null, tdOdds: -125 },
-  { id: "wilson-g", propType: null, line: null, oddsOver: null, tdOdds: 155 },
-  { id: "williams-jameson", propType: null, line: null, oddsOver: null, tdOdds: 180 },
-  { id: "kraft", propType: "Receiving Yds", line: 46.5, oddsOver: -114, tdOdds: null },
-  { id: "likely", propType: "Receiving Yds", line: 43.5, oddsOver: -115, tdOdds: null },
-  { id: "pitts", propType: "Receiving Yds", line: 34.5, oddsOver: -114, tdOdds: null },
-  { id: "kelce", propType: null, line: null, oddsOver: null, tdOdds: 175 },
+  { id: "gibbs", rushYds: [84.5, -114, -110], rushRecYds: [124.5, -114, -112], recs: [4.5, -110, -116], recYds: [35.5, -108, -116], tdOdds: -320 },
+  { id: "chase", recs: [6.5, -144, 113], recYds: [77.5, -110, -114], tdOdds: 135 },
+  { id: "robinson-b", rushYds: [77.5, -111, -113], rushRecYds: [122.5, -115, -115], recs: [4.5, -120, -111], recYds: [40.5, -114, -114], tdOdds: -160 },
+  { id: "nacua", tdOdds: 125 },
+  { id: "smithnjigba", tdOdds: 100 },
+  { id: "stbrown", recs: [6.5, -139, 106], recYds: [75.5, -114, -114], tdOdds: -120 },
+  { id: "mccaffrey", rushYds: [54.5, -110, -114], tdOdds: -280 },
+  { id: "taylor-j", tdOdds: -150 },
+  { id: "lamb", recs: [6.5, -154, 116], recYds: [84.5, -114, -114], tdOdds: 116 },
+  { id: "jefferson", recs: [5.5, -112, -114], recYds: [69.5, -114, -110], tdOdds: 150 },
+  { id: "cook", rushYds: [81.5, -114, -114], tdOdds: -200 },
+  { id: "achane", rushYds: [59.5, -114, -114], rushRecYds: [90.5, -114, -114], recs: [3.5, -122, -106], recYds: [26.5, -114, -114], tdOdds: -104 },
+  { id: "london", recs: [5.5, 100, -135], recYds: [65.5, -114, -114], tdOdds: 180 },
+  { id: "brown-chase", rushYds: [63.5, -114, -114], rushRecYds: [89.5, -112, -111], recs: [3.5, 108, -138], recYds: [21.5, -114, -114], tdOdds: -115 },
+  { id: "jeanty", tdOdds: -120 },
+  { id: "barkley", rushYds: [74.5, -114, -114], rushRecYds: [92.5, -114, -114], recs: [2.5, 128, -164], recYds: [13.5, -117, -107], tdOdds: -120 },
+  { id: "mcbride", recs: [7.5, 112, -143], recYds: [67.5, -111, -113], tdOdds: 185 },
+  { id: "hampton", rushYds: [60.5, -111, -113], rushRecYds: [75.5, -110, -120], recs: [1.5, -150, 118], recYds: [11.5, -114, -109], tdOdds: -125 },
+  { id: "bowers", tdOdds: 200 },
+  { id: "collins-n", tdOdds: 160 },
+  { id: "rice", recs: [4.5, 118, -158], recYds: [45.5, -135, 100], tdOdds: 133 },
+  { id: "walker-k", rushYds: [85.5, -114, -114], rushRecYds: [112.5, -114, -114], recs: [3.5, 120, -160], recYds: [22.5, -114, -114], tdOdds: -240 },
+  { id: "olave", tdOdds: 145 },
+  { id: "pickens", recs: [5.5, 112, -148], recYds: [59.5, -114, -110], tdOdds: 160 },
+  { id: "henry-d", rushYds: [89.5, -114, -114], tdOdds: -230 },
+  { id: "nabers", tdOdds: 205 },
+  { id: "allen-j", passYds: [239.5, -114, -114], passTds: [1.5, -162, 127], ints: [0.5, 125, -160], rushYds: [34.5, -110, -118], tdOdds: -150 },
+  { id: "dsmith", recs: [5.5, -138, 108], recYds: [72.5, -114, -114], tdOdds: 162 },
+  { id: "hall-b", rushYds: [57.5, -114, -114], rushRecYds: [81.5, -115, -110], recs: [3.5, 117, -150], recYds: [21.5, -108, -116], tdOdds: -112 },
+  { id: "love-j", rushYds: [37.5, -112, -112], tdOdds: 140 },
+  { id: "wilson-g", recs: [5.5, -101, -126], recYds: [60.5, -113, -111], tdOdds: 172 },
+  { id: "mcmillan", tdOdds: 165 },
+  { id: "flowers", recs: [5.5, 110, -140], recYds: [71.5, -114, -114], tdOdds: 115 },
+  { id: "kwilliams", rushYds: [55.5, -114, -114], tdOdds: -135 },
+  { id: "williams-j", rushYds: [59.5, -114, -114], rushRecYds: [80.5, -105, -125], recs: [2.5, -172, 135], recYds: [17.5, -109, -113], tdOdds: -170 },
+  { id: "higgins-t", recs: [4.5, -111, -115], recYds: [53.5, -114, -114], tdOdds: 175 },
+  { id: "mcconkey", recs: [4.5, 121, -155], recYds: [51.5, -110, -114], tdOdds: 210 },
+  { id: "jackson-l", passYds: [237.5, -114, -114], passTds: [1.5, -160, 125], ints: [0.5, 155, -200], rushYds: [38.5, -112, -112], tdOdds: 185 },
+  { id: "egbuka", recs: [4.5, 129, -165], recYds: [47.5, -111, -113], tdOdds: 230 },
+  { id: "loveland", tdOdds: 390 },
+  { id: "waddle", recs: [4.5, -154, 116], recYds: [57.5, -114, -114], tdOdds: 185 },
+  { id: "etienne", tdOdds: 135 },
+  { id: "skattebo", tdOdds: 110 },
+  { id: "irving", rushYds: [54.5, -115, -115], tdOdds: 120 },
+  { id: "adams-d", tdOdds: 110 },
+  { id: "maye", passYds: [216.5, -114, -114], passTds: [1.5, 151, -194], ints: [0.5, -137, 107], rushYds: [25.5, -117, -107], tdOdds: 265 },
+  { id: "mclaurin", tdOdds: 275 },
+  { id: "warren-tyler", tdOdds: 225 },
+  { id: "burden", tdOdds: 350 },
+  { id: "judkins", tdOdds: 120 },
+  { id: "moore-dj", recs: [3.5, -150, 117], recYds: [49.5, -114, -114], tdOdds: 165 },
+  { id: "williams-jameson", recs: [4.5, 124, -166], recYds: [54.5, -114, -114], tdOdds: 165 },
+  { id: "odunze", tdOdds: 425 },
+  { id: "swift", tdOdds: 110 },
+  { id: "montgomery", tdOdds: -115 },
+  { id: "burrow", passYds: [253.5, -114, -114], passTds: [1.5, -112, -114], ints: [0.5, -114, -111], tdOdds: 650 },
+  { id: "hurts", passYds: [210.5, -112, -112], passTds: [1.5, 134, -172], ints: [0.5, 116, -148], rushYds: [24.5, -113, -111], tdOdds: 140 },
+  { id: "henderson-t", rushYds: [40.5, -115, -115], rushRecYds: [54.5, -114, -114], recs: [1.5, -110, -115], recYds: [9.5, -114, -114], tdOdds: 175 },
+  { id: "tuten", rushYds: [54.5, -114, -114], rushRecYds: [67.5, -117, -114], recs: [1.5, -116, -110], recYds: [9.5, -114, -114], tdOdds: 150 },
+  { id: "tate-c", tdOdds: 295 },
+  { id: "evans-m", tdOdds: 145 },
+  { id: "price-j", tdOdds: 125 },
+  { id: "watson-c", recs: [4.5, -130, -105], recYds: [67.5, -115, -114], tdOdds: 155 },
+  { id: "washington-p", recs: [4.5, -144, 113], recYds: [61.5, -114, -114], tdOdds: 165 },
+  { id: "harrison", recs: [2.5, 133, -171], recYds: [26.5, -113, -111], tdOdds: 370 },
+  { id: "fannin", tdOdds: 250 },
+  { id: "laporta", recs: [4.5, -106, -120], recYds: [45.5, -111, -113], tdOdds: 183 },
+  { id: "pitts", recs: [3.5, -125, -105], recYds: [37.5, -114, -114], tdOdds: 370 },
+  { id: "metcalf", recs: [4.5, 103, -132], recYds: [52.5, -113, -111], tdOdds: 190 },
+  { id: "stevenson-r", rushYds: [37.5, -110, -112], rushRecYds: [55.5, -110, -116], recs: [2.5, 109, -139], recYds: [14.5, -114, -114], tdOdds: 148 },
+  { id: "sutton", recs: [3.5, -121, -105], recYds: [40.5, -120, -110], tdOdds: 215 },
+  { id: "thomas-brian", recs: [3.5, 140, -188], recYds: [38.5, -114, -110], tdOdds: 270 },
+  { id: "prescott", passYds: [264.5, -115, -115], passTds: [1.5, -146, 114], ints: [0.5, -113, -113], rushYds: [12.5, -114, -114], tdOdds: 550 },
+  { id: "pittman", tdOdds: 370 },
+  { id: "wilson-michael", recs: [4.5, 132, -173], recYds: [45.5, -114, -110], tdOdds: 295 },
+  { id: "kraft", recs: [3.5, -175, 130], recYds: [46.5, -115, -115], tdOdds: 185 },
+  { id: "warren-jaylen", tdOdds: 105 },
+  { id: "herbert", passYds: [222.5, -114, -114], passTds: [1.5, 146, -186], ints: [0.5, -122, -105], rushYds: [19.5, -113, -111], tdOdds: 450 },
+  { id: "lawrence", passYds: [223.5, -114, -114], passTds: [1.5, -109, -117], ints: [0.5, -125, 100], rushYds: [16.5, -114, -114], tdOdds: 290 },
+  { id: "dart", tdOdds: 190 },
+  { id: "pierce-alec", tdOdds: 290 },
+  { id: "pollard", tdOdds: 150 },
+  { id: "dowdle", tdOdds: 105 },
+  { id: "lemon", tdOdds: 470 },
+  { id: "hubbard", tdOdds: -140 },
+  { id: "stafford", passYds: [243.5, -114, -114], passTds: [1.5, -130, 102], ints: [0.5, -101, -123], rushYds: [0.5, 140, -172], tdOdds: 2000 },
+  { id: "meyers", recs: [3.5, 101, -128], recYds: [34.5, -112, -111], tdOdds: 255 },
+  { id: "robinson-wandale", tdOdds: 360 },
+  { id: "kittle", tdOdds: 185 },
+  { id: "purdy", passYds: [235.5, -110, -120], passTds: [1.5, -174, 130], tdOdds: 270 },
+  { id: "addison", recs: [2.5, -142, 112], recYds: [32.5, -114, -114], tdOdds: 265 },
+  { id: "kelce", recs: [4.5, -114, -114], recYds: [50.5, -125, -105], tdOdds: 137 },
+  { id: "nix", passYds: [212.5, -114, -114], passTds: [1.5, 121, -154], ints: [0.5, -121, -104], rushYds: [16.5, -114, -114], tdOdds: 400 },
+  { id: "brooks-jonathon", tdOdds: 253 },
+  { id: "mahomes", passYds: [234.5, -115, -114], passTds: [1.5, -220, 162], rushYds: [17.5, -114, -114], tdOdds: 320 },
+  { id: "dobbins", tdOdds: 120 },
+  { id: "harvey-rj", tdOdds: 220 },
+  { id: "godwin", recs: [3.5, 120, -153], recYds: [35.5, -114, -114], tdOdds: 310 },
+  { id: "downs", tdOdds: 225 },
+  { id: "monangai", tdOdds: 195 },
+  { id: "golden-matthew", recs: [4.5, 105, -145], recYds: [53.5, -116, -118], tdOdds: 200 },
+  { id: "kincaid", tdOdds: 195 },
+  { id: "ferguson-jake", recs: [3.5, -115, -110], recYds: [27.5, -111, -110], tdOdds: 271 },
+  { id: "johnston-q", recs: [3.5, 122, -156], recYds: [35.5, -113, -111], tdOdds: 250 },
+  { id: "diggs", tdOdds: 325 },
+  { id: "croskeymerritt", tdOdds: 180 },
+  { id: "concepcion", tdOdds: 309 },
+  { id: "corum", rushYds: [46.5, -109, -115], tdOdds: 260 },
+  { id: "shakir", tdOdds: 175 },
+  { id: "white-rachaad", tdOdds: 265 },
+  { id: "likely", tdOdds: 275 },
+  { id: "worthy", recs: [3.5, -104, -128], recYds: [35.5, -114, -114], tdOdds: 170 },
+  { id: "jones-aaron", tdOdds: -125 },
+  { id: "andrews-mark", tdOdds: 137 },
+  { id: "goff", passYds: [257.5, -113, -115], passTds: [1.5, -202, 157], ints: [0.5, 115, -147], tdOdds: 1405 },
+  { id: "samuel-deebo", tdOdds: 185 },
+  { id: "doubs", recs: [3.5, 125, -160], recYds: [42.5, -111, -113], tdOdds: 265 },
+  { id: "coker", tdOdds: 215 },
+  { id: "murray-kyler", passYds: [208.5, -112, -112], passTds: [1.5, 152, -196], ints: [0.5, 107, -137], rushYds: [20.5, -114, -114], tdOdds: 325 },
+  { id: "marks-woody", tdOdds: 210 },
+  { id: "henry-hunter", recs: [3.5, -137, 107], recYds: [41.5, -115, -109], tdOdds: 235 },
+  { id: "mayfield", passYds: [216.5, -114, -114], passTds: [1.5, 158, -203], ints: [0.5, -111, -115], rushYds: [16.5, -114, -114], tdOdds: 600 },
+  { id: "shaheed", tdOdds: 290 },
+  { id: "rodriguez-chris", rushYds: [20.5, -114, -114], tdOdds: 230 },
+  { id: "hunter-travis", tdOdds: 1100 },
+  { id: "allgeier", rushYds: [33.5, -115, -115], tdOdds: 185 },
+  { id: "boston-denzel", tdOdds: 282 },
+  { id: "shough", passYds: [250.5, -114, -114], passTds: [1.5, -104, -123], ints: [0.5, -113, -112], tdOdds: 275 },
+  { id: "spears", tdOdds: 250 },
+  { id: "coleman-jonah", tdOdds: 110 },
+  { id: "hockenson", recs: [3.5, -104, -123], recYds: [30.5, -114, -114], tdOdds: 290 },
+  { id: "kamara", tdOdds: 180 },
+  { id: "washington-mike", tdOdds: 425 },
+  { id: "robinson-brian", rushYds: [22.5, -115, -115], tdOdds: 425 },
+  { id: "willis-malik", passYds: [175.5, -115, -115], passTds: [0.5, -210, 154], rushYds: [33.5, -114, -114], tdOdds: 285 },
+  { id: "jones-daniel", tdOdds: 600 },
+  { id: "mitchell-keaton", tdOdds: 500 },
+  { id: "johnson-juwan", tdOdds: 265 },
+  { id: "jeudy", tdOdds: 400 },
+  { id: "tracy", tdOdds: 450 },
+  { id: "love-jordan", passYds: [227.5, -112, -112], passTds: [1.5, -111, -114], ints: [0.5, 100, -135], rushYds: [8.5, -114, -114], tdOdds: 600 },
+  { id: "bigsby", tdOdds: 210 },
+  { id: "sadiq", tdOdds: 437 },
+  { id: "tucker-tre", tdOdds: 290 },
+  { id: "mcmillan-jalen", tdOdds: 500 },
+  { id: "strange", recs: [3.5, 137, -176], recYds: [27.5, -115, -109], tdOdds: 285 },
+  { id: "nailor", tdOdds: 400 },
+  { id: "mitchell-adonai", recs: [3.5, -123, -104], recYds: [45.5, -114, -114], tdOdds: 310 },
+  { id: "johnson-emmett", rushYds: [24.5, -114, -114], rushRecYds: [39.5, -114, -114], recs: [1.5, -102, -130], recYds: [10.5, -114, -114], tdOdds: 340 },
+  { id: "allen-keenan", tdOdds: 240 },
+  { id: "wicks", recs: [3.5, 140, -188], recYds: [40.5, -112, -117], tdOdds: 320 },
+  { id: "stroud", tdOdds: 600 },
+  { id: "davis-ray", tdOdds: 791 },
+  { id: "jaylin-noel", tdOdds: 370 },
+  { id: "ferguson-terrance", tdOdds: 255 },
+  { id: "zachariah-branch", tdOdds: 1100 },
+  { id: "singleton-nicholas", tdOdds: 1900 },
+  { id: "allen-braelon", tdOdds: 275 },
+  { id: "calvin-ridley", tdOdds: 625 },
+  { id: "jennings-jauan", tdOdds: 525 },
+  { id: "caleb-douglas", tdOdds: 390 },
+  { id: "schultz-dalton", tdOdds: 205 },
+  { id: "lloyd-marshawn", rushYds: [27.5, -113, -109], rushRecYds: [36.5, -114, -112], recs: [1.5, 160, -220], recYds: [5.5, -115, -115], tdOdds: 195 },
+  { id: "okonkwo", tdOdds: 410 },
+  { id: "rashod-bateman", tdOdds: 185 },
+  { id: "allen-cyrus", tdOdds: 1200 },
+  { id: "malachi-fields", tdOdds: 330 },
+  { id: "germie-bernard", tdOdds: 525 },
+  { id: "washington-malik", tdOdds: 320 },
+  { id: "antonio-williams", tdOdds: 525 },
+  { id: "harris-tre", recs: [2.5, -168, 131], recYds: [33.5, -114, -114], tdOdds: 450 },
+  { id: "kaytron-allen", tdOdds: 650 },
+  { id: "barner", tdOdds: 240 },
+  { id: "flournoy", tdOdds: 375 },
+  { id: "young-bryce", tdOdds: 400 },
+  { id: "boutte", tdOdds: 410 },
+  { id: "malachi-corley", tdOdds: 1800 },
+  { id: "black-kaelon", tdOdds: 240 },
+  { id: "jelani-woods", tdOdds: 1800 },
 ];
+
+const PROP_SITES = [
+  { key: "sleeper", label: "Sleeper" },
+  { key: "espn", label: "ESPN" },
+];
+
+// PPR, 4-point passing TDs, -2 per INT (ESPN's default; Sleeper's own
+// projections use -1). Fumbles have no line, so they aren't counted.
+const PPR = { rec: 1, recYd: 0.1, rushYd: 0.1, passYd: 0.04, passTd: 4, int: -2, td: 6 };
+// Rough standard deviation of each stat, used only to nudge a juiced line's
+// mean off the line itself (a 6.5-reception line at -154/+116 means the
+// market expects closer to 7 catches, not 6.5).
+const PROP_SD = { recs: (l) => Math.sqrt(l) * 1.1, yds: (l) => Math.max(15, l * 0.45), passYds: () => 55 };
+// Anytime-TD prices are one-sided (no "no TD" price to de-vig against), so
+// they're scaled down by a flat hold estimate instead.
+const ATTD_HOLD = 0.92;
+
+function impliedProb(odds) {
+  return odds < 0 ? -odds / (-odds + 100) : 100 / (odds + 100);
+}
+
+// No-vig probability of the over, or null if either side is unknown.
+function noVigOver([, over, under]) {
+  if (over == null || under == null) return null;
+  const po = impliedProb(over), pu = impliedProb(under);
+  return po / (po + pu);
+}
+
+// Inverse standard normal CDF (Acklam's rational approximation).
+function normInv(p) {
+  const a = [-39.6968302866538, 220.946098424521, -275.928510446969, 138.357751867269, -30.6647980661472, 2.50662827745924];
+  const b = [-54.4760987982241, 161.585836858041, -155.698979859887, 66.8013118877197, -13.2806815528857];
+  const c = [-0.00778489400243029, -0.322396458041136, -2.40076144775900, -2.54973253934373, 4.37466414146497, 2.93816398269878];
+  const d = [0.00778469570904146, 0.322467129070040, 2.44513413714300, 3.75440866190143];
+  if (p < 0.02425) {
+    const q = Math.sqrt(-2 * Math.log(p));
+    return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  }
+  if (p > 1 - 0.02425) return -normInv(1 - p);
+  const q = p - 0.5, r = q * q;
+  return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
+    (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+}
+
+// Market-implied mean for an over/under line: the line itself, shifted by
+// however far the no-vig over probability is from 50/50.
+function impliedMean(lineArr, sdFn) {
+  const [line] = lineArr;
+  const p = noVigOver(lineArr);
+  if (p == null) return line;
+  return Math.max(0, line + sdFn(line) * normInv(p));
+}
+
+// Expected count for a Poisson stat (passing TDs, INTs): the mean whose
+// P(X > line) matches the no-vig over price (e.g. passing TDs over 1.5 at
+// -150 → ~2.1 expected).
+function impliedPoissonMean(lineArr) {
+  const [line] = lineArr;
+  const p = noVigOver(lineArr) ?? 0.5;
+  const k = Math.floor(line);
+  const pOver = (lam) => {
+    let term = Math.exp(-lam), cdf = term;
+    for (let i = 1; i <= k; i++) { term *= lam / i; cdf += term; }
+    return 1 - cdf;
+  };
+  let lo = 0, hi = 10;
+  for (let i = 0; i < 50; i++) {
+    const mid = (lo + hi) / 2;
+    if (pOver(mid) < p) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+// Which lines each position needs for a complete implied total.
+const PROP_NEEDS = {
+  QB: [["passYds", "pass yds"], ["passTds", "pass TD"], ["rushYds", "rush yds"], ["tdOdds", "rush TD"]],
+  RB: [["rushYds", "rush yds"], ["recs", "receptions"], ["recYds|rushRecYds", "rec yds"], ["tdOdds", "TD"]],
+  WR: [["recs", "receptions"], ["recYds", "rec yds"], ["tdOdds", "TD"]],
+  TE: [["recs", "receptions"], ["recYds", "rec yds"], ["tdOdds", "TD"]],
+};
+
+// Turns one WEEK_PROPS entry into implied PPR points plus a breakdown, and
+// lists which inputs had no line (so a low number caused by a missing line
+// reads as incomplete, not as a fade).
+function propsImpliedPoints(prop, position) {
+  const parts = [];
+  let pts = 0;
+  const add = (label, value, mult) => { pts += value * mult; parts.push(`${label} ${value.toFixed(1)}`); };
+
+  if (prop.passYds) add("pass yds", impliedMean(prop.passYds, PROP_SD.passYds), PPR.passYd);
+  if (prop.passTds) add("pass TD", impliedPoissonMean(prop.passTds), PPR.passTd);
+  if (prop.ints) add("INT", impliedPoissonMean(prop.ints), PPR.int);
+  if (prop.rushYds) add("rush yds", impliedMean(prop.rushYds, PROP_SD.yds), PPR.rushYd);
+  if (prop.recs) add("rec", impliedMean(prop.recs, PROP_SD.recs), PPR.rec);
+  if (prop.recYds) add("rec yds", impliedMean(prop.recYds, PROP_SD.yds), PPR.recYd);
+  else if (prop.rushRecYds && prop.rushYds) {
+    const recYds = Math.max(0, impliedMean(prop.rushRecYds, PROP_SD.yds) - impliedMean(prop.rushYds, PROP_SD.yds));
+    add("rec yds", recYds, PPR.recYd);
+  }
+  if (prop.tdOdds != null) {
+    const p = impliedProb(prop.tdOdds) * ATTD_HOLD;
+    add("TDs", -Math.log(1 - p), PPR.td);
+  }
+
+  const missing = (PROP_NEEDS[position] || [])
+    .filter(([fields]) => !fields.split("|").some((f) => prop[f] != null))
+    .map(([, label]) => label);
+  return { pts, parts, missing };
+}
+
+// A player with only an anytime-TD price (their game's yardage lines aren't
+// posted yet) has nothing to compare, so they're left out of the table.
+function hasStatLines(prop) {
+  return ["passYds", "passTds", "rushYds", "recs", "recYds", "rushRecYds"].some((f) => prop[f] != null);
+}
+
+// Same idea as the refresh script's matching: "Kenneth Walker III" and
+// "Kenneth Walker" are the same player.
+function projKey(name) {
+  return String(name || "")
+    .replace(/\b(jr|sr|ii|iii|iv|v)\.?$/i, "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+const PROPS_SEASON = Number(PROPS_UPDATED_ON.slice(0, 4));
+
+async function fetchSleeperProjections(season, week) {
+  const pos = SKILL_POSITIONS.map((p) => `position[]=${p}`).join("&");
+  const res = await fetch(`https://api.sleeper.com/projections/nfl/${season}/${week}?season_type=regular&${pos}`);
+  if (!res.ok) throw new Error(`Sleeper projections failed (${res.status})`);
+  const out = {};
+  for (const row of await res.json()) {
+    const p = row.player;
+    const pts = row.stats && row.stats.pts_ppr;
+    if (!p || pts == null) continue;
+    // Keyed by name+team first, so two same-named players don't collide;
+    // the name-only key covers a team mismatch (e.g. a recent trade).
+    const k = projKey(`${p.first_name} ${p.last_name}`);
+    out[`${k}|${p.team}`] = pts;
+    if (!(k in out)) out[k] = pts;
+  }
+  return out;
+}
+
+// ESPN's default PPR league (leaguedefaults/3) returns each player's
+// projection for the requested week as a stat line with statSourceId 1.
+async function fetchEspnProjections(season, week) {
+  const filter = { players: { limit: 1000, filterSlotIds: { value: [0, 2, 4, 6] }, sortPercOwned: { sortPriority: 1, sortAsc: false } } };
+  const res = await fetch(
+    `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${season}/segments/0/leaguedefaults/3?view=kona_player_info&scoringPeriodId=${week}`,
+    { headers: { "X-Fantasy-Filter": JSON.stringify(filter) } }
+  );
+  if (!res.ok) throw new Error(`ESPN projections failed (${res.status})`);
+  const out = {};
+  for (const { player } of (await res.json()).players || []) {
+    const stat = (player.stats || []).find((s) => s.seasonId === season && s.scoringPeriodId === week && s.statSourceId === 1);
+    if (stat) out[projKey(player.fullName)] = stat.appliedTotal;
+  }
+  return out;
+}
+
+function useSiteProjections(season, week) {
+  const [state, setState] = useState({ sleeper: { status: "loading" }, espn: { status: "loading" } });
+  useEffect(() => {
+    let cancelled = false;
+    const load = (key, fn) =>
+      fn(season, week)
+        .then((data) => !cancelled && setState((s) => ({ ...s, [key]: { status: "ok", data } })))
+        .catch((err) => !cancelled && setState((s) => ({ ...s, [key]: { status: "error", error: err.message } })));
+    load("sleeper", fetchSleeperProjections);
+    load("espn", fetchEspnProjections);
+    return () => { cancelled = true; };
+  }, [season, week]);
+  return state;
+}
+
+function lookupProjection(site, player) {
+  if (site.status !== "ok") return null;
+  const k = projKey(player.name);
+  const v = site.data[`${k}|${player.team}`] ?? site.data[k];
+  return v != null ? v : null;
+}
 
 function fmtOdds(n) {
   if (n == null) return "–";
   return n > 0 ? `+${n}` : `${n}`;
+}
+
+function fmtLine(label, arr) {
+  if (!arr) return null;
+  const [line, over, under] = arr;
+  const odds = over != null ? ` (${fmtOdds(over)}${under != null ? `/${fmtOdds(under)}` : ""})` : "";
+  return `${label} ${line}${odds}`;
+}
+
+function fmtDiff(n) {
+  if (n == null) return "–";
+  return `${n > 0 ? "+" : ""}${n.toFixed(1)}`;
 }
 
 // Same math as SeasonGrid's AVG column (recent points per game from real
@@ -947,35 +1313,44 @@ function recentAvgPoints(player) {
 }
 
 function PropsComparison({ players }) {
-  const [sortBy, setSortBy] = useState("avg");
+  const [sortBy, setSortBy] = useState("diff");
   const [sortDesc, setSortDesc] = useState(true);
+  const [position, setPosition] = useState(POSITIONS[0]);
+  const sites = useSiteProjections(PROPS_SEASON, PROPS_WEEK);
 
   function toggleSort(key) {
     if (key === sortBy) setSortDesc((d) => !d);
     else { setSortBy(key); setSortDesc(true); }
   }
 
-  const rows = useMemo(() => {
-    const ranked = players
-      .map((p) => ({ ...p, ...recentAvgPoints(p) }))
-      .sort((a, b) => (b.avg ?? -1) - (a.avg ?? -1));
-    const byId = {};
-    ranked.forEach((p, i) => { byId[p.id] = { ...p, rank: p.avg != null ? i + 1 : null }; });
+  const byId = useMemo(() => Object.fromEntries(players.map((p) => [p.id, p])), [players]);
+  const tdOnlyCount = useMemo(() => WEEK_PROPS.filter((p) => byId[p.id] && !hasStatLines(p)).length, [byId]);
 
+  const rows = useMemo(() => {
     return WEEK_PROPS
+      .filter(hasStatLines)
       .map((prop) => {
         const p = byId[prop.id];
-        return p ? { ...prop, ...p } : null;
+        if (!p) return null;
+        const { pts, parts, missing } = propsImpliedPoints(prop, p.position);
+        const proj = Object.fromEntries(PROP_SITES.map((s) => [s.key, lookupProjection(sites[s.key], p)]));
+        const vals = Object.values(proj).filter((v) => v != null);
+        const site = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+        return {
+          ...prop, ...p, ...recentAvgPoints(p),
+          implied: pts, parts, missing, proj, site,
+          diff: site != null ? pts - site : null,
+        };
       })
-      .filter(Boolean)
+      .filter((r) => r && (position === "ALL" || r.position === position))
       .sort((a, b) => {
-        let cmp;
-        if (sortBy === "avg") cmp = (a.avg ?? -1) - (b.avg ?? -1);
-        else if (sortBy === "line") cmp = (a.line ?? -1) - (b.line ?? -1);
-        else cmp = (a.tdOdds ?? 9999) - (b.tdOdds ?? 9999);
+        // An incomplete implied total skews its Diff low, so when sorting by
+        // Diff, rows with every line present rank ahead of partial ones.
+        if (sortBy === "diff" && (a.missing.length > 0) !== (b.missing.length > 0)) return a.missing.length > 0 ? 1 : -1;
+        const cmp = (a[sortBy] ?? -999) - (b[sortBy] ?? -999);
         return sortDesc ? -cmp : cmp;
       });
-  }, [players, sortBy, sortDesc]);
+  }, [byId, sites, sortBy, sortDesc, position]);
 
   function headerButton(key, label) {
     const active = sortBy === key;
@@ -987,64 +1362,116 @@ function PropsComparison({ players }) {
     );
   }
 
+  const thMuted = { color: "var(--text-muted)" };
+  const siteStatus = PROP_SITES.map((s) => {
+    const st = sites[s.key];
+    return st.status === "loading" ? `${s.label}: loading…` : st.status === "error" ? `${s.label}: unavailable (${st.error})` : null;
+  }).filter(Boolean);
+
   return (
     <div className="flex flex-col gap-5">
       <header>
-        <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Props vs. Recent Rankings</h2>
+        <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Props vs. Fantasy Projections</h2>
         <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
-          Week {PROPS_WEEK} sportsbook yardage and anytime-touchdown prop lines, next to each player's own recent
-          scoring rank (points per game across Weeks {PLAYED_WEEKS[0]}-{PLAYED_WEEKS[PLAYED_WEEKS.length - 1]},
-          computed live from the real results in Weekly Scores) — a quick read on whether the market's expectation
-          for this week lines up with how a player has actually been producing.
+          Week {PROPS_WEEK} sportsbook lines (yards, receptions, passing TDs, INTs, anytime TD) turned into the PPR
+          points they imply, next to what Sleeper and ESPN project. <b>Diff</b> is props-implied minus the site
+          average: positive means the betting market expects more than the fantasy sites do, negative means less.
         </p>
         <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-          Props last updated {PROPS_UPDATED_ON} from public sportsbook/prop-analysis write-ups — there's no free,
-          CORS-friendly live odds API the way Sleeper's trending endpoint is (player-prop data is commercial,
-          gated behind paid providers), so this is a hand-curated snapshot, not a live feed. Recent Avg/Rank,
-          though, is computed live from <code>WEEKLY_SCORES</code> on every page load.
+          Lines last refreshed {PROPS_UPDATED_ON} from RotoWire's props board (median line across books) — run{" "}
+          <code>node scripts/refresh-props.js</code> to update; books post lines game by game through the week.
+          Sleeper and ESPN projections load live. Scoring: 1 per catch, 0.1 per rushing/receiving yard, 0.04 per
+          passing yard, 4 per passing TD, −2 per INT, 6 per other TD. Each over/under is shifted off its line by how
+          juiced the over is; anytime-TD odds become expected TDs after trimming an estimated 8% hold. Rows missing
+          a line are marked and their Diff greyed out, since the implied total is understated.
         </p>
+        {siteStatus.length > 0 && (
+          <p className="text-xs mt-1" style={{ color: "var(--series-amber)" }}>{siteStatus.join(" · ")}</p>
+        )}
       </header>
 
-      <div className="rounded-lg border overflow-x-auto" style={{ borderColor: "var(--border)", background: "var(--surface-1)" }}>
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr style={{ borderBottom: "1px solid var(--border)" }}>
-              <th className="text-left px-3 py-2 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>Player</th>
-              <th className="px-3 py-2 text-right">{headerButton("avg", "Recent Avg")}</th>
-              <th className="text-right px-2 py-2 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>Rank</th>
-              <th className="text-left px-3 py-2">
-                <button type="button" onClick={() => toggleSort("line")} className="flex items-center gap-1 text-xs font-semibold"
-                  style={{ color: sortBy === "line" ? "var(--text-primary)" : "var(--text-muted)" }}>
-                  Prop (yards line){sortBy === "line" && <span>{sortDesc ? "↓" : "↑"}</span>}
-                </button>
-              </th>
-              <th className="px-3 py-2 text-right">{headerButton("tdOdds", "TD Odds")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.id} className="border-b" style={{ borderColor: "var(--border)" }}>
-                <td className="px-3 py-1.5">
-                  <div className="font-medium" style={{ color: "var(--text-primary)" }}>{r.name}</div>
-                  <div className="text-xs" style={{ color: "var(--text-muted)" }}>{r.position} · {r.team}</div>
-                </td>
-                <td className="px-3 py-1.5 text-right font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>
-                  {r.avg != null ? r.avg.toFixed(1) : "–"}
-                </td>
-                <td className="px-2 py-1.5 text-right tabular-nums" style={{ color: "var(--text-secondary)" }}>
-                  {r.rank != null ? `#${r.rank}` : "–"}
-                </td>
-                <td className="px-3 py-1.5 text-sm" style={{ color: "var(--text-secondary)" }}>
-                  {r.propType ? `${r.propType} ${r.side === "Under" ? "U" : "O"} ${r.line}${r.oddsOver != null ? ` (${fmtOdds(r.oddsOver)})` : ""}` : "–"}
-                </td>
-                <td className="px-3 py-1.5 text-right tabular-nums font-medium" style={{ color: r.tdOdds != null ? "var(--series-blue)" : "var(--text-muted)" }}>
-                  {fmtOdds(r.tdOdds)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex flex-wrap gap-1">
+        {POSITIONS.map((pos) => (
+          <button key={pos} type="button" onClick={() => setPosition(pos)}
+            className="px-3 py-1 rounded-md text-xs font-semibold border"
+            style={{
+              borderColor: "var(--border)",
+              background: position === pos ? "var(--text-primary)" : "var(--surface-1)",
+              color: position === pos ? "var(--surface-1)" : "var(--text-secondary)",
+            }}>
+            {pos}
+          </button>
+        ))}
       </div>
+
+      {rows.length === 0 ? (
+        <div className="rounded-lg border p-8 text-center text-sm" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+          No stat lines in <code>WEEK_PROPS</code> for this filter yet — run <code>node scripts/refresh-props.js</code>{" "}
+          once books have posted this week's lines.
+        </div>
+      ) : (
+        <div className="rounded-lg border overflow-x-auto" style={{ borderColor: "var(--border)", background: "var(--surface-1)" }}>
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                <th className="text-left px-3 py-2 text-xs font-semibold" style={thMuted}>Player</th>
+                <th className="text-left px-3 py-2 text-xs font-semibold" style={thMuted}>Lines</th>
+                <th className="px-3 py-2 text-right">{headerButton("implied", "Props pts")}</th>
+                {PROP_SITES.map((s) => (
+                  <th key={s.key} className="text-right px-2 py-2 text-xs font-semibold" style={thMuted}>{s.label}</th>
+                ))}
+                <th className="px-3 py-2 text-right">{headerButton("diff", "Diff")}</th>
+                <th className="px-3 py-2 text-right">{headerButton("avg", "Recent Avg")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const lines = [
+                  fmtLine("Pass yds", r.passYds), fmtLine("Pass TD", r.passTds), fmtLine("INT", r.ints),
+                  fmtLine("Rush yds", r.rushYds), fmtLine("Rush+rec yds", r.rushRecYds), fmtLine("Rec", r.recs),
+                  fmtLine("Rec yds", r.recYds), r.tdOdds != null ? `Anytime TD ${fmtOdds(r.tdOdds)}` : null,
+                ].filter(Boolean);
+                const diffColor = r.diff == null || r.missing.length > 0 ? "var(--text-muted)"
+                  : r.diff >= 1 ? "var(--series-blue)" : r.diff <= -1 ? "var(--series-red)" : "var(--text-secondary)";
+                return (
+                  <tr key={r.id} className="border-b align-top" style={{ borderColor: "var(--border)" }}>
+                    <td className="px-3 py-1.5">
+                      <div className="font-medium" style={{ color: "var(--text-primary)" }}>{r.name}</div>
+                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>{r.position} · {r.team}</div>
+                    </td>
+                    <td className="px-3 py-1.5 text-xs" style={{ color: "var(--text-secondary)" }}>
+                      {lines.map((l) => <div key={l}>{l}</div>)}
+                      {r.missing.length > 0 && (
+                        <div className="mt-0.5" style={{ color: "var(--series-amber)" }}>No line: {r.missing.join(", ")}</div>
+                      )}
+                    </td>
+                    <td className="px-3 py-1.5 text-right tabular-nums" title={r.parts.join(" · ")}>
+                      <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{r.implied.toFixed(1)}</span>
+                      {r.missing.length > 0 && <span style={{ color: "var(--series-amber)" }}>*</span>}
+                    </td>
+                    {PROP_SITES.map((s) => (
+                      <td key={s.key} className="px-2 py-1.5 text-right tabular-nums" style={{ color: "var(--text-secondary)" }}>
+                        {r.proj[s.key] != null ? r.proj[s.key].toFixed(1) : "–"}
+                      </td>
+                    ))}
+                    <td className="px-3 py-1.5 text-right tabular-nums font-semibold" style={{ color: diffColor }}>
+                      {fmtDiff(r.diff)}
+                    </td>
+                    <td className="px-3 py-1.5 text-right tabular-nums" style={{ color: "var(--text-secondary)" }}>
+                      {r.avg != null ? r.avg.toFixed(1) : "–"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+        * Implied total is missing at least one stat line, so its Diff is greyed out and sorted after complete rows.
+        Hover a Props pts value for its breakdown.
+        {tdOnlyCount > 0 && ` ${tdOnlyCount} more players in the pool only have an anytime-TD price so far (their games' yardage lines aren't posted yet) and are left out until the next refresh.`}
+      </p>
     </div>
   );
 }
@@ -1066,7 +1493,7 @@ function App() {
       <header>
         <h1 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>FF ValueDiff</h1>
         <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
-          Weekly scores, waiver wire targets, and a props-vs-rankings comparison, built on the same player pool.
+          Weekly scores, waiver wire targets, and a props-vs-projections comparison, built on the same player pool.
         </p>
       </header>
 

@@ -3,8 +3,8 @@
 A fantasy football companion covering three tabs on one shared 200-player
 pool: **Weekly Scores** (real results by week, or a full-season grid),
 **Waiver Wire Targets** (live Sleeper trending activity plus a hand-picked
-pickup list), and **Props** (sportsbook yardage/touchdown lines next to each
-player's recent scoring rank).
+pickup list), and **Props** (fantasy points implied by sportsbook lines,
+compared against fantasy sites' projections).
 
 ## Running it
 
@@ -84,33 +84,61 @@ edited by hand — update `WAIVER_TARGETS` as real in-season news (injuries,
 depth-chart moves, snap counts) comes in.
 
 If `WAIVER_TARGETS` is ever emptied out, the page shows an explicit
-"nothing added yet" state rather than a guess. As of this writing it holds
-12 targets, driven by actual results rather than preseason guesses — the
-real Week 3 pickups that Week 1-2's results actually point to (injury
-vacancies, snap-share winners).
+"nothing added yet" state rather than a guess. As of this writing (2026-09-23) it holds
+18 targets, based on actual results and the Week 3 injury report rather
+than preseason guesses: injury vacancies (Collins, Moore, Barkley, Goedert),
+QB changes (Daniels, Dart) and snap-share winners.
 
 ## Props
 
-Sportsbook yardage and anytime-touchdown prop lines for the next unplayed
-week (`WEEK_PROPS` in `index.html`, currently Week 3), next to each player's
-own recent scoring rank and points-per-game — computed live from the real
-results already in `WEEKLY_SCORES`, the same math as Weekly Scores' Season
-Grid AVG column, so it stays in sync automatically as more weeks get added.
-The idea is a quick read on whether the market's expectation for a player
-this week (a short anytime-TD price, a big yardage number) lines up with how
-they've actually been producing, or is out ahead of / behind what the box
-scores say.
+Sportsbook player-prop lines for the current week (`WEEK_PROPS` in
+`index.html`) converted into the PPR fantasy points they imply, next to
+what **Sleeper** and **ESPN** project for the same player. **Diff** is
+props-implied minus the average of the two sites, so a positive number means
+the betting market expects more than the fantasy sites do. There's a position
+filter, and each player's recent points per game (computed live from
+`WEEKLY_SCORES`) sits alongside.
 
-Player-prop odds are commercial sportsbook data gated behind paid odds
-providers — there's no free, CORS-friendly live endpoint for it the way
-Sleeper's trending-add data is — so, same pattern as Waiver Wire Targets'
-hand-picked list, this is a hand-curated snapshot pulled from public
-sportsbook/prop-analysis write-ups (BettorsInsider, Mile High Sports,
-BetMGM's blog, Sharp Football Analysis), not a live feed. Replace
-`WEEK_PROPS` wholesale once the season moves past the week it currently
-covers. Every entry uses a player ID that already exists in `samplePlayers`,
-so no separate ID-mapping layer is needed the way Sleeper's numeric IDs
-required.
+**Where the numbers come from**
+
+- **Lines:** `node scripts/refresh-props.js` pulls every posted line from
+  [RotoWire's props board](https://www.rotowire.com/betting/nfl/player-props.php),
+  which aggregates BetMGM, DraftKings, FanDuel, Caesars and others. RotoWire
+  embeds the whole board as JSON in its page but sends no CORS header, so the
+  browser can't fetch it; the script matches players to `samplePlayers` by
+  name and rewrites `WEEK_PROPS`, `PROPS_WEEK` and `PROPS_UPDATED_ON` in
+  place. For each market it takes the median line across books, priced at
+  BetMGM, DraftKings or FanDuel where available, and the median anytime-TD
+  price. Books post lines game by game from Tuesday to Saturday, so rerun the
+  script closer to kickoff to fill in the games that weren't up yet. Players
+  who only have an anytime-TD price so far are left out of the table, and
+  the page says how many.
+- **Projections:** fetched live on page load from Sleeper's projections API
+  and ESPN's default PPR league endpoint. Both allow cross-origin requests,
+  so no script is needed. They need the page served over http(s) like the
+  Sleeper trending panel; if either fails, the page says so and averages
+  whichever one loaded.
+
+**How the implied points are built** (`propsImpliedPoints` in `index.html`)
+
+- Scoring: 1 per catch, 0.1 per rushing/receiving yard, 0.04 per passing
+  yard, 4 per passing TD, -2 per INT, 6 per other TD. Fumbles have no line.
+- Each yardage/receptions over/under is de-vigged, then shifted off its line
+  by how far the over's no-vig probability sits from 50/50 (normal
+  approximation, rough per-stat standard deviation). A 6.5-catch line priced
+  -154/+116 comes out near 7 expected catches.
+- Passing-TD and INT lines become the Poisson mean that matches the over's
+  price.
+- Anytime-TD odds are one-sided, so they're scaled down by a flat hold
+  estimate (`ATTD_HOLD`) and turned into expected TDs. For QBs that stands
+  in for rushing TDs.
+- RB receiving yards come from the rush+rec yards combo minus the rushing
+  line when there's no separate receiving line.
+
+Rows missing a line their position needs (`PROP_NEEDS`: for example a QB
+with no rushing-yards line, or an RB with no receptions line) list what's
+missing, get an asterisk, and have their Diff greyed out and sorted after the
+complete rows, because the missing stat pushes the implied total low.
 
 ## The shared player pool
 

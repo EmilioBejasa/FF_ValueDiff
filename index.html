@@ -8,6 +8,7 @@
 <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js" crossorigin></script>
+<script src="scripts/lib/sleeper-scores.js"></script>
 <style>
   :root {
     color-scheme: light;
@@ -56,7 +57,8 @@ const { useState, useMemo, useRef, useEffect } = React;
 
 /* ---------------- sample data ---------------- */
 // The shared player pool behind every tab (Weekly Scores, Waiver Wire
-// Targets, Props) — id/name/team/position for the top 200 overall players.
+// Targets, Injured Reserve) — id/name/team/position for the top 200 overall
+// players, plus IR players added so the injury list can show in the grid.
 // Each entry also still carries an `adp` field from this app's original
 // ADP-comparison tool (since removed); nothing reads it anymore, but it's
 // left in place rather than stripped from all 200 rows for no functional
@@ -173,7 +175,7 @@ const samplePlayers = [
   { id: "kincaid", name: "Dalton Kincaid", team: "BUF", position: "TE", adp: { sleeper: 89.4, yahoo: 98.9, espn: 146, fantasypros: 112.7 } },
   { id: "ferguson-jake", name: "Jake Ferguson", team: "DAL", position: "TE", adp: { sleeper: 98.2, yahoo: 115.7, espn: 134, fantasypros: 116.5 } },
   { id: "johnston-q", name: "Quentin Johnston", team: "LAC", position: "WR", adp: { sleeper: 113.9, yahoo: 109.9, espn: 139, fantasypros: 96.4 } },
-  { id: "diggs", name: "Stefon Diggs", team: "FA", position: "WR", adp: { sleeper: 111.3, yahoo: 107.1, espn: 154, fantasypros: 96.6 } },
+  { id: "diggs", name: "Stefon Diggs", team: "WSH", position: "WR", adp: { sleeper: 111.3, yahoo: 107.1, espn: 154, fantasypros: 96.6 } },
   { id: "croskeymerritt", name: "Jacory Croskey-Merritt", team: "WSH", position: "RB", adp: { sleeper: 115.7, yahoo: 110.5, espn: 132, fantasypros: 115 } },
   { id: "concepcion", name: "K.C. Concepcion", team: "CLE", position: "WR", adp: { sleeper: 122.9, yahoo: 127.2, espn: null, fantasypros: 120.4 } },
   { id: "corum", name: "Blake Corum", team: "LAR", position: "RB", adp: { sleeper: 103.8, yahoo: 99.6, espn: 151, fantasypros: 111.8 } },
@@ -186,7 +188,7 @@ const samplePlayers = [
   { id: "mason-jordan", name: "Jordan Mason", team: "MIN", position: "RB", adp: { sleeper: 117.9, yahoo: 115.5, espn: 150, fantasypros: 118.3 } },
   { id: "andrews-mark", name: "Mark Andrews", team: "BAL", position: "TE", adp: { sleeper: 129.2, yahoo: 113.4, espn: 135, fantasypros: 131.7 } },
   { id: "goff", name: "Jared Goff", team: "DET", position: "QB", adp: { sleeper: 133.8, yahoo: 114.5, espn: 171, fantasypros: 107 } },
-  { id: "samuel-deebo", name: "Deebo Samuel", team: "FA", position: "WR", adp: { sleeper: 137.2, yahoo: 127.5, espn: 141, fantasypros: 138.7 } },
+  { id: "samuel-deebo", name: "Deebo Samuel", team: "SF", position: "WR", adp: { sleeper: 137.2, yahoo: 127.5, espn: 141, fantasypros: 138.7 } },
   { id: "doubs", name: "Romeo Doubs", team: "NE", position: "WR", adp: { sleeper: 132.8, yahoo: 131.9, espn: 159, fantasypros: 127.9 } },
   { id: "coker", name: "Jalen Coker", team: "CAR", position: "WR", adp: { sleeper: 144, yahoo: 133.3, espn: 163, fantasypros: 124.6 } },
   { id: "murray-kyler", name: "Kyler Murray", team: "MIN", position: "QB", adp: { sleeper: 159.5, yahoo: 111.8, espn: 165, fantasypros: 113.9 } },
@@ -229,7 +231,7 @@ const samplePlayers = [
   { id: "mitchell-adonai", name: "Adonai Mitchell", team: "NYJ", position: "WR", adp: { sleeper: 234.9, yahoo: 147, espn: 191, fantasypros: 167.3 } },
   { id: "darnold", name: "Sam Darnold", team: "SEA", position: "QB", adp: { sleeper: 175.4, yahoo: 122.8, espn: 280, fantasypros: 140.5 } },
   { id: "johnson-emmett", name: "Emmett Johnson", team: "KC", position: "RB", adp: { sleeper: 209.7, yahoo: 160, espn: null, fantasypros: 189.3 } },
-  { id: "allen-keenan", name: "Keenan Allen", team: "FA", position: "WR", adp: { sleeper: 196.9, yahoo: 125.2, espn: 213, fantasypros: 194.8 } },
+  { id: "allen-keenan", name: "Keenan Allen", team: "IND", position: "WR", adp: { sleeper: 196.9, yahoo: 125.2, espn: 213, fantasypros: 194.8 } },
   { id: "wicks", name: "Dontayvion Wicks", team: "PHI", position: "WR", adp: { sleeper: null, yahoo: 161, espn: 215, fantasypros: 189.4 } },
   { id: "stroud", name: "C.J. Stroud", team: "HOU", position: "QB", adp: { sleeper: 203.8, yahoo: 125.5, espn: 276, fantasypros: 145.5 } },
   { id: "davis-ray", name: "Ray Davis", team: "BUF", position: "RB", adp: { sleeper: 226.8, yahoo: 170, espn: 206, fantasypros: 195.3 } },
@@ -246,7 +248,7 @@ const samplePlayers = [
   { id: "okonkwo", name: "Chig Okonkwo", team: "WSH", position: "TE", adp: { sleeper: 186.7, yahoo: 126.4, espn: 311, fantasypros: 160.8 } },
   { id: "mendoza", name: "Fernando Mendoza", team: "LV", position: "QB", adp: { sleeper: 179.4, yahoo: 119.5, espn: null, fantasypros: 260.3 } },
   { id: "rashod-bateman", name: "Rashod Bateman", team: "BAL", position: "WR", adp: { sleeper: 232.7, yahoo: null, espn: 214, fantasypros: 227.3 } },
-  { id: "allen-cyrus", name: "Cyrus Allen", team: "FA", position: "WR", adp: { sleeper: null, yahoo: 182, espn: null, fantasypros: 228.1 } },
+  { id: "allen-cyrus", name: "Cyrus Allen", team: "KC", position: "WR", adp: { sleeper: null, yahoo: 182, espn: null, fantasypros: 228.1 } },
   { id: "ward-cameron", name: "Cameron Ward", team: "TEN", position: "QB", adp: { sleeper: 212.6, yahoo: 125, espn: 315, fantasypros: 157.2 } },
   { id: "malachi-fields", name: "Malachi Fields", team: "NYG", position: "WR", adp: { sleeper: 222.2, yahoo: null, espn: null, fantasypros: 239.3 } },
   { id: "germie-bernard", name: "Germie Bernard", team: "PIT", position: "WR", adp: { sleeper: 229.8, yahoo: null, espn: null, fantasypros: 232.7 } },
@@ -257,11 +259,21 @@ const samplePlayers = [
   { id: "barner", name: "AJ Barner", team: "SEA", position: "TE", adp: { sleeper: 183.2, yahoo: 126.1, espn: 312, fantasypros: 208.1 } },
   { id: "flournoy", name: "Ryan Flournoy", team: "DAL", position: "WR", adp: { sleeper: 230.7, yahoo: 173, espn: 293, fantasypros: 184.5 } },
   { id: "young-bryce", name: "Bryce Young", team: "CAR", position: "QB", adp: { sleeper: 227.2, yahoo: 121.6, espn: 313, fantasypros: 172.7 } },
-  { id: "boutte", name: "Kayshon Boutte", team: "NE", position: "WR", adp: { sleeper: 231.8, yahoo: 183, espn: 304, fantasypros: 185.6 } },
+  { id: "boutte", name: "Kayshon Boutte", team: "HOU", position: "WR", adp: { sleeper: 231.8, yahoo: 183, espn: 304, fantasypros: 185.6 } },
   { id: "malachi-corley", name: "Malachi Corley", team: "CLE", position: "WR", adp: { sleeper: 242, yahoo: null, espn: null, fantasypros: null } },
-  { id: "black-kaelon", name: "Kaelon Black", team: "FA", position: "RB", adp: { sleeper: null, yahoo: 181, espn: null, fantasypros: 242.7 } },
+  { id: "black-kaelon", name: "Kaelon Black", team: "SF", position: "RB", adp: { sleeper: null, yahoo: 181, espn: null, fantasypros: 242.7 } },
   { id: "jelani-woods", name: "Jelani Woods", team: "NYJ", position: "TE", adp: { sleeper: 243, yahoo: null, espn: null, fantasypros: null } },
   { id: "ross-dwelley", name: "Ross Dwelley", team: "FA", position: "TE", adp: { sleeper: 243, yahoo: null, espn: null, fantasypros: null } },
+  // Added 2026-09-28 so every fantasy-relevant player on IR shows up in Weekly
+  // Scores (see INJURED_RESERVE); they were never in the top-200 ADP list.
+  { id: "conner-james", name: "James Conner", team: "ARI", position: "RB", adp: { sleeper: null, yahoo: null, espn: null, fantasypros: null } },
+  { id: "benson-trey", name: "Trey Benson", team: "ARI", position: "RB", adp: { sleeper: null, yahoo: null, espn: null, fantasypros: null } },
+  { id: "njoku-david", name: "David Njoku", team: "LAC", position: "TE", adp: { sleeper: null, yahoo: null, espn: null, fantasypros: null } },
+  { id: "stowers-eli", name: "Eli Stowers", team: "PHI", position: "TE", adp: { sleeper: null, yahoo: null, espn: null, fantasypros: null } },
+  { id: "tonges-jake", name: "Jake Tonges", team: "SF", position: "TE", adp: { sleeper: null, yahoo: null, espn: null, fantasypros: null } },
+  { id: "kirk-christian", name: "Christian Kirk", team: "SF", position: "WR", adp: { sleeper: null, yahoo: null, espn: null, fantasypros: null } },
+  { id: "pearsall-ricky", name: "Ricky Pearsall", team: "SF", position: "WR", adp: { sleeper: null, yahoo: null, espn: null, fantasypros: null } },
+  { id: "kalinic-nikola", name: "Nikola Kalinic", team: "CHI", position: "TE", adp: { sleeper: null, yahoo: null, espn: null, fantasypros: null } },
 ];
 
 /* ---------------- waiver wire targets ---------------- */
@@ -272,7 +284,7 @@ const samplePlayers = [
 // existed for it. This isn't split by week; it's a single always-current
 // list — replace it wholesale with the latest real targets as the season
 // moves on, rather than piling up a new dated list every week.
-const WAIVER_TARGETS_UPDATED_ON = "2026-09-23";
+const WAIVER_TARGETS_UPDATED_ON = "2026-10-05";
 const WAIVER_PRIORITIES = ["Must Add", "Speculative", "Streamer", "Deep League"];
 const WAIVER_PRIORITY_COLOR = {
   "Must Add": "var(--series-red)",
@@ -280,46 +292,52 @@ const WAIVER_PRIORITY_COLOR = {
   "Streamer": "var(--series-blue)",
   "Deep League": "var(--text-muted)",
 };
-// Current as of the Week 3 injury report (2026-09-23) — real pickups that
-// Week 1-2's results and the latest injury news actually point to (injury
-// vacancies, QB changes, snap-share winners), not preseason speculation.
+// Current as of Week 4's results and injury news (2026-10-05, before Monday
+// night's NO@ATL game): real pickups for Week 5 that Week 1-4 usage, Sleeper's
+// injury designations (Jadarian Price and A.J. Brown to IR; Chase, Barkley,
+// DeVonta Smith, Goedert and Breece Hall out) and Sleeper's most-added list
+// point to. CAR and KC are on bye in Week 5, so none of their players are here.
 const WAIVER_TARGETS = [
-  { id: "rashod-bateman", name: "Rashod Bateman", team: "BAL", position: "WR", priority: "Must Add",
-    note: "Zay Flowers is still nursing a hamstring — Bateman drew 9 targets for 21.8 points in Week 2, and BAL-DAL carries the week's highest total." },
-  { id: "schultz-dalton", name: "Dalton Schultz", team: "HOU", position: "TE", priority: "Must Add",
-    note: "Nico Collins (hamstring) is expected to miss Week 3 — Schultz had 14 targets, 12 catches, and 140 yards without him in Week 2." },
+  { id: "wilson-emanuel", name: "Emanuel Wilson", team: "SEA", position: "RB", priority: "Must Add",
+    note: "Jadarian Price went on IR (chest) with Charbonnet still on PUP — Wilson ran 21 times for 120 total yards and 2 TDs (27.0 points) in Week 4. The most-added player on Sleeper." },
+  { id: "monangai", name: "Kyle Monangai", team: "CHI", position: "RB", priority: "Must Add",
+    note: "30 carries, 150 yards and 2 TDs in Week 4 (28.0 points), double Swift's 15 carries. Listed questionable with a thumb injury, so check his status." },
+  { id: "meyers-dohnte", name: "Dohnte Meyers", team: "CIN", position: "WR", priority: "Must Add",
+    note: "Ja'Marr Chase is out with a concussion — Meyers played 68 of 76 snaps in Week 4 and caught 7 of 9 targets for 82 yards." },
+  { id: "doubs", name: "Romeo Doubs", team: "NE", position: "WR", priority: "Must Add",
+    note: "A.J. Brown went on IR (ankle) — Doubs drew 9 targets and scored twice in Week 4 (23.8 points)." },
+  { id: "gordon-ollie", name: "Ollie Gordon II", team: "MIA", position: "RB", priority: "Must Add",
+    note: "Miami's lead back with Achane on IR — 100 yards and a TD on 9 carries in Week 4, after 17 carries in Week 3." },
+  { id: "wilson-michael", name: "Michael Wilson", team: "ARI", position: "WR", priority: "Must Add",
+    note: "30 targets over the last two weeks (17, then 13), playing nearly every snap." },
+  { id: "allen-braelon", name: "Braelon Allen", team: "NYJ", position: "RB", priority: "Speculative",
+    note: "Breece Hall is out again (quad) — Allen handled 14 carries in Week 4 and is the lead back while Hall's out." },
   { id: "bigsby", name: "Tank Bigsby", team: "PHI", position: "RB", priority: "Speculative",
-    note: "Saquon Barkley is day-to-day with a stinger — Bigsby turned 15 opportunities into 41 yards and a TD after Barkley left Week 2." },
+    note: "Saquon Barkley is out (hamstring) — Bigsby led the backfield with 14 carries in Week 4, though he's questionable himself and split snaps 29-29 with Will Shipley." },
+  { id: "cooper-darius", name: "Darius Cooper", team: "PHI", position: "WR", priority: "Speculative",
+    note: "DeVonta Smith (hamstring) and Dallas Goedert (MCL) are both out — Cooper played 55 of 61 snaps in Week 4 with 7 targets and 2 TDs." },
   { id: "coleman-keon", name: "Keon Coleman", team: "BUF", position: "WR", priority: "Speculative",
-    note: "DJ Moore is day-to-day with a shoulder injury — Coleman had 6 catches for 63 yards on a 25% target share and would step into a bigger role." },
-  { id: "mariota", name: "Marcus Mariota", team: "WSH", position: "QB", priority: "Speculative",
-    note: "Jayden Daniels dislocated his elbow in Week 2 and could be out long-term — Mariota is the confirmed starter, with rushing upside." },
-  { id: "coleman-jonah", name: "Jonah Coleman", team: "DEN", position: "RB", priority: "Speculative",
-    note: "RJ Harvey (hamstring) was inactive and J.K. Dobbins is also nursing a hamstring — Coleman broke out for 14.8 points in Week 2." },
-  { id: "wicks", name: "Dontayvion Wicks", team: "PHI", position: "WR", priority: "Speculative",
-    note: "90% of snaps and an 82% route share in Week 1, then 5 catches for 74 yards in Week 2 — and Dallas Goedert (MCL) is out for multiple weeks." },
-  { id: "tucker-tre", name: "Tre Tucker", team: "LV", position: "WR", priority: "Speculative",
-    note: "5 catches for 119 yards and a 40-yard score in Week 2 after a quiet opener." },
-  { id: "boston-denzel", name: "Denzel Boston", team: "CLE", position: "WR", priority: "Speculative",
-    note: "Top-10 in yards per route run, with a long touchdown in each of his first two games." },
-  { id: "wilson-emanuel", name: "Emanuel Wilson", team: "SEA", position: "RB", priority: "Speculative",
-    note: "21 carries for 92 yards in Week 2 with Jadarian Price (shoulder) banged up and Zach Charbonnet still on PUP." },
+    note: "6 catches, 116 yards and a TD on 7 targets in Week 4, with DJ Moore listed questionable." },
+  { id: "kamara", name: "Alvin Kamara", team: "NO", position: "RB", priority: "Speculative",
+    note: "Travis Etienne is now on IR (hamstring) — Kamara is next up. New Orleans plays Monday night, so check his Week 4 workload." },
+  { id: "higbee", name: "Tyler Higbee", team: "LAR", position: "TE", priority: "Speculative",
+    note: "Colby Parkinson is out and Terrance Ferguson is on IR — Higbee has played 55+ snaps two weeks running with 17 targets in that span." },
+  { id: "wilson-roman", name: "Roman Wilson", team: "PIT", position: "WR", priority: "Speculative",
+    note: "Exactly 6 targets in all four games and a TD in each of the last two, on limited snaps." },
+  { id: "cousins", name: "Kirk Cousins", team: "LV", position: "QB", priority: "Streamer",
+    note: "20+ points three weeks running, including 365 passing yards in Week 4 (23.6 points)." },
+  { id: "stroud", name: "C.J. Stroud", team: "HOU", position: "QB", priority: "Streamer",
+    note: "347 yards and 2 TDs in Week 4 (23.1 points) — 16+ points in three of four games." },
   { id: "shough", name: "Tyler Shough", team: "NO", position: "QB", priority: "Streamer",
-    note: "Averaging 23.5 points per game in Kellen Moore's fast-paced offense — a real streaming option." },
-  { id: "young-bryce", name: "Bryce Young", team: "CAR", position: "QB", priority: "Streamer",
-    note: "113.3 passer rating and 8.9 YPA through two weeks, plus rushing equity — startable if your QB1 is out." },
-  { id: "willis-malik", name: "Malik Willis", team: "MIA", position: "QB", priority: "Streamer",
-    note: "Rushing floor (39 yards and a TD on the ground in Week 1), and his schedule softens after a tough opening stretch." },
-  { id: "freiermuth", name: "Pat Freiermuth", team: "PIT", position: "TE", priority: "Streamer",
-    note: "Route share jumped from 72% to 82% in Week 2, and Cincinnati has allowed the most TE fantasy points in the league." },
-  { id: "johnson-emmett", name: "Emmett Johnson", team: "KC", position: "RB", priority: "Deep League",
-    note: "Clear RB2 behind an injury-prone Kenneth Walker III — stash for handcuff insurance." },
-  { id: "kamara", name: "Alvin Kamara", team: "NO", position: "RB", priority: "Deep League",
-    note: "Still catching passes (5 grabs on 6 targets in Week 1) in the league's fastest offense — a PPR bench piece." },
-  { id: "winston", name: "Jameis Winston", team: "NYG", position: "QB", priority: "Deep League",
-    note: "Jaxson Dart's knee injury is season-ending, so Winston starts — but he went 11-of-27 for 111 yards in relief. Superflex only." },
-  { id: "johnson-juwan", name: "Juwan Johnson", team: "NO", position: "TE", priority: "Deep League",
-    note: "Back-to-back double-digit weeks, catching all 4 targets for 66 yards in Week 2." },
+    note: "20+ points in all three games so far, plays Monday night in Week 4." },
+  { id: "mayer-michael", name: "Michael Mayer", team: "LV", position: "TE", priority: "Streamer",
+    note: "10 targets, 8 catches and 82 yards on 74 of 84 snaps in Week 4 — an every-down tight end." },
+  { id: "strange", name: "Brenton Strange", team: "JAX", position: "TE", priority: "Streamer",
+    note: "7 catches for 95 yards on 8 targets in Week 4 (16.5 points)." },
+  { id: "washington-malik", name: "Malik Washington", team: "MIA", position: "WR", priority: "Deep League",
+    note: "Caleb Douglas is out (ankle) — Washington caught all 5 targets for 70 yards in Week 4, with 28 targets through four games." },
+  { id: "concepcion", name: "K.C. Concepcion", team: "CLE", position: "WR", priority: "Deep League",
+    note: "17 targets over the last two weeks on 59+ snaps each — volume in PPR, even if the efficiency isn't there yet." },
 ];
 
 /* ---------------- weekly scores ---------------- */
@@ -339,104 +357,324 @@ const BYE_WEEKS = {
 const ALL_WEEKS = Array.from({ length: 18 }, (_, i) => i + 1);
 
 // Actual fantasy points scored (PPR), by player id, for weeks that have
-// actually been played — pulled from FantasyPros' Week 1/2 2026 stats tables.
-// A week with no key here hasn't been played yet, so it isn't guessed at;
-// see WeeklyScores below for how that's shown.
-const WEEKLY_SCORES_UPDATED_ON = "2026-09-22";
+// actually been played, from Sleeper's stats API
+// (api.sleeper.com/stats/nfl/2026/<week>, pts_ppr). This is a baked-in
+// snapshot written by scripts/refresh-scores.js: the page replaces it with
+// live data from Sleeper on load (useLiveScores below) and only falls back to
+// it offline. Only players who actually played are listed; players who didn't
+// are in DID_NOT_PLAY below, and a week with no key here hasn't been played
+// yet, so it isn't guessed at.
+const WEEKLY_SCORES_UPDATED_ON = "2026-10-05";
 const WEEKLY_SCORES = {
   1: {
     "achane": 10.6, "adams-d": 5.6, "addison": 0, "allen-braelon": 4, "allen-cyrus": 0,
     "allen-j": 35.7, "allen-keenan": 9.2, "allgeier": 9, "andrews-mark": 8.9, "antonio-williams": 16.4,
     "barkley": 9, "barner": 3.3, "bigsby": 0.3, "black-kaelon": 8, "boston-denzel": 13.9,
-    "boutte": 3.1, "bowers": 0, "brooks-jonathon": 7.2, "brown-aj": 5.6, "brown-chase": 18.8,
-    "burden": 9.5, "burrow": 15.2, "caleb-douglas": 14.4, "calvin-ridley": 0, "charbonnet": 0,
-    "chase": 3.2, "coker": 33.8, "coleman-jonah": 0, "collins-n": 21.2, "concepcion": 7.8,
-    "cook": 9.9, "cooper-omar": 4, "corum": 5.4, "croskeymerritt": 12.6, "daniels-j": 17.7,
-    "darnold": 0.5, "dart": 26.6, "davis-ray": 0.3, "dell": 0, "diggs": 15.5,
-    "dobbins": 0, "doubs": 0, "dowdle": 4.1, "downs": 5.7, "dsmith": 8.3,
-    "egbuka": 11.3, "etienne": 14.8, "evans-m": 16.9, "fannin": 4.1, "ferguson-jake": 2.6,
-    "ferguson-terrance": 0, "flournoy": 4.2, "flowers": 26, "gainwell": 2.8, "germie-bernard": 0,
-    "gibbs": 33.6, "godwin": 8.3, "goedert": 23.7, "goff": 16.4, "golden-matthew": 15.5,
-    "hall-b": 19.8, "hampton": 8.3, "harris-tre": 5, "harrison": 4.3, "harvey-rj": 0,
-    "henderson-t": 0, "henry-d": 35.3, "henry-hunter": 5.6, "herbert": 14.3, "higgins-jayden": 0,
+    "boutte": 3.1, "brooks-jonathon": 7.2, "brown-aj": 5.6, "brown-chase": 18.8, "burden": 9.5,
+    "burrow": 15.2, "caleb-douglas": 14.4, "calvin-ridley": 0, "chase": 3.2, "coker": 33.8,
+    "coleman-jonah": 0, "collins-n": 21.2, "concepcion": 7.8, "cook": 9.9, "cooper-omar": 4,
+    "corum": 5.4, "croskeymerritt": 12.6, "daniels-j": 17.7, "darnold": 0.5, "dart": 26.6,
+    "davis-ray": 0.3, "diggs": 15.5, "dobbins": 3.6, "doubs": 0, "dowdle": 4.1,
+    "downs": 5.7, "dsmith": 8.3, "egbuka": 11.3, "etienne": 14.8, "evans-m": 16.9,
+    "fannin": 4.1, "ferguson-jake": 2.6, "ferguson-terrance": 0, "flournoy": 4.2, "flowers": 26,
+    "gainwell": 2.8, "germie-bernard": 0, "gibbs": 33.6, "godwin": 8.3, "goedert": 23.7,
+    "goff": 16.4, "golden-matthew": 15.5, "hall-b": 19.8, "hampton": 8.3, "harris-tre": 5,
+    "harrison": 4.3, "harvey-rj": 8.1, "henry-d": 35.3, "henry-hunter": 5.6, "herbert": 14.3,
     "higgins-t": 8.9, "hockenson": 13.6, "hubbard": 23.7, "hunter-travis": 2.1, "hurts": 24.7,
-    "irving": 20.3, "jackson-l": 25, "jacobs": 0, "jaylin-noel": 7.3, "jeanty": 32.7,
-    "jefferson": 31.2, "jelani-woods": 0, "jennings-jauan": 0, "jeudy": 4.6, "johnson-emmett": 0,
-    "johnson-juwan": 14.4, "johnston-q": 3.7, "jones-aaron": 10, "jones-daniel": 10, "judkins": 7,
-    "kamara": 0, "kaytron-allen": 1.6, "kelce": 0, "kincaid": 18, "kittle": 3.2,
-    "kraft": 9.5, "kwilliams": 15.5, "lamb": 15.4, "lane-jakobi": 2.1, "laporta": 9.8,
-    "lawrence": 26.1, "lemon": 2.5, "likely": 27.8, "lloyd-marshawn": 3.7, "london": 5.5,
-    "love-j": 13, "love-jordan": 20.5, "loveland": 0, "mahomes": 0, "malachi-corley": 0,
-    "malachi-fields": 4.5, "marks-woody": 5, "mason-jordan": 11.9, "maye": 12.8, "mayfield": 11.6,
-    "mcbride": 24.5, "mccaffrey": 13.8, "mcconkey": 19.2, "mclaurin": 3.4, "mcmillan": 10.5,
-    "mcmillan-jalen": 0, "mendoza": 0, "metcalf": 8, "meyers": 12.2, "mitchell-adonai": 9,
-    "mitchell-keaton": 0.9, "monangai": 20.4, "montgomery": 28.9, "moore-dj": 21, "murray-kyler": 0.6,
-    "nabers": 12.9, "nacua": 12.4, "nailor": 5.7, "nix": 0, "odunze": 7.2,
-    "okonkwo": 3.6, "olave": 28.2, "pacheco": 0, "pickens": 5.8, "pierce-alec": 10.1,
-    "pittman": 8.8, "pitts": 0, "pollard": 4.4, "prescott": 15.4, "price-j": 7.8,
-    "purdy": 22.1, "rashod-bateman": 0, "reed-jayden": 5, "rice": 0, "robinson-b": 31.3,
-    "robinson-brian": 3.1, "robinson-wandale": 8.8, "rodriguez-chris": 2.3, "ross-dwelley": 0, "sadiq": 11.4,
+    "irving": 20.3, "jackson-l": 25, "jaylin-noel": 7.3, "jeanty": 32.7, "jefferson": 31.2,
+    "jelani-woods": 0, "jennings-jauan": 0, "jeudy": 4.6, "johnson-emmett": 8.8, "johnson-juwan": 14.4,
+    "johnston-q": 3.7, "jones-aaron": 10, "jones-daniel": 10, "judkins": 7, "kaytron-allen": 1.6,
+    "kelce": 10.1, "kincaid": 18, "kittle": 3.2, "kraft": 9.5, "kwilliams": 15.5,
+    "lamb": 15.4, "lane-jakobi": 2.1, "laporta": 9.8, "lawrence": 26.1, "lemon": 2.5,
+    "likely": 27.8, "lloyd-marshawn": 3.7, "london": 5.5, "love-j": 13, "love-jordan": 20.5,
+    "loveland": 0, "mahomes": 22.7, "malachi-corley": 0, "malachi-fields": 4.5, "marks-woody": 5,
+    "mason-jordan": 11.9, "maye": 12.8, "mayfield": 11.6, "mcbride": 24.5, "mccaffrey": 13.8,
+    "mcconkey": 19.2, "mclaurin": 3.4, "mcmillan": 10.5, "metcalf": 8, "meyers": 12.2,
+    "mitchell-adonai": 9, "mitchell-keaton": 0.9, "monangai": 20.4, "montgomery": 28.9, "moore-dj": 21,
+    "murray-kyler": 0.6, "nabers": 12.9, "nacua": 12.4, "nailor": 5.7, "nix": 6.4,
+    "njoku-david": 10.8, "odunze": 7.2, "okonkwo": 3.6, "olave": 28.2, "pickens": 5.8,
+    "pierce-alec": 10.1, "pittman": 8.8, "pitts": 0, "pollard": 4.4, "prescott": 15.4,
+    "price-j": 7.8, "purdy": 22.1, "rashod-bateman": 0, "reed-jayden": 5, "rice": 9.9,
+    "robinson-b": 31.3, "robinson-brian": 3.1, "robinson-wandale": 8.8, "rodriguez-chris": 2.3, "sadiq": 11.4,
     "sampson-dylan": 0, "samuel-deebo": 18, "schultz-dalton": 7.5, "shaheed": 1.4, "shakir": 9,
-    "shough": 25.2, "singleton-nicholas": 0, "skattebo": 14.1, "smithnjigba": 26.2, "spears": 4.4,
-    "stafford": 5.1, "stbrown": 28.7, "stevenson-r": 14.5, "strange": 10.3, "stribling": 0,
-    "stroud": 16.5, "sutton": 0, "swift": 32.4, "tate-c": 7.8, "taylor-j": 25.1,
-    "thomas-brian": 7, "tracy": -0.6, "tucker-tre": 4.7, "tuten": 9.8, "tyson-jordyn": 0,
-    "waddle": 0, "walker-k": 0, "ward-cameron": 11.7, "warren-jaylen": 10.3, "warren-tyler": 10.3,
-    "washington-malik": 6.3, "washington-mike": 4.1, "washington-p": 19.3, "watson-c": 32.7, "white-rachaad": 4.7,
-    "wicks": 15.3, "williams-caleb": 37.3, "williams-j": 24.2, "williams-jameson": 8.5, "willis-malik": 17.7,
-    "wilson-g": 13.9, "wilson-michael": 10.6, "worthy": 0, "young-bryce": 32.4, "zachariah-branch": 0,
+    "shough": 25.2, "skattebo": 14.1, "smithnjigba": 26.2, "spears": 4.4, "stafford": 5.1,
+    "stbrown": 28.7, "stevenson-r": 14.5, "strange": 10.3, "stribling": 0, "stroud": 16.5,
+    "sutton": 3.1, "swift": 32.4, "tate-c": 7.8, "taylor-j": 25.1, "thomas-brian": 7,
+    "tonges-jake": 0, "tracy": -0.6, "tucker-tre": 4.7, "tuten": 9.8, "waddle": 1.2,
+    "walker-k": 34.1, "ward-cameron": 11.7, "warren-jaylen": 10.3, "warren-tyler": 10.3, "washington-malik": 6.3,
+    "washington-mike": 4.1, "washington-p": 19.3, "watson-c": 32.7, "white-rachaad": 4.7, "wicks": 15.3,
+    "williams-caleb": 37.3, "williams-j": 24.2, "williams-jameson": 8.5, "willis-malik": 17.7, "wilson-g": 13.9,
+    "wilson-michael": 10.6, "worthy": 4.8, "young-bryce": 32.4, "zachariah-branch": 0,
   },
   2: {
     "achane": 12.3, "adams-d": 39.5, "addison": 4.1, "allen-braelon": 8.5, "allen-cyrus": 0,
     "allen-j": 40.8, "allen-keenan": 1.5, "allgeier": 3.9, "andrews-mark": 10.9, "antonio-williams": 5.4,
     "barkley": 3, "barner": 7.9, "bigsby": 11.8, "black-kaelon": 2.5, "boston-denzel": 20.5,
-    "boutte": 6.7, "bowers": 0, "brooks-jonathon": 2.1, "brown-aj": 0, "brown-chase": 11.2,
-    "burden": 6.2, "burrow": 16.2, "caleb-douglas": 3.9, "calvin-ridley": 5.5, "charbonnet": 0,
-    "chase": 26.5, "coker": 14.6, "coleman-jonah": 14.8, "collins-n": 0, "concepcion": 8.2,
-    "cook": 20.9, "cooper-omar": 0, "corum": 10.2, "croskeymerritt": 5.8, "daniels-j": 14.7,
-    "darnold": 0, "dart": 0.8, "davis-ray": 0, "dell": 0, "diggs": 21.7,
-    "dobbins": 3.6, "doubs": 12.6, "dowdle": 6.4, "downs": 14.2, "dsmith": 27.7,
-    "egbuka": 10.3, "etienne": 7.1, "evans-m": 8.4, "fannin": 10.4, "ferguson-jake": 20.3,
-    "ferguson-terrance": 17.4, "flournoy": 7.3, "flowers": 0, "gainwell": 4.5, "germie-bernard": 7.5,
-    "gibbs": 23.3, "godwin": 8.8, "goedert": 1.4, "goff": 29.8, "golden-matthew": 9.8,
-    "hall-b": 14.2, "hampton": 17.5, "harris-tre": 6.3, "harrison": 0, "harvey-rj": 0,
-    "henderson-t": 13.6, "henry-d": 17.7, "henry-hunter": 7, "herbert": 9.9, "higgins-jayden": 0,
+    "boutte": 6.7, "brooks-jonathon": 2.1, "brown-chase": 11.2, "burden": 6.2, "burrow": 16.2,
+    "caleb-douglas": 3.9, "calvin-ridley": 5.5, "chase": 26.5, "coker": 14.6, "coleman-jonah": 14.8,
+    "concepcion": 8.2, "cook": 20.9, "corum": 10.2, "croskeymerritt": 5.8, "daniels-j": 14.7,
+    "dart": 0.8, "davis-ray": 0, "diggs": 21.7, "dobbins": 3.6, "doubs": 12.6,
+    "dowdle": 6.4, "downs": 14.2, "dsmith": 27.7, "egbuka": 10.3, "etienne": 7.1,
+    "evans-m": 8.4, "fannin": 10.4, "ferguson-jake": 20.3, "ferguson-terrance": 17.4, "flournoy": 7.3,
+    "gainwell": 4.5, "germie-bernard": 7.5, "gibbs": 23.3, "godwin": 8.8, "goedert": 1.4,
+    "goff": 29.8, "golden-matthew": 9.8, "hall-b": 14.2, "hampton": 17.5, "harris-tre": 6.3,
+    "harrison": 0, "henderson-t": 13.6, "henry-d": 17.7, "henry-hunter": 7, "herbert": 9.9,
     "higgins-t": 14.5, "hockenson": 5.9, "hubbard": 14.4, "hunter-travis": 0, "hurts": 18.2,
-    "irving": 13, "jackson-l": 15.8, "jacobs": 0, "jaylin-noel": 5.4, "jeanty": 10.3,
-    "jefferson": 8.5, "jelani-woods": 0, "jennings-jauan": 0, "jeudy": 0, "johnson-emmett": 5.5,
-    "johnson-juwan": 10.6, "johnston-q": 2.4, "jones-aaron": 10.5, "jones-daniel": 12.4, "judkins": 9.8,
-    "kamara": 7.2, "kaytron-allen": 2.4, "kelce": 25.1, "kincaid": 22.5, "kittle": 18,
-    "kraft": 3.5, "kwilliams": 15.7, "lamb": 35.3, "lane-jakobi": 0, "laporta": 17.2,
-    "lawrence": 7.2, "lemon": 1.9, "likely": 8.3, "lloyd-marshawn": 8.6, "london": 8.9,
-    "love-j": 7.5, "love-jordan": 13.8, "loveland": 1.3, "mahomes": 29, "malachi-corley": 0,
-    "malachi-fields": 5, "marks-woody": 8.5, "mason-jordan": 0, "maye": 9, "mayfield": 13.2,
-    "mcbride": 18.1, "mccaffrey": 22.6, "mcconkey": 6.5, "mclaurin": 7, "mcmillan": 15.1,
-    "mcmillan-jalen": 0, "mendoza": 0, "metcalf": 6.7, "meyers": 3.8, "mitchell-adonai": 12.3,
-    "mitchell-keaton": 4.9, "monangai": 7.8, "montgomery": 4.4, "moore-dj": -0.1, "murray-kyler": 0,
-    "nabers": 1.1, "nacua": 0, "nailor": 1.9, "nix": 15.1, "odunze": 7.3,
-    "okonkwo": 0, "olave": 22.6, "pacheco": 0, "pickens": 10, "pierce-alec": 2.1,
-    "pittman": 0, "pitts": 2.5, "pollard": 7.5, "prescott": 29.8, "price-j": 5,
-    "purdy": 28.5, "rashod-bateman": 21.8, "reed-jayden": 1.4, "rice": 12.3, "robinson-b": 11.1,
-    "robinson-brian": 8.7, "robinson-wandale": 1.9, "rodriguez-chris": 1.3, "ross-dwelley": 0, "sadiq": 3.7,
-    "sampson-dylan": 0, "samuel-deebo": 6.5, "schultz-dalton": 26, "shaheed": 6.9, "shakir": 6.8,
-    "shough": 22.4, "singleton-nicholas": 1, "skattebo": 9.5, "smithnjigba": 42.5, "spears": 9,
-    "stafford": 28, "stbrown": 35.2, "stevenson-r": 3.6, "strange": 3.7, "stribling": 0,
-    "stroud": 17, "sutton": 5.5, "swift": 12.9, "tate-c": 5.7, "taylor-j": 29.2,
-    "thomas-brian": 7, "tracy": 0, "tucker-tre": 22.9, "tuten": 14.2, "tyson-jordyn": 0,
-    "waddle": 21.8, "walker-k": 23.8, "ward-cameron": 20, "warren-jaylen": 9.7, "warren-tyler": 14.4,
-    "washington-malik": 8.7, "washington-mike": 0.7, "washington-p": 16.8, "watson-c": 14.1, "white-rachaad": 14.3,
-    "wicks": 12.4, "williams-caleb": 8.7, "williams-j": 8, "williams-jameson": 5.3, "willis-malik": 12.5,
-    "wilson-g": 16.7, "wilson-michael": 3.8, "worthy": 13.5, "young-bryce": 24.1, "zachariah-branch": 3.4,
+    "irving": 13, "jackson-l": 15.8, "jaylin-noel": 5.4, "jeanty": 10.3, "jefferson": 8.5,
+    "jelani-woods": 0, "jeudy": 0, "johnson-emmett": 5.5, "johnson-juwan": 10.6, "johnston-q": 2.4,
+    "jones-aaron": 10.5, "jones-daniel": 12.4, "judkins": 9.8, "kamara": 7.2, "kaytron-allen": 2.4,
+    "kelce": 25.1, "kincaid": 22.5, "kittle": 18, "kraft": 3.5, "kwilliams": 15.7,
+    "lamb": 35.3, "laporta": 17.2, "lawrence": 7.2, "lemon": 1.9, "likely": 8.3,
+    "lloyd-marshawn": 8.6, "london": 8.9, "love-j": 7.5, "love-jordan": 13.8, "loveland": 1.3,
+    "mahomes": 29, "malachi-corley": 0, "malachi-fields": 5, "marks-woody": 8.5, "maye": 9,
+    "mayfield": 13.2, "mcbride": 18.1, "mccaffrey": 22.6, "mcconkey": 6.5, "mclaurin": 7,
+    "mcmillan": 15.1, "mcmillan-jalen": 0, "metcalf": 6.7, "meyers": 3.8, "mitchell-adonai": 12.3,
+    "mitchell-keaton": 4.9, "monangai": 7.8, "montgomery": 4.4, "moore-dj": -0.1, "nabers": 1.1,
+    "nailor": 1.9, "nix": 15.1, "njoku-david": 1.9, "odunze": 7.3, "olave": 22.6,
+    "pickens": 10, "pierce-alec": 2.1, "pitts": 2.5, "pollard": 7.5, "prescott": 29.8,
+    "price-j": 5, "purdy": 28.5, "rashod-bateman": 21.8, "reed-jayden": 1.4, "rice": 12.3,
+    "robinson-b": 11.1, "robinson-brian": 8.7, "robinson-wandale": 1.9, "rodriguez-chris": 1.3, "sadiq": 3.7,
+    "samuel-deebo": 6.5, "schultz-dalton": 26, "shaheed": 6.9, "shakir": 6.8, "shough": 22.4,
+    "singleton-nicholas": 1, "skattebo": 9.5, "smithnjigba": 42.5, "spears": 9, "stafford": 28,
+    "stbrown": 35.2, "stevenson-r": 3.6, "strange": 3.7, "stroud": 17, "sutton": 5.5,
+    "swift": 12.9, "tate-c": 5.7, "taylor-j": 29.2, "thomas-brian": 7, "tracy": 0,
+    "tucker-tre": 22.9, "tuten": 14.2, "waddle": 21.8, "walker-k": 23.8, "ward-cameron": 20,
+    "warren-jaylen": 9.7, "warren-tyler": 14.4, "washington-malik": 8.7, "washington-mike": 0.7, "washington-p": 16.8,
+    "watson-c": 14.1, "white-rachaad": 14.3, "wicks": 12.4, "williams-caleb": 8.7, "williams-j": 8,
+    "williams-jameson": 5.3, "willis-malik": 12.5, "wilson-g": 16.7, "wilson-michael": 3.8, "worthy": 13.5,
+    "young-bryce": 24.1, "zachariah-branch": 3.4,
   },
-  // Weeks 3-18: add entries here once those weeks have actually been played.
+  3: {
+    "achane": 1.7, "adams-d": 20.7, "addison": 20, "allen-braelon": 4.7, "allen-cyrus": 0,
+    "allen-j": 19.5, "allen-keenan": 18.3, "allgeier": 4.9, "andrews-mark": 5.4, "antonio-williams": 3.5,
+    "barkley": 9, "barner": 11.9, "bigsby": -0.5, "black-kaelon": 1.7, "boston-denzel": 8.1,
+    "boutte": 4.1, "bowers": 27.6, "brown-chase": 8.9, "burden": 19.8, "burrow": 22.6,
+    "calvin-ridley": 0, "chase": 24.8, "coker": 3.8, "concepcion": 2.9, "cook": 19.4,
+    "corum": 3.5, "croskeymerritt": 5.3, "darnold": 29.7, "davis-ray": 0, "diggs": 7.3,
+    "dobbins": 6.3, "doubs": 7.9, "downs": 12.7, "dsmith": 12.5, "egbuka": 11.2,
+    "etienne": 9, "evans-m": 12.4, "fannin": 24.1, "ferguson-jake": 9.3, "ferguson-terrance": 1.9,
+    "flournoy": 4.2, "flowers": 15.4, "gainwell": 3, "germie-bernard": 2.4, "gibbs": 41.4,
+    "godwin": 5.5, "goff": 19.4, "golden-matthew": 21, "hall-b": 8.5, "hampton": 5.6,
+    "harris-tre": 13.6, "harrison": 7, "harvey-rj": 10.7, "henderson-t": 3.9, "henry-d": 21.9,
+    "henry-hunter": 1.5, "herbert": 13.7, "higgins-t": 21, "hockenson": 3.1, "hubbard": 15,
+    "hunter-travis": 0, "hurts": 13.6, "irving": 7.8, "jackson-l": 20.4, "jaylin-noel": 4.5,
+    "jeanty": 12.3, "jefferson": 5.2, "jelani-woods": 3, "jennings-jauan": 1.1, "jeudy": 0,
+    "johnson-emmett": 1.7, "johnson-juwan": 23.3, "johnston-q": 7, "jones-aaron": 14.2, "jones-daniel": 8.9,
+    "judkins": 9.9, "kamara": 5.1, "kaytron-allen": 0, "kelce": 13.9, "kincaid": 3.8,
+    "kittle": 26.2, "kraft": 6.6, "kwilliams": 21.8, "lamb": 20.2, "laporta": 7.4,
+    "lawrence": 20.8, "lemon": 5.9, "likely": 3.3, "lloyd-marshawn": 3.8, "london": 28.4,
+    "love-j": 21.9, "love-jordan": 19.5, "loveland": 7.1, "mahomes": 16.9, "malachi-corley": -2,
+    "malachi-fields": 3.9, "marks-woody": 9.1, "maye": 5.8, "mayfield": 12.3, "mcbride": 16.5,
+    "mccaffrey": 21.6, "mcconkey": 10.6, "mclaurin": 19.7, "mcmillan": 3.7, "mcmillan-jalen": 0,
+    "metcalf": 12.1, "meyers": 19.4, "mitchell-keaton": 13.7, "monangai": 3.1, "montgomery": 6.8,
+    "moore-dj": 12.7, "murray-kyler": 11.4, "nabers": 7.6, "nailor": 2.6, "nix": 25.1,
+    "odunze": 7.4, "olave": 19.7, "pickens": 15.2, "pittman": 3.6, "pitts": 1.5,
+    "pollard": 13.6, "prescott": 18.9, "price-j": 1.2, "purdy": 31.3, "rashod-bateman": 5.7,
+    "rice": 15.8, "robinson-b": 35.3, "robinson-brian": 11, "robinson-wandale": 18.7, "rodriguez-chris": 9.7,
+    "sadiq": 23.5, "samuel-deebo": 15.4, "schultz-dalton": 6, "shaheed": 3.4, "shakir": 1.6,
+    "shough": 24.8, "singleton-nicholas": 0, "skattebo": 13, "smithnjigba": 35.4, "spears": 0.5,
+    "stafford": 22.9, "stbrown": 11.9, "stevenson-r": 6.8, "strange": 6.2, "stroud": 11.7,
+    "sutton": 7.6, "swift": 10.8, "tate-c": 11.8, "taylor-j": 9.2, "thomas-brian": 1.8,
+    "tracy": 0.3, "tucker-tre": 8.3, "tuten": 17, "waddle": 6.4, "walker-k": 21.3,
+    "ward-cameron": 10.4, "warren-jaylen": 20.6, "warren-tyler": 14.7, "washington-malik": 11.1, "washington-mike": 11.4,
+    "washington-p": 13, "watson-c": 22.6, "white-rachaad": 11.1, "wicks": 5.2, "williams-j": 18.3,
+    "williams-jameson": 8.9, "willis-malik": 11, "wilson-g": 26.7, "wilson-michael": 25.9, "worthy": 4,
+    "young-bryce": 14.6, "zachariah-branch": 1.7,
+  },
+  4: {
+    "adams-d": 7.2, "addison": 9.1, "allen-braelon": 8.7, "allen-cyrus": 0, "allen-j": 19.5,
+    "allgeier": 12.9, "andrews-mark": 13.7, "antonio-williams": 5.1, "barkley": 2, "barner": 2.2,
+    "bigsby": 5.5, "black-kaelon": 1.3, "boston-denzel": 12.9, "boutte": 6.6, "bowers": 20.6,
+    "brown-chase": 19.1, "burden": 11.4, "burrow": 25.7, "calvin-ridley": 2.3, "chase": 5.7,
+    "collins-n": 30.8, "concepcion": 11.4, "cook": 16.3, "corum": 3.1, "croskeymerritt": 7,
+    "darnold": 14.3, "davis-ray": 1.7, "diggs": 8.5, "dobbins": 7.2, "doubs": 23.8,
+    "downs": 4.6, "egbuka": 3.3, "evans-m": 12.6, "fannin": 11.7, "ferguson-jake": 4.1,
+    "flournoy": 7.7, "flowers": 25.8, "gainwell": 10.7, "germie-bernard": 3.1, "gibbs": 17.7,
+    "godwin": 9.1, "goff": 20.5, "golden-matthew": 11.7, "hampton": 13.3, "harris-tre": 9,
+    "harrison": 8.2, "harvey-rj": 19.3, "henderson-t": 4.2, "henry-d": 15.9, "henry-hunter": 11.2,
+    "herbert": 11.6, "higgins-t": 26.7, "hockenson": 24.9, "hubbard": 25.9, "hunter-travis": 0,
+    "hurts": 13.5, "irving": 6.1, "jackson-l": 18.9, "jaylin-noel": 11.9, "jeanty": 18.6,
+    "jelani-woods": 2.1, "jennings-jauan": 1.8, "jeudy": 6.6, "johnson-emmett": 2, "johnston-q": 5,
+    "jones-aaron": 16.8, "jones-daniel": 8.9, "judkins": 21.6, "kaytron-allen": 0.1, "kelce": 3.5,
+    "kincaid": 1.7, "kittle": 17, "kraft": 16.5, "kwilliams": 36.7, "lamb": 41.3,
+    "laporta": 22.4, "lawrence": 13.1, "lemon": 5.7, "likely": 13.6, "lloyd-marshawn": 9.9,
+    "love-j": 6.5, "love-jordan": 14.1, "loveland": 11.7, "mahomes": 17, "malachi-corley": 0,
+    "malachi-fields": 13.2, "marks-woody": 8.2, "maye": 27.2, "mcbride": 10.1, "mccaffrey": 16,
+    "mcconkey": 0, "mcmillan": 45.2, "metcalf": 16.5, "meyers": 6.3, "mitchell-keaton": 11.3,
+    "monangai": 28, "montgomery": 4.3, "moore-dj": 2.7, "murray-kyler": 11.5, "nabers": 23.2,
+    "nacua": 27.7, "nailor": 0, "nix": 13.6, "odunze": 15.4, "okonkwo": 2.5,
+    "pickens": 9.5, "pittman": 3.5, "pollard": 13, "prescott": 18.1, "purdy": 19.6,
+    "rashod-bateman": 6.6, "rice": 0, "robinson-wandale": 11, "rodriguez-chris": 9.5, "sadiq": 0,
+    "samuel-deebo": 18, "schultz-dalton": 2.9, "shaheed": 12.3, "shakir": 13.2, "singleton-nicholas": 0.2,
+    "skattebo": 7.6, "smithnjigba": 12.6, "spears": 1.6, "stafford": 11.7, "stbrown": 15.5,
+    "stevenson-r": 18.4, "strange": 16.5, "stroud": 23.1, "sutton": 1.4, "swift": 7.4,
+    "tate-c": 21.5, "taylor-j": 22.7, "thomas-brian": 9.7, "tracy": -0.1, "tucker-tre": 8.4,
+    "tuten": 11.1, "waddle": 14.5, "walker-k": 30.9, "ward-cameron": 16.6, "warren-jaylen": 15.6,
+    "warren-tyler": 9.1, "washington-malik": 12, "washington-mike": 2.7, "washington-p": 2, "watson-c": 7.7,
+    "wicks": 4.8, "williams-j": 31.3, "williams-jameson": 16.2, "willis-malik": 2.5, "wilson-g": 5.7,
+    "wilson-michael": 16.5, "worthy": 11, "young-bryce": 21.5,
+  },
 };
 
-// Only weeks with a real entry above get a "By Week" tab — no point
-// offering Week 3 through Week 18 as choices when none of them have real
+// Players whose team played that week but who didn't take a snap (inactive,
+// injured, or not on a roster). Shown as "OUT", or "IR" when the week falls
+// inside an INJURED_RESERVE stint, rather than as 0 points.
+const DID_NOT_PLAY = {
+  1: [
+    "benson-trey", "bowers", "charbonnet", "conner-james", "dell",
+    "henderson-t", "higgins-jayden", "jacobs", "kalinic-nikola", "kamara",
+    "kirk-christian", "mcmillan-jalen", "mendoza", "pacheco", "pearsall-ricky",
+    "ross-dwelley", "singleton-nicholas", "stowers-eli", "tyson-jordyn",
+  ],
+  2: [
+    "benson-trey", "bowers", "brown-aj", "charbonnet", "collins-n",
+    "conner-james", "cooper-omar", "darnold", "dell", "flowers",
+    "harvey-rj", "higgins-jayden", "jacobs", "jennings-jauan", "kalinic-nikola",
+    "kirk-christian", "lane-jakobi", "mason-jordan", "mendoza", "murray-kyler",
+    "nacua", "okonkwo", "pacheco", "pearsall-ricky", "pittman",
+    "ross-dwelley", "sampson-dylan", "stowers-eli", "stribling", "tonges-jake",
+    "tyson-jordyn",
+  ],
+  3: [
+    "benson-trey", "brooks-jonathon", "brown-aj", "caleb-douglas", "charbonnet",
+    "coleman-jonah", "collins-n", "conner-james", "cooper-omar", "daniels-j",
+    "dart", "dell", "dowdle", "goedert", "higgins-jayden",
+    "jacobs", "kalinic-nikola", "kirk-christian", "lane-jakobi", "mason-jordan",
+    "mendoza", "mitchell-adonai", "nacua", "njoku-david", "okonkwo",
+    "pacheco", "pearsall-ricky", "pierce-alec", "reed-jayden", "ross-dwelley",
+    "sampson-dylan", "stowers-eli", "stribling", "tonges-jake", "tyson-jordyn",
+    "williams-caleb",
+  ],
+  4: [
+    "achane", "allen-keenan", "benson-trey", "brooks-jonathon", "brown-aj",
+    "caleb-douglas", "charbonnet", "coker", "coleman-jonah", "conner-james",
+    "cooper-omar", "daniels-j", "dart", "dell", "dowdle",
+    "dsmith", "ferguson-terrance", "goedert", "hall-b", "higgins-jayden",
+    "jacobs", "jefferson", "kalinic-nikola", "kirk-christian", "lane-jakobi",
+    "mason-jordan", "mayfield", "mclaurin", "mcmillan-jalen", "mendoza",
+    "mitchell-adonai", "njoku-david", "pacheco", "pearsall-ricky", "pierce-alec",
+    "price-j", "reed-jayden", "ross-dwelley", "sampson-dylan", "stowers-eli",
+    "stribling", "tonges-jake", "white-rachaad", "williams-caleb",
+  ],
+};
+
+// Players on injured reserve (or reserve/PUP) as of 2026-09-28, plus the ones
+// whose seasons are over, from Sleeper's injury designations and team news.
+// Both lists carry a four-game minimum, so the grid shows "IR" from
+// `sinceWeek` through the earliest week they're allowed back (see irReturnWeek),
+// or through Week 18 when `seasonEnding` is set. `sinceWeek` is the first game
+// of their current absence — 1 for players who started the season there.
+const INJURED_RESERVE_UPDATED_ON = "2026-09-28";
+const INJURED_RESERVE = [
+  { id: "achane", list: "IR", injury: "Torn ACL", sinceWeek: 4, seasonEnding: true },
+  { id: "dart", list: "IR", injury: "Knee (MCL, PCL, meniscus surgery)", sinceWeek: 3, seasonEnding: true },
+  { id: "higgins-jayden", list: "IR", injury: "Torn ACL", sinceWeek: 1, seasonEnding: true },
+  { id: "brown-aj", list: "IR", injury: "Ankle sprain", sinceWeek: 2 },
+  { id: "tyson-jordyn", list: "IR", injury: "Hamstring", sinceWeek: 1 },
+  { id: "brooks-jonathon", list: "IR", injury: "Abdomen (surgery)", sinceWeek: 3 },
+  { id: "conner-james", list: "IR", injury: "Foot", sinceWeek: 1 },
+  { id: "pierce-alec", list: "IR", injury: "Heel", sinceWeek: 3 },
+  { id: "mason-jordan", list: "IR", injury: "Thumb (surgery)", sinceWeek: 2 },
+  { id: "charbonnet", list: "PUP", injury: "ACL recovery", sinceWeek: 1 },
+  { id: "stribling", list: "IR", injury: "Ankle (surgery)", sinceWeek: 2 },
+  { id: "benson-trey", list: "IR", injury: "Knee", sinceWeek: 1 },
+  { id: "coleman-jonah", list: "IR", injury: "Ankle sprain", sinceWeek: 3 },
+  { id: "sampson-dylan", list: "IR", injury: "Knee", sinceWeek: 2 },
+  { id: "njoku-david", list: "IR", injury: "Lower leg", sinceWeek: 3 },
+  { id: "stowers-eli", list: "IR", injury: "Hamstring", sinceWeek: 1 },
+  { id: "lane-jakobi", list: "IR", injury: "Wrist (surgery)", sinceWeek: 2 },
+  { id: "pacheco", list: "IR", injury: "Back", sinceWeek: 1 },
+  { id: "cooper-omar", list: "IR", injury: "Ankle sprain", sinceWeek: 2 },
+  { id: "tonges-jake", list: "IR", injury: "Knee", sinceWeek: 2 },
+  { id: "dell", list: "IR", injury: "ACL/MCL recovery", sinceWeek: 1 },
+  { id: "kirk-christian", list: "IR", injury: "Calf", sinceWeek: 1 },
+  { id: "pearsall-ricky", list: "IR", injury: "Knee (PCL)", sinceWeek: 1 },
+  { id: "kalinic-nikola", list: "IR", injury: "Knee", sinceWeek: 1 },
+];
+const IR_MIN_GAMES = 4;
+const INJURED_BY_ID = Object.fromEntries(INJURED_RESERVE.map((r) => [r.id, r]));
+
+// Earliest game a player can come back for: the first team game after the
+// four-game minimum from `sinceWeek` (a bye week doesn't count as a game, and
+// isn't a return week either), or null if season-ending.
+function irReturnWeek(entry, team) {
+  if (entry.seasonEnding) return null;
+  let games = 0;
+  for (let w = entry.sinceWeek; w <= 18; w++) {
+    if (BYE_WEEKS[team] === w) continue;
+    if (games === IR_MIN_GAMES) return w;
+    games++;
+  }
+  return null;
+}
+
+// Only weeks with real scores get a "By Week" tab — no point
+// offering later weeks as choices when none of them have real
 // scores yet. The season grid still shows all 18 weeks as columns (blank
 // until played), since that's meant to show the whole season's shape at a
 // glance.
-const PLAYED_WEEKS = Object.keys(WEEKLY_SCORES).map(Number).sort((a, b) => a - b);
+const playedWeeks = (scores) => Object.keys(scores).map(Number).sort((a, b) => a - b);
+
+/* ---------------- weekly scores (live) ---------------- */
+// Starts from the baked-in WEEKLY_SCORES/DID_NOT_PLAY snapshot, then pulls
+// every week played so far straight from Sleeper (shared logic in
+// scripts/lib/sleeper-scores.js) and swaps each week in as it arrives. Each
+// week's trimmed result is cached in localStorage: finished weeks for a few
+// hours (stat corrections still trickle in), the current week for a few
+// minutes so in-progress games stay fresh.
+const LIVE_SCORES_CACHE_KEY = "ff-valuediff:live-scores-v2";
+const LIVE_SCORES_TTL_MS = { done: 6 * 60 * 60 * 1000, current: 5 * 60 * 1000 };
+
+function useLiveScores(players) {
+  const [data, setData] = useState({
+    scores: WEEKLY_SCORES, dnp: DID_NOT_PLAY, teamsPlayed: {},
+    status: "loading", updatedOn: WEEKLY_SCORES_UPDATED_ON,
+  });
+
+  useEffect(() => {
+    if (!window.SleeperScores) {
+      setData((d) => ({ ...d, status: "error", message: "scripts/lib/sleeper-scores.js didn't load" }));
+      return;
+    }
+    const { fetchState, fetchWeek, weeksToFetch } = window.SleeperScores;
+    let cancelled = false;
+    let cache = {};
+    try { cache = JSON.parse(localStorage.getItem(LIVE_SCORES_CACHE_KEY) || "{}"); } catch (e) {}
+
+    const apply = (week, wk) => setData((d) => {
+      if (wk.teamsPlayed.length === 0) return d; // not started yet
+      return {
+        ...d,
+        scores: { ...d.scores, [week]: wk.scores },
+        dnp: { ...d.dnp, [week]: wk.dnp },
+        teamsPlayed: { ...d.teamsPlayed, [week]: wk.teamsPlayed },
+      };
+    });
+
+    (async () => {
+      const state = await fetchState();
+      const season = state.season;
+      if (cache.season !== season) cache = { season, weeks: {} };
+
+      await Promise.all(weeksToFetch(state).map(async (week) => {
+        const ttl = week < state.week ? LIVE_SCORES_TTL_MS.done : LIVE_SCORES_TTL_MS.current;
+        const hit = cache.weeks[week];
+        const wk = hit && Date.now() - hit.fetchedAt < ttl ? hit : { ...(await fetchWeek(season, week, players)), fetchedAt: Date.now() };
+        cache.weeks[week] = wk;
+        if (!cancelled) apply(week, wk);
+      }));
+
+      try { localStorage.setItem(LIVE_SCORES_CACHE_KEY, JSON.stringify(cache)); } catch (e) {}
+      if (!cancelled) setData((d) => ({ ...d, status: "live", updatedOn: new Date().toLocaleString() }));
+    })().catch((err) => {
+      if (!cancelled) setData((d) => ({ ...d, status: "error", message: err.message }));
+    });
+
+    return () => { cancelled = true; };
+  }, [players]);
+
+  return data;
+}
 
 /* ---------------- sleeper trending (live) ---------------- */
 // Unlike the hand-curated list above, this part IS live: Sleeper's API sends
@@ -446,11 +684,13 @@ const PLAYED_WEEKS = Object.keys(WEEKLY_SCORES).map(Number).sort((a, b) => a - b
 //   Sleeper leagues right now, and how many times in the lookback window.
 // - /players/nfl — every player Sleeper knows about, to turn those IDs into
 //   names/teams/positions. Sleeper's own docs say this second one is a
-//   large (~5MB+) payload meant to be cached and refreshed at most once a
-//   day, not called per-request — so it's trimmed to skill positions
-//   (QB/RB/WR/TE) and cached in localStorage before being reused.
-const SLEEPER_PLAYERS_CACHE_KEY = "ff-valuediff:sleeper-players-cache";
-const SLEEPER_PLAYERS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+//   large (~5MB+) payload meant to be cached, not called per-request — so
+//   it's trimmed to skill positions (QB/RB/WR/TE) and cached in localStorage
+//   before being reused. It also carries injury designations, which feed the
+//   live injury report on the Injuries tab and change daily during the week,
+//   so the cache is kept for 6 hours rather than a full day.
+const SLEEPER_PLAYERS_CACHE_KEY = "ff-valuediff:sleeper-players-cache-v2";
+const SLEEPER_PLAYERS_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const SLEEPER_TRENDING_LOOKBACK_HOURS = 24;
 const SLEEPER_TRENDING_LIMIT = 15;
 const SKILL_POSITIONS = ["QB", "RB", "WR", "TE"];
@@ -468,7 +708,10 @@ async function fetchSleeperPlayerMap() {
   for (const id in all) {
     const p = all[id];
     if (p && SKILL_POSITIONS.includes(p.position) && p.team) {
-      trimmed[id] = { name: p.full_name, position: p.position, team: p.team, status: p.injury_status || null };
+      trimmed[id] = {
+        name: p.full_name, position: p.position, team: p.team, status: p.injury_status || null,
+        injury: p.injury_body_part || null, notes: p.injury_notes || null,
+      };
     }
   }
   try {
@@ -636,15 +879,28 @@ function WaiverTargets() {
 // each week's bye list is known for the whole season in advance, even before
 // that week's games have happened.
 // Per-cell state for one player in one week of the season grid: a real
-// score, that team's real bye week, or a week that hasn't been played yet —
-// each renders differently (number / "BYE" / blank) rather than collapsing
+// score, that team's real bye week, a week inside an IR stint, a played week
+// they sat out, or a week that hasn't been played yet — each renders
+// differently (number / "BYE" / "IR" / "OUT" / blank) rather than collapsing
 // "no number" into one meaning.
-function weekCell(player, w) {
-  if (BYE_WEEKS[player.team] === w) return { type: "bye" };
-  const wk = WEEKLY_SCORES[w];
-  if (!wk || wk[player.id] === undefined) return { type: "blank" };
-  return { type: "score", value: wk[player.id] };
+function isOnIr(player, w) {
+  const entry = INJURED_BY_ID[player.id];
+  if (!entry || w < entry.sinceWeek) return false;
+  const back = irReturnWeek(entry, player.team);
+  return back === null || w < back;
 }
+
+function weekCell(player, w, data) {
+  if (BYE_WEEKS[player.team] === w) return { type: "bye" };
+  const wk = data.scores[w];
+  if (wk && wk[player.id] !== undefined) return { type: "score", value: wk[player.id] };
+  if (isOnIr(player, w)) return { type: "ir" };
+  if ((data.dnp[w] || []).includes(player.id)) return { type: "out" };
+  return { type: "blank" };
+}
+
+const CELL_LABEL = { bye: "BYE", ir: "IR", out: "OUT", blank: "–" };
+const CELL_COLOR = { ir: "var(--series-red)", out: "var(--series-amber)" };
 
 // Modeled on FantasyPros' own "Weekly Fantasy Football Leaders" report
 // (RK / Player / POS / GP / Wk1…Wk18 / AVG / TTL, sortable by AVG or TTL) —
@@ -659,14 +915,14 @@ function SortHeader({ label, active, onClick }) {
   );
 }
 
-function SeasonGrid({ players, positionFilter }) {
+function SeasonGrid({ players, positionFilter, data }) {
   const [sortBy, setSortBy] = useState("ttl");
 
   const rows = useMemo(() => {
     const withTotals = players
       .filter((p) => positionFilter === "ALL" || p.position === positionFilter)
       .map((p) => {
-        const cells = ALL_WEEKS.map((w) => weekCell(p, w));
+        const cells = ALL_WEEKS.map((w) => weekCell(p, w, data));
         const gp = cells.filter((c) => c.type === "score").length;
         const ttl = cells.reduce((sum, c) => sum + (c.type === "score" ? c.value : 0), 0);
         const avg = gp > 0 ? ttl / gp : null;
@@ -676,7 +932,7 @@ function SeasonGrid({ players, positionFilter }) {
       if (sortBy === "avg") return (b.avg ?? -1) - (a.avg ?? -1);
       return b.ttl - a.ttl;
     });
-  }, [players, positionFilter, sortBy]);
+  }, [players, positionFilter, sortBy, data]);
 
   return (
     <div className="rounded-lg border overflow-auto" style={{ borderColor: "var(--border)", background: "var(--surface-1)", maxHeight: "75vh" }}>
@@ -716,8 +972,12 @@ function SeasonGrid({ players, positionFilter }) {
                 <td className="px-2 py-1.5 text-right tabular-nums" style={{ color: "var(--text-secondary)" }}>{p.gp}</td>
                 {p.cells.map((c, wi) => (
                   <td key={wi} className="px-2 py-1.5 text-right tabular-nums"
-                    style={{ color: c.type === "score" ? "var(--text-primary)" : "var(--text-muted)" }}>
-                    {c.type === "score" ? c.value.toFixed(1) : c.type === "bye" ? "BYE" : "–"}
+                    style={{
+                      color: c.type === "score" ? "var(--text-primary)" : (CELL_COLOR[c.type] || "var(--text-muted)"),
+                      fontWeight: CELL_COLOR[c.type] ? 600 : 400,
+                      fontSize: c.type === "score" ? undefined : "0.75rem",
+                    }}>
+                    {c.type === "score" ? c.value.toFixed(1) : CELL_LABEL[c.type]}
                   </td>
                 ))}
                 <td className="px-3 py-1.5 text-right tabular-nums" style={{ color: sortBy === "ttl" ? "var(--text-primary)" : "var(--text-secondary)", fontWeight: sortBy === "ttl" ? 600 : 400 }}>
@@ -745,12 +1005,18 @@ const WEEKLY_VIEWS = [
 // picking waivers/streamers for first, the full unfiltered view last).
 const POSITIONS = ["RB", "WR", "QB", "TE", "ALL"];
 
-function WeeklyScores({ players }) {
+function WeeklyScores({ players, data }) {
   const [view, setView] = useState("byWeek");
-  const [week, setWeek] = useState(1);
+  // Open on the most recent week with results.
+  const weeks = playedWeeks(data.scores);
+  const latestWeek = weeks[weeks.length - 1] ?? 1;
+  const [pickedWeek, setWeek] = useState(null);
+  // Follow the latest week (it can change once live data arrives) until a
+  // week is picked by hand.
+  const week = pickedWeek ?? latestWeek;
   const [positionFilter, setPositionFilter] = useState("RB");
 
-  const scores = WEEKLY_SCORES[week];
+  const scores = data.scores[week];
   const byeTeams = useMemo(
     () => Object.keys(BYE_WEEKS).filter((team) => BYE_WEEKS[team] === week).sort(),
     [week]
@@ -761,15 +1027,24 @@ function WeeklyScores({ players }) {
     return players
       .filter((p) => positionFilter === "ALL" || p.position === positionFilter)
       .filter((p) => !byeTeams.includes(p.team))
-      .map((p) => ({ ...p, points: scores[p.id] ?? null }))
-      .filter((p) => p.points !== null)
-      .sort((a, b) => b.points - a.points);
-  }, [players, scores, positionFilter, byeTeams]);
+      .map((p) => ({ ...p, cell: weekCell(p, week, data) }))
+      .filter((p) => ["score", "ir", "out"].includes(p.cell.type))
+      // Scorers first by points, then players who sat out (IR before OUT).
+      .sort((a, b) => {
+        const rank = (c) => (c.type === "score" ? 0 : c.type === "ir" ? 1 : 2);
+        return rank(a.cell) - rank(b.cell) || (b.cell.value ?? 0) - (a.cell.value ?? 0) || a.name.localeCompare(b.name);
+      });
+  }, [players, scores, week, positionFilter, byeTeams, data]);
 
   const onBye = useMemo(
     () => players.filter((p) => byeTeams.includes(p.team)),
     [players, byeTeams]
   );
+
+  // Teams with a game this week that hasn't been played yet (live data only).
+  const yetToPlay = data.teamsPlayed[week]
+    ? Object.keys(BYE_WEEKS).filter((t) => !byeTeams.includes(t) && !data.teamsPlayed[week].includes(t)).sort()
+    : [];
 
   return (
     <div className="flex flex-col gap-5">
@@ -780,11 +1055,14 @@ function WeeklyScores({ players }) {
           Week 1-18 season grid with a running total.
         </p>
         <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-          Real Weeks 1-2 results as of {WEEKLY_SCORES_UPDATED_ON} (FantasyPros' Week 1/2 2026 stats tables). Weeks
-          3-18 haven't been played yet, so nothing fabricated is shown for them — only <code>WEEKLY_SCORES</code>{" "}
-          entries that actually exist are rendered as results; add a week's key in <code>index.html</code> once
-          it's actually been played. Bye weeks are the real 2026 schedule and show up regardless of whether
-          that week's scores are in yet — "BYE" in the grid, or the bye list below in the by-week view.
+          {data.status === "live"
+            ? <>Live from Sleeper's stats API (updated {data.updatedOn}), refreshed every time the page loads.</>
+            : data.status === "loading"
+              ? <>Loading live results from Sleeper… showing the saved {data.updatedOn} snapshot until then.</>
+              : <>Couldn't reach Sleeper ({data.message}), so this is the saved {data.updatedOn} snapshot.</>}{" "}
+          Weeks that haven't been played show nothing except byes and IR stints. A player who didn't play shows <strong>OUT</strong> instead of 0,
+          or <strong>IR</strong> for weeks on injured reserve or PUP. IR runs through the earliest week the player can
+          return (four games minimum), or the rest of the season for season-ending injuries.
         </p>
       </header>
 
@@ -818,17 +1096,17 @@ function WeeklyScores({ players }) {
       </div>
 
       {view === "grid" ? (
-        <SeasonGrid players={players} positionFilter={positionFilter} />
+        <SeasonGrid players={players} positionFilter={positionFilter} data={data} />
       ) : (
         <>
           <div className="flex items-center gap-1 flex-wrap">
-            {PLAYED_WEEKS.map((w) => (
+            {weeks.map((w) => (
               <button key={w} type="button" onClick={() => setWeek(w)}
                 className="rounded-full px-3 py-1 text-xs font-medium border"
                 style={{
                   borderColor: "var(--border)",
                   background: week === w ? "var(--series-blue)" : "transparent",
-                  color: week === w ? "#ffffff" : (WEEKLY_SCORES[w] ? "var(--text-secondary)" : "var(--text-muted)"),
+                  color: week === w ? "#ffffff" : "var(--text-secondary)",
                 }}>
                 Wk {w}
               </button>
@@ -841,6 +1119,13 @@ function WeeklyScores({ players }) {
               <span style={{ color: "var(--text-muted)" }}>none — every team plays this week.</span>
             ) : (
               <span style={{ color: "var(--text-secondary)" }}>{byeTeams.join(", ")}</span>
+            )}
+            {yetToPlay.length > 0 && (
+              <div className="mt-1">
+                <span className="font-medium" style={{ color: "var(--text-primary)" }}>Still to play: </span>
+                <span style={{ color: "var(--text-secondary)" }}>{yetToPlay.join(", ")}</span>
+                <span style={{ color: "var(--text-muted)" }}> — their players are left blank until the game's in.</span>
+              </div>
             )}
           </div>
 
@@ -864,12 +1149,13 @@ function WeeklyScores({ players }) {
                 <tbody>
                   {ranked.map((p, i) => (
                     <tr key={p.id} className="border-b" style={{ borderColor: "var(--border)" }}>
-                      <td className="px-3 py-2 text-right tabular-nums" style={{ color: "var(--text-muted)" }}>{i + 1}</td>
+                      <td className="px-3 py-2 text-right tabular-nums" style={{ color: "var(--text-muted)" }}>{p.cell.type === "score" ? i + 1 : ""}</td>
                       <td className="px-3 py-2 font-medium" style={{ color: "var(--text-primary)" }}>{p.name}</td>
                       <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>{p.position}</td>
                       <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>{p.team}</td>
-                      <td className="px-3 py-2 text-right font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>
-                        {p.points.toFixed(1)}
+                      <td className="px-3 py-2 text-right font-semibold tabular-nums"
+                        style={{ color: p.cell.type === "score" ? "var(--text-primary)" : CELL_COLOR[p.cell.type] }}>
+                        {p.cell.type === "score" ? p.cell.value.toFixed(1) : CELL_LABEL[p.cell.type]}
                       </td>
                     </tr>
                   ))}
@@ -899,579 +1185,236 @@ function WeeklyScores({ players }) {
   );
 }
 
-/* ---------------- props-implied points vs fantasy site projections ---------------- */
-// Sportsbook player props (yards, receptions, passing TDs, INTs, anytime TD)
-// for the current week, converted into the PPR fantasy points they imply,
-// then set against what fantasy sites project for the same player.
-//
-// The two halves come from different places:
-// - WEEK_PROPS is a snapshot written by `node scripts/refresh-props.js`,
-//   which pulls every posted line from RotoWire's props board (RotoWire
-//   sends no CORS header, so the browser can't fetch it directly). Books
-//   post lines game by game through the week, so rerun it closer to kickoff
-//   to fill in games that weren't up yet. Don't hand-edit — it's
-//   regenerated wholesale.
-// - Site projections are fetched live on page load from Sleeper's and
-//   ESPN's projection APIs, both of which allow cross-origin requests.
-const PROPS_WEEK = 3;
-const PROPS_UPDATED_ON = "2026-09-23";
-// Each over/under is [line, overOdds, underOdds] (the median line across
-// books, priced at BetMGM/DraftKings/FanDuel where available); tdOdds is the
-// median anytime-TD price. A field is absent when no book has posted it.
-const WEEK_PROPS = [
-  { id: "gibbs", rushYds: [84.5, -114, -110], rushRecYds: [124.5, -114, -112], recs: [4.5, -110, -116], recYds: [35.5, -108, -116], tdOdds: -320 },
-  { id: "chase", recs: [6.5, -144, 113], recYds: [77.5, -110, -114], tdOdds: 135 },
-  { id: "robinson-b", rushYds: [77.5, -111, -113], rushRecYds: [122.5, -115, -115], recs: [4.5, -120, -111], recYds: [40.5, -114, -114], tdOdds: -160 },
-  { id: "nacua", tdOdds: 125 },
-  { id: "smithnjigba", tdOdds: 100 },
-  { id: "stbrown", recs: [6.5, -139, 106], recYds: [75.5, -114, -114], tdOdds: -120 },
-  { id: "mccaffrey", rushYds: [54.5, -110, -114], tdOdds: -280 },
-  { id: "taylor-j", tdOdds: -150 },
-  { id: "lamb", recs: [6.5, -154, 116], recYds: [84.5, -114, -114], tdOdds: 116 },
-  { id: "jefferson", recs: [5.5, -112, -114], recYds: [69.5, -114, -110], tdOdds: 150 },
-  { id: "cook", rushYds: [81.5, -114, -114], tdOdds: -200 },
-  { id: "achane", rushYds: [59.5, -114, -114], rushRecYds: [90.5, -114, -114], recs: [3.5, -122, -106], recYds: [26.5, -114, -114], tdOdds: -104 },
-  { id: "london", recs: [5.5, 100, -135], recYds: [65.5, -114, -114], tdOdds: 180 },
-  { id: "brown-chase", rushYds: [63.5, -114, -114], rushRecYds: [89.5, -112, -111], recs: [3.5, 108, -138], recYds: [21.5, -114, -114], tdOdds: -115 },
-  { id: "jeanty", tdOdds: -120 },
-  { id: "barkley", rushYds: [74.5, -114, -114], rushRecYds: [92.5, -114, -114], recs: [2.5, 128, -164], recYds: [13.5, -117, -107], tdOdds: -120 },
-  { id: "mcbride", recs: [7.5, 112, -143], recYds: [67.5, -111, -113], tdOdds: 185 },
-  { id: "hampton", rushYds: [60.5, -111, -113], rushRecYds: [75.5, -110, -120], recs: [1.5, -150, 118], recYds: [11.5, -114, -109], tdOdds: -125 },
-  { id: "bowers", tdOdds: 200 },
-  { id: "collins-n", tdOdds: 160 },
-  { id: "rice", recs: [4.5, 118, -158], recYds: [45.5, -135, 100], tdOdds: 133 },
-  { id: "walker-k", rushYds: [85.5, -114, -114], rushRecYds: [112.5, -114, -114], recs: [3.5, 120, -160], recYds: [22.5, -114, -114], tdOdds: -240 },
-  { id: "olave", tdOdds: 145 },
-  { id: "pickens", recs: [5.5, 112, -148], recYds: [59.5, -114, -110], tdOdds: 160 },
-  { id: "henry-d", rushYds: [89.5, -114, -114], tdOdds: -230 },
-  { id: "nabers", tdOdds: 205 },
-  { id: "allen-j", passYds: [239.5, -114, -114], passTds: [1.5, -162, 127], ints: [0.5, 125, -160], rushYds: [34.5, -110, -118], tdOdds: -150 },
-  { id: "dsmith", recs: [5.5, -138, 108], recYds: [72.5, -114, -114], tdOdds: 162 },
-  { id: "hall-b", rushYds: [57.5, -114, -114], rushRecYds: [81.5, -115, -110], recs: [3.5, 117, -150], recYds: [21.5, -108, -116], tdOdds: -112 },
-  { id: "love-j", rushYds: [37.5, -112, -112], tdOdds: 140 },
-  { id: "wilson-g", recs: [5.5, -101, -126], recYds: [60.5, -113, -111], tdOdds: 172 },
-  { id: "mcmillan", tdOdds: 165 },
-  { id: "flowers", recs: [5.5, 110, -140], recYds: [71.5, -114, -114], tdOdds: 115 },
-  { id: "kwilliams", rushYds: [55.5, -114, -114], tdOdds: -135 },
-  { id: "williams-j", rushYds: [59.5, -114, -114], rushRecYds: [80.5, -105, -125], recs: [2.5, -172, 135], recYds: [17.5, -109, -113], tdOdds: -170 },
-  { id: "higgins-t", recs: [4.5, -111, -115], recYds: [53.5, -114, -114], tdOdds: 175 },
-  { id: "mcconkey", recs: [4.5, 121, -155], recYds: [51.5, -110, -114], tdOdds: 210 },
-  { id: "jackson-l", passYds: [237.5, -114, -114], passTds: [1.5, -160, 125], ints: [0.5, 155, -200], rushYds: [38.5, -112, -112], tdOdds: 185 },
-  { id: "egbuka", recs: [4.5, 129, -165], recYds: [47.5, -111, -113], tdOdds: 230 },
-  { id: "loveland", tdOdds: 390 },
-  { id: "waddle", recs: [4.5, -154, 116], recYds: [57.5, -114, -114], tdOdds: 185 },
-  { id: "etienne", tdOdds: 135 },
-  { id: "skattebo", tdOdds: 110 },
-  { id: "irving", rushYds: [54.5, -115, -115], tdOdds: 120 },
-  { id: "adams-d", tdOdds: 110 },
-  { id: "maye", passYds: [216.5, -114, -114], passTds: [1.5, 151, -194], ints: [0.5, -137, 107], rushYds: [25.5, -117, -107], tdOdds: 265 },
-  { id: "mclaurin", tdOdds: 275 },
-  { id: "warren-tyler", tdOdds: 225 },
-  { id: "burden", tdOdds: 350 },
-  { id: "judkins", tdOdds: 120 },
-  { id: "moore-dj", recs: [3.5, -150, 117], recYds: [49.5, -114, -114], tdOdds: 165 },
-  { id: "williams-jameson", recs: [4.5, 124, -166], recYds: [54.5, -114, -114], tdOdds: 165 },
-  { id: "odunze", tdOdds: 425 },
-  { id: "swift", tdOdds: 110 },
-  { id: "montgomery", tdOdds: -115 },
-  { id: "burrow", passYds: [253.5, -114, -114], passTds: [1.5, -112, -114], ints: [0.5, -114, -111], tdOdds: 650 },
-  { id: "hurts", passYds: [210.5, -112, -112], passTds: [1.5, 134, -172], ints: [0.5, 116, -148], rushYds: [24.5, -113, -111], tdOdds: 140 },
-  { id: "henderson-t", rushYds: [40.5, -115, -115], rushRecYds: [54.5, -114, -114], recs: [1.5, -110, -115], recYds: [9.5, -114, -114], tdOdds: 175 },
-  { id: "tuten", rushYds: [54.5, -114, -114], rushRecYds: [67.5, -117, -114], recs: [1.5, -116, -110], recYds: [9.5, -114, -114], tdOdds: 150 },
-  { id: "tate-c", tdOdds: 295 },
-  { id: "evans-m", tdOdds: 145 },
-  { id: "price-j", tdOdds: 125 },
-  { id: "watson-c", recs: [4.5, -130, -105], recYds: [67.5, -115, -114], tdOdds: 155 },
-  { id: "washington-p", recs: [4.5, -144, 113], recYds: [61.5, -114, -114], tdOdds: 165 },
-  { id: "harrison", recs: [2.5, 133, -171], recYds: [26.5, -113, -111], tdOdds: 370 },
-  { id: "fannin", tdOdds: 250 },
-  { id: "laporta", recs: [4.5, -106, -120], recYds: [45.5, -111, -113], tdOdds: 183 },
-  { id: "pitts", recs: [3.5, -125, -105], recYds: [37.5, -114, -114], tdOdds: 370 },
-  { id: "metcalf", recs: [4.5, 103, -132], recYds: [52.5, -113, -111], tdOdds: 190 },
-  { id: "stevenson-r", rushYds: [37.5, -110, -112], rushRecYds: [55.5, -110, -116], recs: [2.5, 109, -139], recYds: [14.5, -114, -114], tdOdds: 148 },
-  { id: "sutton", recs: [3.5, -121, -105], recYds: [40.5, -120, -110], tdOdds: 215 },
-  { id: "thomas-brian", recs: [3.5, 140, -188], recYds: [38.5, -114, -110], tdOdds: 270 },
-  { id: "prescott", passYds: [264.5, -115, -115], passTds: [1.5, -146, 114], ints: [0.5, -113, -113], rushYds: [12.5, -114, -114], tdOdds: 550 },
-  { id: "pittman", tdOdds: 370 },
-  { id: "wilson-michael", recs: [4.5, 132, -173], recYds: [45.5, -114, -110], tdOdds: 295 },
-  { id: "kraft", recs: [3.5, -175, 130], recYds: [46.5, -115, -115], tdOdds: 185 },
-  { id: "warren-jaylen", tdOdds: 105 },
-  { id: "herbert", passYds: [222.5, -114, -114], passTds: [1.5, 146, -186], ints: [0.5, -122, -105], rushYds: [19.5, -113, -111], tdOdds: 450 },
-  { id: "lawrence", passYds: [223.5, -114, -114], passTds: [1.5, -109, -117], ints: [0.5, -125, 100], rushYds: [16.5, -114, -114], tdOdds: 290 },
-  { id: "dart", tdOdds: 190 },
-  { id: "pierce-alec", tdOdds: 290 },
-  { id: "pollard", tdOdds: 150 },
-  { id: "dowdle", tdOdds: 105 },
-  { id: "lemon", tdOdds: 470 },
-  { id: "hubbard", tdOdds: -140 },
-  { id: "stafford", passYds: [243.5, -114, -114], passTds: [1.5, -130, 102], ints: [0.5, -101, -123], rushYds: [0.5, 140, -172], tdOdds: 2000 },
-  { id: "meyers", recs: [3.5, 101, -128], recYds: [34.5, -112, -111], tdOdds: 255 },
-  { id: "robinson-wandale", tdOdds: 360 },
-  { id: "kittle", tdOdds: 185 },
-  { id: "purdy", passYds: [235.5, -110, -120], passTds: [1.5, -174, 130], tdOdds: 270 },
-  { id: "addison", recs: [2.5, -142, 112], recYds: [32.5, -114, -114], tdOdds: 265 },
-  { id: "kelce", recs: [4.5, -114, -114], recYds: [50.5, -125, -105], tdOdds: 137 },
-  { id: "nix", passYds: [212.5, -114, -114], passTds: [1.5, 121, -154], ints: [0.5, -121, -104], rushYds: [16.5, -114, -114], tdOdds: 400 },
-  { id: "brooks-jonathon", tdOdds: 253 },
-  { id: "mahomes", passYds: [234.5, -115, -114], passTds: [1.5, -220, 162], rushYds: [17.5, -114, -114], tdOdds: 320 },
-  { id: "dobbins", tdOdds: 120 },
-  { id: "harvey-rj", tdOdds: 220 },
-  { id: "godwin", recs: [3.5, 120, -153], recYds: [35.5, -114, -114], tdOdds: 310 },
-  { id: "downs", tdOdds: 225 },
-  { id: "monangai", tdOdds: 195 },
-  { id: "golden-matthew", recs: [4.5, 105, -145], recYds: [53.5, -116, -118], tdOdds: 200 },
-  { id: "kincaid", tdOdds: 195 },
-  { id: "ferguson-jake", recs: [3.5, -115, -110], recYds: [27.5, -111, -110], tdOdds: 271 },
-  { id: "johnston-q", recs: [3.5, 122, -156], recYds: [35.5, -113, -111], tdOdds: 250 },
-  { id: "diggs", tdOdds: 325 },
-  { id: "croskeymerritt", tdOdds: 180 },
-  { id: "concepcion", tdOdds: 309 },
-  { id: "corum", rushYds: [46.5, -109, -115], tdOdds: 260 },
-  { id: "shakir", tdOdds: 175 },
-  { id: "white-rachaad", tdOdds: 265 },
-  { id: "likely", tdOdds: 275 },
-  { id: "worthy", recs: [3.5, -104, -128], recYds: [35.5, -114, -114], tdOdds: 170 },
-  { id: "jones-aaron", tdOdds: -125 },
-  { id: "andrews-mark", tdOdds: 137 },
-  { id: "goff", passYds: [257.5, -113, -115], passTds: [1.5, -202, 157], ints: [0.5, 115, -147], tdOdds: 1405 },
-  { id: "samuel-deebo", tdOdds: 185 },
-  { id: "doubs", recs: [3.5, 125, -160], recYds: [42.5, -111, -113], tdOdds: 265 },
-  { id: "coker", tdOdds: 215 },
-  { id: "murray-kyler", passYds: [208.5, -112, -112], passTds: [1.5, 152, -196], ints: [0.5, 107, -137], rushYds: [20.5, -114, -114], tdOdds: 325 },
-  { id: "marks-woody", tdOdds: 210 },
-  { id: "henry-hunter", recs: [3.5, -137, 107], recYds: [41.5, -115, -109], tdOdds: 235 },
-  { id: "mayfield", passYds: [216.5, -114, -114], passTds: [1.5, 158, -203], ints: [0.5, -111, -115], rushYds: [16.5, -114, -114], tdOdds: 600 },
-  { id: "shaheed", tdOdds: 290 },
-  { id: "rodriguez-chris", rushYds: [20.5, -114, -114], tdOdds: 230 },
-  { id: "hunter-travis", tdOdds: 1100 },
-  { id: "allgeier", rushYds: [33.5, -115, -115], tdOdds: 185 },
-  { id: "boston-denzel", tdOdds: 282 },
-  { id: "shough", passYds: [250.5, -114, -114], passTds: [1.5, -104, -123], ints: [0.5, -113, -112], tdOdds: 275 },
-  { id: "spears", tdOdds: 250 },
-  { id: "coleman-jonah", tdOdds: 110 },
-  { id: "hockenson", recs: [3.5, -104, -123], recYds: [30.5, -114, -114], tdOdds: 290 },
-  { id: "kamara", tdOdds: 180 },
-  { id: "washington-mike", tdOdds: 425 },
-  { id: "robinson-brian", rushYds: [22.5, -115, -115], tdOdds: 425 },
-  { id: "willis-malik", passYds: [175.5, -115, -115], passTds: [0.5, -210, 154], rushYds: [33.5, -114, -114], tdOdds: 285 },
-  { id: "jones-daniel", tdOdds: 600 },
-  { id: "mitchell-keaton", tdOdds: 500 },
-  { id: "johnson-juwan", tdOdds: 265 },
-  { id: "jeudy", tdOdds: 400 },
-  { id: "tracy", tdOdds: 450 },
-  { id: "love-jordan", passYds: [227.5, -112, -112], passTds: [1.5, -111, -114], ints: [0.5, 100, -135], rushYds: [8.5, -114, -114], tdOdds: 600 },
-  { id: "bigsby", tdOdds: 210 },
-  { id: "sadiq", tdOdds: 437 },
-  { id: "tucker-tre", tdOdds: 290 },
-  { id: "mcmillan-jalen", tdOdds: 500 },
-  { id: "strange", recs: [3.5, 137, -176], recYds: [27.5, -115, -109], tdOdds: 285 },
-  { id: "nailor", tdOdds: 400 },
-  { id: "mitchell-adonai", recs: [3.5, -123, -104], recYds: [45.5, -114, -114], tdOdds: 310 },
-  { id: "johnson-emmett", rushYds: [24.5, -114, -114], rushRecYds: [39.5, -114, -114], recs: [1.5, -102, -130], recYds: [10.5, -114, -114], tdOdds: 340 },
-  { id: "allen-keenan", tdOdds: 240 },
-  { id: "wicks", recs: [3.5, 140, -188], recYds: [40.5, -112, -117], tdOdds: 320 },
-  { id: "stroud", tdOdds: 600 },
-  { id: "davis-ray", tdOdds: 791 },
-  { id: "jaylin-noel", tdOdds: 370 },
-  { id: "ferguson-terrance", tdOdds: 255 },
-  { id: "zachariah-branch", tdOdds: 1100 },
-  { id: "singleton-nicholas", tdOdds: 1900 },
-  { id: "allen-braelon", tdOdds: 275 },
-  { id: "calvin-ridley", tdOdds: 625 },
-  { id: "jennings-jauan", tdOdds: 525 },
-  { id: "caleb-douglas", tdOdds: 390 },
-  { id: "schultz-dalton", tdOdds: 205 },
-  { id: "lloyd-marshawn", rushYds: [27.5, -113, -109], rushRecYds: [36.5, -114, -112], recs: [1.5, 160, -220], recYds: [5.5, -115, -115], tdOdds: 195 },
-  { id: "okonkwo", tdOdds: 410 },
-  { id: "rashod-bateman", tdOdds: 185 },
-  { id: "allen-cyrus", tdOdds: 1200 },
-  { id: "malachi-fields", tdOdds: 330 },
-  { id: "germie-bernard", tdOdds: 525 },
-  { id: "washington-malik", tdOdds: 320 },
-  { id: "antonio-williams", tdOdds: 525 },
-  { id: "harris-tre", recs: [2.5, -168, 131], recYds: [33.5, -114, -114], tdOdds: 450 },
-  { id: "kaytron-allen", tdOdds: 650 },
-  { id: "barner", tdOdds: 240 },
-  { id: "flournoy", tdOdds: 375 },
-  { id: "young-bryce", tdOdds: 400 },
-  { id: "boutte", tdOdds: 410 },
-  { id: "malachi-corley", tdOdds: 1800 },
-  { id: "black-kaelon", tdOdds: 240 },
-  { id: "jelani-woods", tdOdds: 1800 },
-];
-
-const PROP_SITES = [
-  { key: "sleeper", label: "Sleeper" },
-  { key: "espn", label: "ESPN" },
-];
-
-// PPR, 4-point passing TDs, -2 per INT (ESPN's default; Sleeper's own
-// projections use -1). Fumbles have no line, so they aren't counted.
-const PPR = { rec: 1, recYd: 0.1, rushYd: 0.1, passYd: 0.04, passTd: 4, int: -2, td: 6 };
-// Rough standard deviation of each stat, used only to nudge a juiced line's
-// mean off the line itself (a 6.5-reception line at -154/+116 means the
-// market expects closer to 7 catches, not 6.5).
-const PROP_SD = { recs: (l) => Math.sqrt(l) * 1.1, yds: (l) => Math.max(15, l * 0.45), passYds: () => 55 };
-// Anytime-TD prices are one-sided (no "no TD" price to de-vig against), so
-// they're scaled down by a flat hold estimate instead.
-const ATTD_HOLD = 0.92;
-
-function impliedProb(odds) {
-  return odds < 0 ? -odds / (-odds + 100) : 100 / (odds + 100);
+/* ---------------- injured reserve page ---------------- */
+// Everyone in INJURED_RESERVE, in two tables: IR/PUP stints ordered by the
+// earliest week each player can return (soonest first), then season-ending
+// injuries in their own section below.
+function InjuryTable({ rows, showReturn }) {
+  const headers = ["Player", "Pos", "Team", "Status", "Injury", "Since", ...(showReturn ? ["Earliest return"] : [])];
+  return (
+    <div className="rounded-lg border overflow-x-auto" style={{ borderColor: "var(--border)", background: "var(--surface-1)" }}>
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr style={{ borderBottom: "1px solid var(--border)" }}>
+            {headers.map((h, i) => (
+              <th key={h} className={`${i >= 5 ? "text-right" : "text-left"} px-3 py-2 text-xs font-semibold`}
+                style={{ color: "var(--text-muted)" }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.id} className="border-b" style={{ borderColor: "var(--border)" }}>
+              <td className="px-3 py-2 font-medium whitespace-nowrap" style={{ color: "var(--text-primary)" }}>{r.player.name}</td>
+              <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>{r.player.position}</td>
+              <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>{r.player.team}</td>
+              <td className="px-3 py-2 whitespace-nowrap">
+                <span className="rounded-full px-2 py-0.5 text-xs font-semibold border"
+                  style={{ borderColor: "var(--border)", color: r.seasonEnding ? "var(--series-red)" : "var(--series-amber)" }}>
+                  {r.seasonEnding ? "Out for season" : r.list}
+                </span>
+              </td>
+              <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>{r.injury}</td>
+              <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap" style={{ color: "var(--text-secondary)" }}>
+                {r.sinceWeek === 1 ? "Preseason" : `Wk ${r.sinceWeek}`}
+              </td>
+              {showReturn && (
+                <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap font-semibold" style={{ color: "var(--text-primary)" }}>
+                  Wk {r.back}
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
-// No-vig probability of the over, or null if either side is unknown.
-function noVigOver([, over, under]) {
-  if (over == null || under == null) return null;
-  const po = impliedProb(over), pu = impliedProb(under);
-  return po / (po + pu);
-}
-
-// Inverse standard normal CDF (Acklam's rational approximation).
-function normInv(p) {
-  const a = [-39.6968302866538, 220.946098424521, -275.928510446969, 138.357751867269, -30.6647980661472, 2.50662827745924];
-  const b = [-54.4760987982241, 161.585836858041, -155.698979859887, 66.8013118877197, -13.2806815528857];
-  const c = [-0.00778489400243029, -0.322396458041136, -2.40076144775900, -2.54973253934373, 4.37466414146497, 2.93816398269878];
-  const d = [0.00778469570904146, 0.322467129070040, 2.44513413714300, 3.75440866190143];
-  if (p < 0.02425) {
-    const q = Math.sqrt(-2 * Math.log(p));
-    return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
-  }
-  if (p > 1 - 0.02425) return -normInv(1 - p);
-  const q = p - 0.5, r = q * q;
-  return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
-    (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
-}
-
-// Market-implied mean for an over/under line: the line itself, shifted by
-// however far the no-vig over probability is from 50/50.
-function impliedMean(lineArr, sdFn) {
-  const [line] = lineArr;
-  const p = noVigOver(lineArr);
-  if (p == null) return line;
-  return Math.max(0, line + sdFn(line) * normInv(p));
-}
-
-// Expected count for a Poisson stat (passing TDs, INTs): the mean whose
-// P(X > line) matches the no-vig over price (e.g. passing TDs over 1.5 at
-// -150 → ~2.1 expected).
-function impliedPoissonMean(lineArr) {
-  const [line] = lineArr;
-  const p = noVigOver(lineArr) ?? 0.5;
-  const k = Math.floor(line);
-  const pOver = (lam) => {
-    let term = Math.exp(-lam), cdf = term;
-    for (let i = 1; i <= k; i++) { term *= lam / i; cdf += term; }
-    return 1 - cdf;
-  };
-  let lo = 0, hi = 10;
-  for (let i = 0; i < 50; i++) {
-    const mid = (lo + hi) / 2;
-    if (pOver(mid) < p) lo = mid; else hi = mid;
-  }
-  return (lo + hi) / 2;
-}
-
-// Which lines each position needs for a complete implied total.
-const PROP_NEEDS = {
-  QB: [["passYds", "pass yds"], ["passTds", "pass TD"], ["rushYds", "rush yds"], ["tdOdds", "rush TD"]],
-  RB: [["rushYds", "rush yds"], ["recs", "receptions"], ["recYds|rushRecYds", "rec yds"], ["tdOdds", "TD"]],
-  WR: [["recs", "receptions"], ["recYds", "rec yds"], ["tdOdds", "TD"]],
-  TE: [["recs", "receptions"], ["recYds", "rec yds"], ["tdOdds", "TD"]],
+// Live: every player in the pool (plus the waiver targets) whose current
+// Sleeper designation is Questionable, Doubtful, Out or not active. IR/PUP
+// players are left to the hand-kept lists below. Sleeper's designations
+// follow the official injury reports (Wednesday to Friday); early in the week
+// they're carried over from the last game, which is why the latest game's
+// result is shown alongside.
+const REPORT_STATUSES = ["Questionable", "Doubtful", "Out", "NA"];
+const REPORT_STATUS_LABEL = { NA: "Not active" };
+const REPORT_STATUS_COLOR = {
+  Questionable: "var(--series-amber)",
+  Doubtful: "var(--series-red)",
+  Out: "var(--series-red)",
+  NA: "var(--text-muted)",
 };
 
-// Turns one WEEK_PROPS entry into implied PPR points plus a breakdown, and
-// lists which inputs had no line (so a low number caused by a missing line
-// reads as incomplete, not as a fade).
-function propsImpliedPoints(prop, position) {
-  const parts = [];
-  let pts = 0;
-  const add = (label, value, mult) => { pts += value * mult; parts.push(`${label} ${value.toFixed(1)}`); };
+function InjuryReport({ players, positionFilter, data, sectionTitle }) {
+  const [state, setState] = useState({ status: "loading", rows: [] });
 
-  if (prop.passYds) add("pass yds", impliedMean(prop.passYds, PROP_SD.passYds), PPR.passYd);
-  if (prop.passTds) add("pass TD", impliedPoissonMean(prop.passTds), PPR.passTd);
-  if (prop.ints) add("INT", impliedPoissonMean(prop.ints), PPR.int);
-  if (prop.rushYds) add("rush yds", impliedMean(prop.rushYds, PROP_SD.yds), PPR.rushYd);
-  if (prop.recs) add("rec", impliedMean(prop.recs, PROP_SD.recs), PPR.rec);
-  if (prop.recYds) add("rec yds", impliedMean(prop.recYds, PROP_SD.yds), PPR.recYd);
-  else if (prop.rushRecYds && prop.rushYds) {
-    const recYds = Math.max(0, impliedMean(prop.rushRecYds, PROP_SD.yds) - impliedMean(prop.rushYds, PROP_SD.yds));
-    add("rec yds", recYds, PPR.recYd);
-  }
-  if (prop.tdOdds != null) {
-    const p = impliedProb(prop.tdOdds) * ATTD_HOLD;
-    add("TDs", -Math.log(1 - p), PPR.td);
-  }
+  const pool = useMemo(() => {
+    const ids = new Set(players.map((p) => p.id));
+    return [...players, ...WAIVER_TARGETS.filter((t) => !ids.has(t.id))];
+  }, [players]);
 
-  const missing = (PROP_NEEDS[position] || [])
-    .filter(([fields]) => !fields.split("|").some((f) => prop[f] != null))
-    .map(([, label]) => label);
-  return { pts, parts, missing };
-}
-
-// A player with only an anytime-TD price (their game's yardage lines aren't
-// posted yet) has nothing to compare, so they're left out of the table.
-function hasStatLines(prop) {
-  return ["passYds", "passTds", "rushYds", "recs", "recYds", "rushRecYds"].some((f) => prop[f] != null);
-}
-
-// Same idea as the refresh script's matching: "Kenneth Walker III" and
-// "Kenneth Walker" are the same player.
-function projKey(name) {
-  return String(name || "")
-    .replace(/\b(jr|sr|ii|iii|iv|v)\.?$/i, "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]/g, "");
-}
-
-const PROPS_SEASON = Number(PROPS_UPDATED_ON.slice(0, 4));
-
-async function fetchSleeperProjections(season, week) {
-  const pos = SKILL_POSITIONS.map((p) => `position[]=${p}`).join("&");
-  const res = await fetch(`https://api.sleeper.com/projections/nfl/${season}/${week}?season_type=regular&${pos}`);
-  if (!res.ok) throw new Error(`Sleeper projections failed (${res.status})`);
-  const out = {};
-  for (const row of await res.json()) {
-    const p = row.player;
-    const pts = row.stats && row.stats.pts_ppr;
-    if (!p || pts == null) continue;
-    // Keyed by name+team first, so two same-named players don't collide;
-    // the name-only key covers a team mismatch (e.g. a recent trade).
-    const k = projKey(`${p.first_name} ${p.last_name}`);
-    out[`${k}|${p.team}`] = pts;
-    if (!(k in out)) out[k] = pts;
-  }
-  return out;
-}
-
-// ESPN's default PPR league (leaguedefaults/3) returns each player's
-// projection for the requested week as a stat line with statSourceId 1.
-async function fetchEspnProjections(season, week) {
-  const filter = { players: { limit: 1000, filterSlotIds: { value: [0, 2, 4, 6] }, sortPercOwned: { sortPriority: 1, sortAsc: false } } };
-  const res = await fetch(
-    `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${season}/segments/0/leaguedefaults/3?view=kona_player_info&scoringPeriodId=${week}`,
-    { headers: { "X-Fantasy-Filter": JSON.stringify(filter) } }
-  );
-  if (!res.ok) throw new Error(`ESPN projections failed (${res.status})`);
-  const out = {};
-  for (const { player } of (await res.json()).players || []) {
-    const stat = (player.stats || []).find((s) => s.seasonId === season && s.scoringPeriodId === week && s.statSourceId === 1);
-    if (stat) out[projKey(player.fullName)] = stat.appliedTotal;
-  }
-  return out;
-}
-
-function useSiteProjections(season, week) {
-  const [state, setState] = useState({ sleeper: { status: "loading" }, espn: { status: "loading" } });
   useEffect(() => {
     let cancelled = false;
-    const load = (key, fn) =>
-      fn(season, week)
-        .then((data) => !cancelled && setState((s) => ({ ...s, [key]: { status: "ok", data } })))
-        .catch((err) => !cancelled && setState((s) => ({ ...s, [key]: { status: "error", error: err.message } })));
-    load("sleeper", fetchSleeperProjections);
-    load("espn", fetchEspnProjections);
-    return () => { cancelled = true; };
-  }, [season, week]);
-  return state;
-}
-
-function lookupProjection(site, player) {
-  if (site.status !== "ok") return null;
-  const k = projKey(player.name);
-  const v = site.data[`${k}|${player.team}`] ?? site.data[k];
-  return v != null ? v : null;
-}
-
-function fmtOdds(n) {
-  if (n == null) return "–";
-  return n > 0 ? `+${n}` : `${n}`;
-}
-
-function fmtLine(label, arr) {
-  if (!arr) return null;
-  const [line, over, under] = arr;
-  const odds = over != null ? ` (${fmtOdds(over)}${under != null ? `/${fmtOdds(under)}` : ""})` : "";
-  return `${label} ${line}${odds}`;
-}
-
-function fmtDiff(n) {
-  if (n == null) return "–";
-  return `${n > 0 ? "+" : ""}${n.toFixed(1)}`;
-}
-
-// Same math as SeasonGrid's AVG column (recent points per game from real
-// WEEKLY_SCORES results only) — kept as its own small helper here rather
-// than importing SeasonGrid's internal state, since this only needs the
-// number, not the full week-by-week cell grid.
-function recentAvgPoints(player) {
-  const scored = PLAYED_WEEKS.map((w) => weekCell(player, w)).filter((c) => c.type === "score");
-  const gp = scored.length;
-  return { gp, avg: gp > 0 ? scored.reduce((sum, c) => sum + c.value, 0) / gp : null };
-}
-
-function PropsComparison({ players }) {
-  const [sortBy, setSortBy] = useState("diff");
-  const [sortDesc, setSortDesc] = useState(true);
-  const [position, setPosition] = useState(POSITIONS[0]);
-  const sites = useSiteProjections(PROPS_SEASON, PROPS_WEEK);
-
-  function toggleSort(key) {
-    if (key === sortBy) setSortDesc((d) => !d);
-    else { setSortBy(key); setSortDesc(true); }
-  }
-
-  const byId = useMemo(() => Object.fromEntries(players.map((p) => [p.id, p])), [players]);
-  const tdOnlyCount = useMemo(() => WEEK_PROPS.filter((p) => byId[p.id] && !hasStatLines(p)).length, [byId]);
-
-  const rows = useMemo(() => {
-    return WEEK_PROPS
-      .filter(hasStatLines)
-      .map((prop) => {
-        const p = byId[prop.id];
-        if (!p) return null;
-        const { pts, parts, missing } = propsImpliedPoints(prop, p.position);
-        const proj = Object.fromEntries(PROP_SITES.map((s) => [s.key, lookupProjection(sites[s.key], p)]));
-        const vals = Object.values(proj).filter((v) => v != null);
-        const site = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-        return {
-          ...prop, ...p, ...recentAvgPoints(p),
-          implied: pts, parts, missing, proj, site,
-          diff: site != null ? pts - site : null,
-        };
+    fetchSleeperPlayerMap()
+      .then((sleeperPlayers) => {
+        if (cancelled) return;
+        const matched = window.SleeperScores.matchSleeperIds(pool, sleeperPlayers);
+        const rows = pool
+          .filter((p) => matched[p.id])
+          .map((p) => ({ player: p, sleeper: sleeperPlayers[matched[p.id]] }))
+          .filter((r) => REPORT_STATUSES.includes(r.sleeper.status));
+        setState({ status: "ready", rows });
       })
-      .filter((r) => r && (position === "ALL" || r.position === position))
-      .sort((a, b) => {
-        // An incomplete implied total skews its Diff low, so when sorting by
-        // Diff, rows with every line present rank ahead of partial ones.
-        if (sortBy === "diff" && (a.missing.length > 0) !== (b.missing.length > 0)) return a.missing.length > 0 ? 1 : -1;
-        const cmp = (a[sortBy] ?? -999) - (b[sortBy] ?? -999);
-        return sortDesc ? -cmp : cmp;
+      .catch((err) => {
+        if (!cancelled) setState({ status: "error", rows: [], message: err.message });
       });
-  }, [byId, sites, sortBy, sortDesc, position]);
+    return () => { cancelled = true; };
+  }, [pool]);
 
-  function headerButton(key, label) {
-    const active = sortBy === key;
-    return (
-      <button type="button" onClick={() => toggleSort(key)} className="flex items-center gap-1 text-xs font-semibold ml-auto"
-        style={{ color: active ? "var(--text-primary)" : "var(--text-muted)" }}>
-        {label}{active && <span>{sortDesc ? "↓" : "↑"}</span>}
-      </button>
-    );
-  }
+  const lastWeek = playedWeeks(data.scores).slice(-1)[0];
+  const rows = state.rows
+    .filter((r) => positionFilter === "ALL" || r.player.position === positionFilter)
+    .sort((a, b) =>
+      REPORT_STATUSES.indexOf(a.sleeper.status) - REPORT_STATUSES.indexOf(b.sleeper.status) ||
+      a.player.name.localeCompare(b.player.name));
 
-  const thMuted = { color: "var(--text-muted)" };
-  const siteStatus = PROP_SITES.map((s) => {
-    const st = sites[s.key];
-    return st.status === "loading" ? `${s.label}: loading…` : st.status === "error" ? `${s.label}: unavailable (${st.error})` : null;
-  }).filter(Boolean);
+  // How the player's most recent week went: points, OUT, or blank if their
+  // game hasn't been played yet.
+  const lastGame = (p) => {
+    if (!lastWeek) return "–";
+    const cell = weekCell(p, lastWeek, data);
+    if (cell.type === "score") return `${cell.value.toFixed(1)} pts`;
+    return cell.type === "blank" ? "–" : CELL_LABEL[cell.type];
+  };
+
+  const headers = ["Player", "Pos", "Team", "Status", "Injury", lastWeek ? `Wk ${lastWeek}` : "Last game"];
+  const message = (text) => (
+    <div className="rounded-lg border p-6 text-center text-sm" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+      {text}
+    </div>
+  );
+
+  return (
+    <section className="flex flex-col gap-2">
+      {sectionTitle("This Week's Injury Report", rows.length)}
+      {state.status === "loading" ? message("Loading the latest designations from Sleeper…")
+        : state.status === "error" ? message(`Couldn't reach Sleeper (${state.message}). The live injury report needs the page served over http(s).`)
+        : rows.length === 0 ? message("No one at this position is questionable, doubtful or out right now.")
+        : (
+          <div className="rounded-lg border overflow-x-auto" style={{ borderColor: "var(--border)", background: "var(--surface-1)" }}>
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                  {headers.map((h, i) => (
+                    <th key={h} className={`${i === 5 ? "text-right" : "text-left"} px-3 py-2 text-xs font-semibold`}
+                      style={{ color: "var(--text-muted)" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(({ player, sleeper }) => (
+                  <tr key={player.id} className="border-b" style={{ borderColor: "var(--border)" }}>
+                    <td className="px-3 py-2 font-medium" style={{ color: "var(--text-primary)" }}>{player.name}</td>
+                    <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>{player.position}</td>
+                    <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>{player.team}</td>
+                    <td className="px-3 py-2 font-semibold" style={{ color: REPORT_STATUS_COLOR[sleeper.status] }}>
+                      {REPORT_STATUS_LABEL[sleeper.status] || sleeper.status}
+                    </td>
+                    <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>
+                      {[sleeper.injury, sleeper.notes].filter(Boolean).join(" — ") || "Undisclosed"}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums" style={{ color: "var(--text-secondary)" }}>{lastGame(player)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+        Official injury reports come out Wednesday through Friday. Until then, a designation may be carried over
+        from the last game, so the last column shows how that game went.
+      </p>
+    </section>
+  );
+}
+
+function InjuredReserve({ players, data }) {
+  const [positionFilter, setPositionFilter] = useState("ALL");
+  const byId = useMemo(() => Object.fromEntries(players.map((p) => [p.id, p])), [players]);
+
+  const { onIr, seasonEnding } = useMemo(() => {
+    const rows = INJURED_RESERVE
+      .map((entry) => ({ ...entry, player: byId[entry.id] }))
+      .filter((r) => r.player && (positionFilter === "ALL" || r.player.position === positionFilter))
+      .map((r) => ({ ...r, back: irReturnWeek(r, r.player.team) }));
+    const byName = (a, b) => a.player.name.localeCompare(b.player.name);
+    return {
+      onIr: rows.filter((r) => !r.seasonEnding).sort((a, b) => a.back - b.back || byName(a, b)),
+      seasonEnding: rows.filter((r) => r.seasonEnding).sort(byName),
+    };
+  }, [byId, positionFilter]);
+
+  const sectionTitle = (text, count) => (
+    <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+      {text} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({count})</span>
+    </h3>
+  );
 
   return (
     <div className="flex flex-col gap-5">
       <header>
-        <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Props vs. Fantasy Projections</h2>
+        <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Injuries</h2>
         <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
-          Week {PROPS_WEEK} sportsbook lines (yards, receptions, passing TDs, INTs, anytime TD) turned into the PPR
-          points they imply, next to what Sleeper and ESPN project. <b>Diff</b> is props-implied minus the site
-          average: positive means the betting market expects more than the fantasy sites do, negative means less.
+          This week&apos;s injury report (questionable, doubtful and out), then players on injured reserve or PUP (at
+          least four games out), sorted by the earliest week they can return, and players out for the season.
         </p>
         <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-          Lines last refreshed {PROPS_UPDATED_ON} from RotoWire's props board (median line across books) — run{" "}
-          <code>node scripts/refresh-props.js</code> to update; books post lines game by game through the week.
-          Sleeper and ESPN projections load live. Scoring: 1 per catch, 0.1 per rushing/receiving yard, 0.04 per
-          passing yard, 4 per passing TD, −2 per INT, 6 per other TD. Each over/under is shifted off its line by how
-          juiced the over is; anytime-TD odds become expected TDs after trimming an estimated 8% hold. Rows missing
-          a line are marked and their Diff greyed out, since the implied total is understated.
+          The weekly injury report is live from Sleeper. The IR lists are as of {INJURED_RESERVE_UPDATED_ON}, from
+          Sleeper&apos;s injury designations and team news. "Earliest return" is the
+          first week the player is eligible to come back, counting four team games from the start of the stint and
+          skipping byes; many players take longer. Edit <code>INJURED_RESERVE</code> in <code>index.html</code> as
+          players are placed on or activated from IR.
         </p>
-        {siteStatus.length > 0 && (
-          <p className="text-xs mt-1" style={{ color: "var(--series-amber)" }}>{siteStatus.join(" · ")}</p>
-        )}
       </header>
 
-      <div className="flex flex-wrap gap-1">
+      <div className="flex items-center gap-1">
         {POSITIONS.map((pos) => (
-          <button key={pos} type="button" onClick={() => setPosition(pos)}
-            className="px-3 py-1 rounded-md text-xs font-semibold border"
+          <button key={pos} type="button" onClick={() => setPositionFilter(pos)}
+            className="rounded-full px-3 py-1 text-xs font-medium border"
             style={{
               borderColor: "var(--border)",
-              background: position === pos ? "var(--text-primary)" : "var(--surface-1)",
-              color: position === pos ? "var(--surface-1)" : "var(--text-secondary)",
+              background: positionFilter === pos ? "var(--series-blue)" : "transparent",
+              color: positionFilter === pos ? "#ffffff" : "var(--text-secondary)",
             }}>
             {pos}
           </button>
         ))}
       </div>
 
-      {rows.length === 0 ? (
-        <div className="rounded-lg border p-8 text-center text-sm" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
-          No stat lines in <code>WEEK_PROPS</code> for this filter yet — run <code>node scripts/refresh-props.js</code>{" "}
-          once books have posted this week's lines.
-        </div>
-      ) : (
-        <div className="rounded-lg border overflow-x-auto" style={{ borderColor: "var(--border)", background: "var(--surface-1)" }}>
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                <th className="text-left px-3 py-2 text-xs font-semibold" style={thMuted}>Player</th>
-                <th className="text-left px-3 py-2 text-xs font-semibold" style={thMuted}>Lines</th>
-                <th className="px-3 py-2 text-right">{headerButton("implied", "Props pts")}</th>
-                {PROP_SITES.map((s) => (
-                  <th key={s.key} className="text-right px-2 py-2 text-xs font-semibold" style={thMuted}>{s.label}</th>
-                ))}
-                <th className="px-3 py-2 text-right">{headerButton("diff", "Diff")}</th>
-                <th className="px-3 py-2 text-right">{headerButton("avg", "Recent Avg")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => {
-                const lines = [
-                  fmtLine("Pass yds", r.passYds), fmtLine("Pass TD", r.passTds), fmtLine("INT", r.ints),
-                  fmtLine("Rush yds", r.rushYds), fmtLine("Rush+rec yds", r.rushRecYds), fmtLine("Rec", r.recs),
-                  fmtLine("Rec yds", r.recYds), r.tdOdds != null ? `Anytime TD ${fmtOdds(r.tdOdds)}` : null,
-                ].filter(Boolean);
-                const diffColor = r.diff == null || r.missing.length > 0 ? "var(--text-muted)"
-                  : r.diff >= 1 ? "var(--series-blue)" : r.diff <= -1 ? "var(--series-red)" : "var(--text-secondary)";
-                return (
-                  <tr key={r.id} className="border-b align-top" style={{ borderColor: "var(--border)" }}>
-                    <td className="px-3 py-1.5">
-                      <div className="font-medium" style={{ color: "var(--text-primary)" }}>{r.name}</div>
-                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>{r.position} · {r.team}</div>
-                    </td>
-                    <td className="px-3 py-1.5 text-xs" style={{ color: "var(--text-secondary)" }}>
-                      {lines.map((l) => <div key={l}>{l}</div>)}
-                      {r.missing.length > 0 && (
-                        <div className="mt-0.5" style={{ color: "var(--series-amber)" }}>No line: {r.missing.join(", ")}</div>
-                      )}
-                    </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums" title={r.parts.join(" · ")}>
-                      <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{r.implied.toFixed(1)}</span>
-                      {r.missing.length > 0 && <span style={{ color: "var(--series-amber)" }}>*</span>}
-                    </td>
-                    {PROP_SITES.map((s) => (
-                      <td key={s.key} className="px-2 py-1.5 text-right tabular-nums" style={{ color: "var(--text-secondary)" }}>
-                        {r.proj[s.key] != null ? r.proj[s.key].toFixed(1) : "–"}
-                      </td>
-                    ))}
-                    <td className="px-3 py-1.5 text-right tabular-nums font-semibold" style={{ color: diffColor }}>
-                      {fmtDiff(r.diff)}
-                    </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums" style={{ color: "var(--text-secondary)" }}>
-                      {r.avg != null ? r.avg.toFixed(1) : "–"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-        * Implied total is missing at least one stat line, so its Diff is greyed out and sorted after complete rows.
-        Hover a Props pts value for its breakdown.
-        {tdOnlyCount > 0 && ` ${tdOnlyCount} more players in the pool only have an anytime-TD price so far (their games' yardage lines aren't posted yet) and are left out until the next refresh.`}
-      </p>
+      <InjuryReport players={players} positionFilter={positionFilter} data={data} sectionTitle={sectionTitle} />
+
+      <section className="flex flex-col gap-2">
+        {sectionTitle("On IR / PUP", onIr.length)}
+        {onIr.length === 0 ? (
+          <div className="rounded-lg border p-6 text-center text-sm" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+            No players at this position are on IR right now.
+          </div>
+        ) : (
+          <InjuryTable rows={onIr} showReturn />
+        )}
+      </section>
+
+      <section className="flex flex-col gap-2">
+        {sectionTitle("Out for the Season", seasonEnding.length)}
+        {seasonEnding.length === 0 ? (
+          <div className="rounded-lg border p-6 text-center text-sm" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+            No season-ending injuries at this position.
+          </div>
+        ) : (
+          <InjuryTable rows={seasonEnding} showReturn={false} />
+        )}
+      </section>
     </div>
   );
 }
@@ -1481,19 +1424,23 @@ function PropsComparison({ players }) {
 const PAGES = [
   { key: "weekly", label: "Weekly Scores" },
   { key: "waivers", label: "Waiver Wire Targets" },
-  { key: "props", label: "Props" },
+  { key: "injuries", label: "Injuries" },
 ];
+
+const SCORED_PLAYERS = [...samplePlayers, ...WAIVER_TARGETS.filter((t) => !samplePlayers.some((p) => p.id === t.id))];
 
 function App() {
   const [page, setPage] = useState("weekly");
   const players = samplePlayers;
+  // Waiver targets outside the pool get scores too, for the injury report's last-game column.
+  const liveScores = useLiveScores(SCORED_PLAYERS);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col gap-5">
       <header>
         <h1 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>FF ValueDiff</h1>
         <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
-          Weekly scores, waiver wire targets, and a props-vs-projections comparison, built on the same player pool.
+          Weekly scores, waiver wire targets, and who's on injured reserve, built on the same player pool.
         </p>
       </header>
 
@@ -1510,9 +1457,9 @@ function App() {
         ))}
       </nav>
 
-      {page === "weekly" && <WeeklyScores players={players} />}
+      {page === "weekly" && <WeeklyScores players={players} data={liveScores} />}
       {page === "waivers" && <WaiverTargets />}
-      {page === "props" && <PropsComparison players={players} />}
+      {page === "injuries" && <InjuredReserve players={players} data={liveScores} />}
     </div>
   );
 }

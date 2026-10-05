@@ -1,10 +1,10 @@
 # FF ValueDiff
 
-A fantasy football companion covering three tabs on one shared 200-player
-pool: **Weekly Scores** (real results by week, or a full-season grid),
+A fantasy football companion covering three tabs on one shared player pool:
+**Weekly Scores** (real results by week, or a full-season grid),
 **Waiver Wire Targets** (live Sleeper trending activity plus a hand-picked
-pickup list), and **Props** (fantasy points implied by sportsbook lines,
-compared against fantasy sites' projections).
+pickup list), and **Injuries** (a live weekly injury report, plus who's out for the season or on IR/PUP,
+and the earliest week each player can return).
 
 ## Running it
 
@@ -18,8 +18,8 @@ plain double-clicked file, since `fetch` calls from a `file://` page hit
 browser restrictions that a real server doesn't. Any static file server
 works, e.g. `python -m http.server` from this directory, then open
 `http://localhost:8000/index.html`. Everything else in the app (Weekly
-Scores, the hand-picked Waiver Wire list, Props) works fine from a plain
-double-clicked file too.
+Scores, the hand-picked Waiver Wire list, Injured Reserve) works fine from a
+plain double-clicked file too.
 
 There's also a Chrome extension version in `extension/` — same idea, no
 React/Babel/CDN (a separate vanilla-JS rewrite, since extension pages block
@@ -41,17 +41,36 @@ that part is known for the whole season in advance, so it's shown
 regardless of whether the week's games have happened.
 
 Scores themselves are **real results, not projections or fabricated
-numbers** — pulled from FantasyPros' Week 1/2 2026 stats tables and stored in
-`WEEKLY_SCORES` in `index.html`. Only weeks that have actually been played
-get an entry there; the by-week selector only offers a tab for weeks that
-actually have an entry (`PLAYED_WEEKS` in `index.html`, derived from
-`WEEKLY_SCORES`'s own keys), same pattern as Waiver Wire Targets below — so
-there's nothing to click into that would just show an empty state. The
-season grid still shows all 18 week columns regardless, blank until played,
-since that view is meant to show the whole season's shape at a glance. As of
-this writing, Weeks 1-2 are filled in — add each following week's key to
-`WEEKLY_SCORES` once it's actually been played, and its tab appears
-automatically.
+numbers**, from Sleeper's stats API (`https://api.sleeper.com/stats/nfl/2026/<week>`,
+the `pts_ppr` field). They **update automatically**: on every page load the
+app asks Sleeper for the current week (`/v1/state/nfl`) and pulls every
+week played so far, so new weeks, in-progress games and stat corrections
+show up without editing anything. Each week's trimmed result is cached in
+`localStorage` (finished weeks for 6 hours, the current week for 5 minutes).
+While a week is in progress, the by-week view lists the teams **still to
+play**; their players stay blank until their game is in. The by-week
+selector only offers weeks with real scores and opens on the latest one. The
+season grid still shows all 18 week columns, blank until played.
+
+The fetch-and-match logic lives in `scripts/lib/sleeper-scores.js`, which
+the page loads with a plain `<script>` tag. Players are matched to Sleeper by
+name and position, plus a short `SLEEPER_ID_OVERRIDES` list for names that
+differ (e.g. "Kenny" Gainwell, "Cam" Ward). Sleeper's `WAS` is mapped to this
+app's `WSH`. If you add a player whose Sleeper name differs, add them there.
+
+`WEEKLY_SCORES` and `DID_NOT_PLAY` in `index.html` are a **baked-in
+snapshot**, shown until live data arrives and used if Sleeper can't be
+reached. To refresh the snapshot, run `node scripts/refresh-scores.js` (Node
+18+, `--dry-run` to preview). As of 2026-10-05 it holds Weeks 1-4. Week 4 is
+missing the Monday night NO@ATL game, which the live fetch picks up.
+
+**OUT and IR instead of 0.** `WEEKLY_SCORES` only lists players who
+actually played. Players whose team played but who didn't are listed in
+`DID_NOT_PLAY` and show **OUT**, both in the grid and at the bottom of the
+by-week table. Weeks inside an Injured Reserve stint show **IR** instead,
+including future weeks up to the player's earliest possible return (or the
+rest of the season for season-ending injuries). OUT and IR weeks don't
+count toward GP or AVG.
 
 ## Waiver Wire Targets
 
@@ -84,66 +103,44 @@ edited by hand — update `WAIVER_TARGETS` as real in-season news (injuries,
 depth-chart moves, snap counts) comes in.
 
 If `WAIVER_TARGETS` is ever emptied out, the page shows an explicit
-"nothing added yet" state rather than a guess. As of this writing (2026-09-23) it holds
-18 targets, based on actual results and the Week 3 injury report rather
-than preseason guesses: injury vacancies (Collins, Moore, Barkley, Goedert),
-QB changes (Daniels, Dart) and snap-share winners.
+"nothing added yet" state rather than a guess. As of this writing (2026-10-05) it holds
+20 Week 5 targets, based on Week 1-4 usage, Sleeper's injury designations
+and its most-added list rather than preseason guesses: injury vacancies
+(Jadarian Price and A.J. Brown to IR; Chase, Barkley, DeVonta Smith, Goedert
+and Breece Hall out), target/snap share winners, and streamers. CAR and KC
+are on bye in Week 5, so none of their players are listed.
 
-## Props
+## Injuries
 
-Sportsbook player-prop lines for the current week (`WEEK_PROPS` in
-`index.html`) converted into the PPR fantasy points they imply, next to
-what **Sleeper** and **ESPN** project for the same player. **Diff** is
-props-implied minus the average of the two sites, so a positive number means
-the betting market expects more than the fantasy sites do. There's a position
-filter, and each player's recent points per game (computed live from
-`WEEKLY_SCORES`) sits alongside.
+**This Week's Injury Report** (top of the tab) is **live**: every player in
+the pool, plus the waiver targets, whose current Sleeper designation is
+Questionable, Doubtful, Out or not active (e.g. Lamar Jackson, questionable
+with an ankle injury). Each row shows the injury and how the player's most
+recent game went. It comes from the same `/players/nfl` payload as the
+trending panel, now cached for 6 hours instead of 24 because designations
+change daily. Official injury reports come out Wednesday through Friday, so
+early in the week a designation may be carried over from the last game.
 
-**Where the numbers come from**
+Below that, the hand-kept IR lists: every fantasy-relevant player who's out for the season or on injured
+reserve or reserve/PUP (`INJURED_RESERVE` in `index.html`). Both lists mean
+at least four games out. Each entry has the injury, the week the current
+absence started (`sinceWeek`, 1 for players who started the season there)
+and, unless it's season-ending, the **earliest return** week: four team
+games after `sinceWeek`, skipping the team's bye (`irReturnWeek`). That
+date is a minimum, and many players take longer.
 
-- **Lines:** `node scripts/refresh-props.js` pulls every posted line from
-  [RotoWire's props board](https://www.rotowire.com/betting/nfl/player-props.php),
-  which aggregates BetMGM, DraftKings, FanDuel, Caesars and others. RotoWire
-  embeds the whole board as JSON in its page but sends no CORS header, so the
-  browser can't fetch it; the script matches players to `samplePlayers` by
-  name and rewrites `WEEK_PROPS`, `PROPS_WEEK` and `PROPS_UPDATED_ON` in
-  place. For each market it takes the median line across books, priced at
-  BetMGM, DraftKings or FanDuel where available, and the median anytime-TD
-  price. Books post lines game by game from Tuesday to Saturday, so rerun the
-  script closer to kickoff to fill in the games that weren't up yet. Players
-  who only have an anytime-TD price so far are left out of the table, and
-  the page says how many.
-- **Projections:** fetched live on page load from Sleeper's projections API
-  and ESPN's default PPR league endpoint. Both allow cross-origin requests,
-  so no script is needed. They need the page served over http(s) like the
-  Sleeper trending panel; if either fails, the page says so and averages
-  whichever one loaded.
-
-**How the implied points are built** (`propsImpliedPoints` in `index.html`)
-
-- Scoring: 1 per catch, 0.1 per rushing/receiving yard, 0.04 per passing
-  yard, 4 per passing TD, -2 per INT, 6 per other TD. Fumbles have no line.
-- Each yardage/receptions over/under is de-vigged, then shifted off its line
-  by how far the over's no-vig probability sits from 50/50 (normal
-  approximation, rough per-stat standard deviation). A 6.5-catch line priced
-  -154/+116 comes out near 7 expected catches.
-- Passing-TD and INT lines become the Poisson mean that matches the over's
-  price.
-- Anytime-TD odds are one-sided, so they're scaled down by a flat hold
-  estimate (`ATTD_HOLD`) and turned into expected TDs. For QBs that stands
-  in for rushing TDs.
-- RB receiving yards come from the rush+rec yards combo minus the rushing
-  line when there's no separate receiving line.
-
-Rows missing a line their position needs (`PROP_NEEDS`: for example a QB
-with no rushing-yards line, or an RB with no receptions line) list what's
-missing, get an asterisk, and have their Diff greyed out and sorted after the
-complete rows, because the missing stat pushes the implied total low.
+As of 2026-09-28 it holds 24 players, from Sleeper's injury designations
+(IR/PUP) plus team news. Three are season-ending: Achane (torn ACL), Dart
+(knee surgery) and Jayden Higgins (torn ACL). Edit the list by hand as
+players are placed on or activated from IR. The same list drives the IR
+cells in Weekly Scores.
 
 ## The shared player pool
 
-All three tabs read from one 200-player list, `samplePlayers` in
-`index.html` — id/name/team/position for the top 200 overall players. To
+All three tabs read from one list, `samplePlayers` in `index.html`:
+id/name/team/position for the top 200 overall players, plus 8 IR players
+added on 2026-09-28 (Conner, Benson, Njoku, Stowers, Tonges, Kirk, Pearsall,
+Kalinic) so every Injured Reserve entry also appears in Weekly Scores. To
 change what's shown, edit that array directly rather than anything in the
 browser (every table in the app is read-only).
 
@@ -151,7 +148,14 @@ Each entry also still carries an `adp` field left over from this app's
 original ADP-comparison tool (see "History" below); nothing reads it
 anymore; it's simply unused.
 
-## History: the original ADP Comparison tool
+## History
+
+The app also had a **Props** tab (sportsbook lines turned into implied
+fantasy points, compared with Sleeper and ESPN projections, fed by
+`scripts/refresh-props.js`). It was removed on 2026-09-28 along with its
+script; both are in git history if it's ever wanted back.
+
+### The original ADP Comparison tool
 
 This app started as a pure ADP-comparison tool — a table and scatter chart
 comparing each player's Average Draft Position across Yahoo, ESPN, Sleeper,

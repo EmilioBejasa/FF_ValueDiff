@@ -106,7 +106,7 @@ If `WAIVER_TARGETS` is ever emptied out, the page shows an explicit
 "nothing added yet" state rather than a guess. As of this writing (2026-10-05) it holds
 20 Week 5 targets, based on Week 1-4 usage, Sleeper's injury designations
 and its most-added list rather than preseason guesses: injury vacancies
-(Jadarian Price and A.J. Brown to IR; Chase, Barkley, DeVonta Smith, Goedert
+(Jadarian Price and A.J. Brown to IR; Chase, Barkley, Bigsby, DeVonta Smith, Goedert
 and Breece Hall out), target/snap share winners, and streamers. CAR and KC
 are on bye in Week 5, so none of their players are listed.
 

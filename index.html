@@ -364,7 +364,7 @@ const ALL_WEEKS = Array.from({ length: 18 }, (_, i) => i + 1);
 // it offline. Only players who actually played are listed; players who didn't
 // are in DID_NOT_PLAY below, and a week with no key here hasn't been played
 // yet, so it isn't guessed at.
-const WEEKLY_SCORES_UPDATED_ON = "2026-10-05";
+const WEEKLY_SCORES_UPDATED_ON = "2026-10-06";
 const WEEKLY_SCORES = {
   1: {
     "achane": 10.6, "adams-d": 5.6, "addison": 0, "allen-braelon": 4, "allen-cyrus": 0,
@@ -397,14 +397,50 @@ const WEEKLY_SCORES = {
     "price-j": 7.8, "purdy": 22.1, "rashod-bateman": 0, "reed-jayden": 5, "rice": 9.9,
     "robinson-b": 31.3, "robinson-brian": 3.1, "robinson-wandale": 8.8, "rodriguez-chris": 2.3, "sadiq": 11.4,
     "sampson-dylan": 0, "samuel-deebo": 18, "schultz-dalton": 7.5, "shaheed": 1.4, "shakir": 9,
-    "shough": 25.2, "skattebo": 14.1, "smithnjigba": 26.2, "spears": 4.4, "stafford": 5.1,
-    "stbrown": 28.7, "stevenson-r": 14.5, "strange": 10.3, "stribling": 0, "stroud": 16.5,
-    "sutton": 3.1, "swift": 32.4, "tate-c": 7.8, "taylor-j": 25.1, "thomas-brian": 7,
-    "tonges-jake": 0, "tracy": -0.6, "tucker-tre": 4.7, "tuten": 9.8, "waddle": 1.2,
-    "walker-k": 34.1, "ward-cameron": 11.7, "warren-jaylen": 10.3, "warren-tyler": 10.3, "washington-malik": 6.3,
-    "washington-mike": 4.1, "washington-p": 19.3, "watson-c": 32.7, "white-rachaad": 4.7, "wicks": 15.3,
-    "williams-caleb": 37.3, "williams-j": 24.2, "williams-jameson": 8.5, "willis-malik": 17.7, "wilson-g": 13.9,
-    "wilson-michael": 10.6, "worthy": 4.8, "young-bryce": 32.4, "zachariah-branch": 0,
+    "shough": 25.2, "skattebo": 14.1, "sl-10214": 2.3, "sl-10218": 6.2, "sl-10225": 2,
+    "sl-10226": 3.2, "sl-10231": 0, "sl-10234": 0, "sl-10235": 0, "sl-10857": 1.4,
+    "sl-10871": 2.2, "sl-11056": 2.2, "sl-11157": 0, "sl-11199": 0.7, "sl-11201": 2.4,
+    "sl-11280": 4, "sl-11370": 2.9, "sl-11421": 0, "sl-11433": 0, "sl-11435": 0.3,
+    "sl-11573": 0.3, "sl-11574": 0, "sl-11577": 2.2, "sl-11592": 0, "sl-11593": 3.4,
+    "sl-11596": 0, "sl-11597": 1.9, "sl-11599": 0.8, "sl-11608": 1.7, "sl-11616": 0,
+    "sl-11623": 1.8, "sl-11626": 0, "sl-11627": 0.5, "sl-11630": 5.6, "sl-11637": 1.1,
+    "sl-11643": -0.1, "sl-11647": 0, "sl-1166": 15.8, "sl-11729": 2.8, "sl-11834": 19.9,
+    "sl-11942": 0, "sl-11994": 0, "sl-12048": 2.9, "sl-12455": 0, "sl-12472": 5.6,
+    "sl-12473": 1.9, "sl-12483": 11.3, "sl-12485": -0.4, "sl-12491": 1.1, "sl-12492": 8.2,
+    "sl-12493": 5.2, "sl-12495": 0, "sl-12496": 0, "sl-12498": 1.8, "sl-12499": 8.1,
+    "sl-12502": 6.8, "sl-12503": 0, "sl-12504": 0, "sl-12505": 0, "sl-12521": 0,
+    "sl-12523": -2, "sl-12535": 0, "sl-12540": -0.3, "sl-12544": 0, "sl-12547": 0,
+    "sl-12641": 1.4, "sl-12699": 3.5, "sl-12700": 0, "sl-12718": 0, "sl-12817": 1.9,
+    "sl-12938": 0, "sl-12969": 2.9, "sl-13013": 0, "sl-13075": 0, "sl-13079": 7.1,
+    "sl-13150": 0, "sl-13264": 3.8, "sl-13273": 0, "sl-13277": 1.2, "sl-13299": 1.9,
+    "sl-13307": 2.6, "sl-13311": 3.5, "sl-13317": 6.6, "sl-13322": 0, "sl-13324": 2.3,
+    "sl-13329": 0.8, "sl-13333": 0, "sl-13338": 0, "sl-13380": 0, "sl-13394": 10,
+    "sl-13411": 0, "sl-13420": 7.2, "sl-13421": 7.2, "sl-13424": 1, "sl-13434": 0,
+    "sl-13477": 0, "sl-13533": 0.3, "sl-1373": 9.3, "sl-14026": 0, "sl-2359": 4.2,
+    "sl-2505": 4.8, "sl-3155": 0, "sl-3161": 19.2, "sl-3202": 0, "sl-3257": 16.5,
+    "sl-3269": 6.3, "sl-3271": 1.2, "sl-3286": 13, "sl-3634": 16.4, "sl-4017": 15,
+    "sl-4039": 5.5, "sl-4054": 0, "sl-4066": 14.3, "sl-4144": 7, "sl-4147": 8,
+    "sl-4177": 9.1, "sl-4189": 0, "sl-4314": 0, "sl-4454": 15.5, "sl-4464": -0.3,
+    "sl-4574": 7.7, "sl-4602": 0, "sl-4993": 18.8, "sl-4995": 0, "sl-5008": 1.4,
+    "sl-5409": 1.4, "sl-5773": 0, "sl-5854": 12.8, "sl-5857": 13.3, "sl-5906": 1.7,
+    "sl-5973": 4.2, "sl-5985": 3.5, "sl-5995": 3.8, "sl-6001": 4.9, "sl-6130": 13.8,
+    "sl-6271": 1.5, "sl-6427": 0, "sl-6826": 11.5, "sl-6828": 2.8, "sl-6865": 1.6,
+    "sl-6869": 3, "sl-6931": 1.1, "sl-7039": 0, "sl-7090": 4.7, "sl-7204": 0,
+    "sl-7521": 0, "sl-7535": 0, "sl-7536": 0, "sl-7587": 0, "sl-7600": 15.6,
+    "sl-7670": 10.4, "sl-7694": 5.5, "sl-7716": 3.3, "sl-7757": 0, "sl-7812": 0,
+    "sl-7828": 1.5, "sl-7842": 3.9, "sl-7891": 1.5, "sl-8111": 5.6, "sl-8119": 2.9,
+    "sl-8122": 0, "sl-8127": 0, "sl-8145": 1.4, "sl-8160": 2.4, "sl-8168": 0,
+    "sl-8172": 3.8, "sl-8181": 0.1, "sl-8188": 0, "sl-8195": 3.4, "sl-8200": 0,
+    "sl-8204": 2, "sl-8225": 1.7, "sl-8527": 0, "sl-8755": 1, "sl-8917": 1.8,
+    "sl-9479": 3.8, "sl-9482": 9.2, "sl-9501": 7, "sl-96": 12.5, "sl-9757": 9,
+    "smithnjigba": 26.2, "spears": 4.4, "stafford": 5.1, "stbrown": 28.7, "stevenson-r": 14.5,
+    "strange": 10.3, "stribling": 0, "stroud": 16.5, "sutton": 3.1, "swift": 32.4,
+    "tate-c": 7.8, "taylor-j": 25.1, "thomas-brian": 7, "tonges-jake": 0, "tracy": -0.6,
+    "tucker-tre": 4.7, "tuten": 9.8, "waddle": 1.2, "walker-k": 34.1, "ward-cameron": 11.7,
+    "warren-jaylen": 10.3, "warren-tyler": 10.3, "washington-malik": 6.3, "washington-mike": 4.1, "washington-p": 19.3,
+    "watson-c": 32.7, "white-rachaad": 4.7, "wicks": 15.3, "williams-caleb": 37.3, "williams-j": 24.2,
+    "williams-jameson": 8.5, "willis-malik": 17.7, "wilson-g": 13.9, "wilson-michael": 10.6, "worthy": 4.8,
+    "young-bryce": 32.4, "zachariah-branch": 0,
   },
   2: {
     "achane": 12.3, "adams-d": 39.5, "addison": 4.1, "allen-braelon": 8.5, "allen-cyrus": 0,
@@ -435,14 +471,52 @@ const WEEKLY_SCORES = {
     "price-j": 5, "purdy": 28.5, "rashod-bateman": 21.8, "reed-jayden": 1.4, "rice": 12.3,
     "robinson-b": 11.1, "robinson-brian": 8.7, "robinson-wandale": 1.9, "rodriguez-chris": 1.3, "sadiq": 3.7,
     "samuel-deebo": 6.5, "schultz-dalton": 26, "shaheed": 6.9, "shakir": 6.8, "shough": 22.4,
-    "singleton-nicholas": 1, "skattebo": 9.5, "smithnjigba": 42.5, "spears": 9, "stafford": 28,
-    "stbrown": 35.2, "stevenson-r": 3.6, "strange": 3.7, "stroud": 17, "sutton": 5.5,
-    "swift": 12.9, "tate-c": 5.7, "taylor-j": 29.2, "thomas-brian": 7, "tracy": 0,
-    "tucker-tre": 22.9, "tuten": 14.2, "waddle": 21.8, "walker-k": 23.8, "ward-cameron": 20,
-    "warren-jaylen": 9.7, "warren-tyler": 14.4, "washington-malik": 8.7, "washington-mike": 0.7, "washington-p": 16.8,
-    "watson-c": 14.1, "white-rachaad": 14.3, "wicks": 12.4, "williams-caleb": 8.7, "williams-j": 8,
-    "williams-jameson": 5.3, "willis-malik": 12.5, "wilson-g": 16.7, "wilson-michael": 3.8, "worthy": 13.5,
-    "young-bryce": 24.1, "zachariah-branch": 3.4,
+    "singleton-nicholas": 1, "skattebo": 9.5, "sl-10214": 1.7, "sl-10218": 6.7, "sl-10225": 0,
+    "sl-10226": 1.7, "sl-10231": 1, "sl-10234": 0, "sl-10235": 0, "sl-10871": 0,
+    "sl-11056": 5.3, "sl-11157": 0, "sl-11199": 0.8, "sl-11201": 8.7, "sl-11256": 2.2,
+    "sl-11280": 0, "sl-11370": 3.6, "sl-11421": 14.7, "sl-11433": 12.8, "sl-11435": 9.2,
+    "sl-11439": 0.3, "sl-11573": 0, "sl-11574": 0, "sl-11577": 4.9, "sl-11592": 2.5,
+    "sl-11593": 0, "sl-11596": 1.6, "sl-11597": 0, "sl-11599": 0, "sl-11608": 10.8,
+    "sl-11616": 0, "sl-11626": 8.4, "sl-11627": 3.7, "sl-11629": 5.7, "sl-11630": 7.8,
+    "sl-11637": 12.3, "sl-11643": 1.1, "sl-11647": 0, "sl-1166": 21.2, "sl-11729": 3,
+    "sl-11834": 11.4, "sl-11942": 2.4, "sl-11994": 0, "sl-12048": 2.5, "sl-12455": 0,
+    "sl-12467": 1.5, "sl-12472": 2.1, "sl-12473": 2.3, "sl-12483": 4.5, "sl-12485": 5.9,
+    "sl-12491": 0, "sl-12492": 1.6, "sl-12493": 9.8, "sl-12495": 0.7, "sl-12496": 0,
+    "sl-12497": 0, "sl-12498": 0, "sl-12499": 8.9, "sl-12502": 3.3, "sl-12503": 2,
+    "sl-12504": 3.2, "sl-12505": 8.6, "sl-12521": 2.7, "sl-12535": 4.6, "sl-12540": 0,
+    "sl-12542": 0.8, "sl-12544": 0, "sl-12547": 2, "sl-12641": 0, "sl-12699": 2.4,
+    "sl-12700": 0, "sl-12718": 2.2, "sl-12817": 0, "sl-12938": 0, "sl-13013": 0,
+    "sl-13075": 0, "sl-13079": 0, "sl-13150": 10.6, "sl-13264": 0, "sl-13273": 0,
+    "sl-13277": 0.2, "sl-13299": 0, "sl-13307": 0, "sl-13311": 0, "sl-13317": 4.7,
+    "sl-13319": 1.8, "sl-13322": 1.9, "sl-13324": 0, "sl-13329": 0, "sl-13333": 1.4,
+    "sl-13338": 0, "sl-13347": 1.2, "sl-13380": 2.3, "sl-13394": 0, "sl-13411": 0,
+    "sl-13420": 1.8, "sl-13421": 4, "sl-13424": 0, "sl-13434": 1.4, "sl-13477": 1.7,
+    "sl-13533": 0, "sl-13602": 1, "sl-1373": 15.6, "sl-13770": 0, "sl-14026": 2.8,
+    "sl-2306": 3.5, "sl-2307": 8.7, "sl-2359": 2.3, "sl-2505": 18.3, "sl-3155": 9.1,
+    "sl-3161": 6.3, "sl-3202": 4, "sl-3257": 7.5, "sl-3269": 1.6, "sl-3271": 0,
+    "sl-3286": 6.4, "sl-3634": 9, "sl-4017": 19.7, "sl-4039": 4, "sl-4054": 0,
+    "sl-4066": 2.7, "sl-4144": 0, "sl-4147": 3.2, "sl-4177": 3.8, "sl-4189": 0,
+    "sl-4314": 2.8, "sl-4454": 3.1, "sl-4574": 1.4, "sl-4602": 0, "sl-4972": 0.3,
+    "sl-4993": 0, "sl-4995": 2.1, "sl-5008": 0, "sl-5773": 2.8, "sl-5848": 1.2,
+    "sl-5854": 21.4, "sl-5857": 0, "sl-5906": 8.5, "sl-5973": 3.4, "sl-5985": 5.4,
+    "sl-5995": 3.8, "sl-6001": 0, "sl-6012": 1.6, "sl-6130": 0.9, "sl-6271": 1.3,
+    "sl-6826": 0, "sl-6828": -0.3, "sl-6865": 3.5, "sl-6869": 0, "sl-6931": 3,
+    "sl-7039": 16.4, "sl-7090": 6.8, "sl-7204": 1.4, "sl-7521": 1.6, "sl-7527": -0.2,
+    "sl-7528": 0.6, "sl-7535": 0, "sl-7536": 1.7, "sl-7562": 2.9, "sl-7587": 4.1,
+    "sl-7600": 7.4, "sl-7670": 11.3, "sl-7694": 1.4, "sl-7716": 0, "sl-7757": 1.2,
+    "sl-7812": 0, "sl-7828": 0, "sl-7842": 0, "sl-7891": 0, "sl-8111": 8.8,
+    "sl-8119": 3.1, "sl-8122": 2.4, "sl-8127": 5.1, "sl-8135": 0, "sl-8145": 2.5,
+    "sl-8147": 0, "sl-8160": -0.4, "sl-8168": 2.6, "sl-8172": 3.7, "sl-8181": 0.1,
+    "sl-8188": 12.6, "sl-8195": 0, "sl-8200": 1.7, "sl-8204": 0, "sl-8208": 4.9,
+    "sl-8225": 0, "sl-8527": 3.7, "sl-8917": 0.1, "sl-9479": 1.7, "sl-9482": 5.3,
+    "sl-9501": 1.9, "sl-9506": 0, "sl-96": 5, "smithnjigba": 42.5, "spears": 9,
+    "stafford": 28, "stbrown": 35.2, "stevenson-r": 3.6, "strange": 3.7, "stroud": 17,
+    "sutton": 5.5, "swift": 12.9, "tate-c": 5.7, "taylor-j": 29.2, "thomas-brian": 7,
+    "tracy": 0, "tucker-tre": 22.9, "tuten": 14.2, "waddle": 21.8, "walker-k": 23.8,
+    "ward-cameron": 20, "warren-jaylen": 9.7, "warren-tyler": 14.4, "washington-malik": 8.7, "washington-mike": 0.7,
+    "washington-p": 16.8, "watson-c": 14.1, "white-rachaad": 14.3, "wicks": 12.4, "williams-caleb": 8.7,
+    "williams-j": 8, "williams-jameson": 5.3, "willis-malik": 12.5, "wilson-g": 16.7, "wilson-michael": 3.8,
+    "worthy": 13.5, "young-bryce": 24.1, "zachariah-branch": 3.4,
   },
   3: {
     "achane": 1.7, "adams-d": 20.7, "addison": 20, "allen-braelon": 4.7, "allen-cyrus": 0,
@@ -472,14 +546,50 @@ const WEEKLY_SCORES = {
     "pollard": 13.6, "prescott": 18.9, "price-j": 1.2, "purdy": 31.3, "rashod-bateman": 5.7,
     "rice": 15.8, "robinson-b": 35.3, "robinson-brian": 11, "robinson-wandale": 18.7, "rodriguez-chris": 9.7,
     "sadiq": 23.5, "samuel-deebo": 15.4, "schultz-dalton": 6, "shaheed": 3.4, "shakir": 1.6,
-    "shough": 24.8, "singleton-nicholas": 0, "skattebo": 13, "smithnjigba": 35.4, "spears": 0.5,
-    "stafford": 22.9, "stbrown": 11.9, "stevenson-r": 6.8, "strange": 6.2, "stroud": 11.7,
-    "sutton": 7.6, "swift": 10.8, "tate-c": 11.8, "taylor-j": 9.2, "thomas-brian": 1.8,
-    "tracy": 0.3, "tucker-tre": 8.3, "tuten": 17, "waddle": 6.4, "walker-k": 21.3,
-    "ward-cameron": 10.4, "warren-jaylen": 20.6, "warren-tyler": 14.7, "washington-malik": 11.1, "washington-mike": 11.4,
-    "washington-p": 13, "watson-c": 22.6, "white-rachaad": 11.1, "wicks": 5.2, "williams-j": 18.3,
-    "williams-jameson": 8.9, "willis-malik": 11, "wilson-g": 26.7, "wilson-michael": 25.9, "worthy": 4,
-    "young-bryce": 14.6, "zachariah-branch": 1.7,
+    "shough": 24.8, "singleton-nicholas": 0, "skattebo": 13, "sl-10214": 3.9, "sl-10218": 8.5,
+    "sl-10225": 0, "sl-10231": 5, "sl-10234": 0, "sl-10235": 0, "sl-10871": 1.9,
+    "sl-11056": 3, "sl-11157": 12.3, "sl-11201": 0, "sl-11280": 3, "sl-11292": 1.4,
+    "sl-11370": 1.4, "sl-11421": 3.5, "sl-11433": 7.8, "sl-11435": 1.4, "sl-11439": 0,
+    "sl-11559": 15, "sl-11574": -2, "sl-11577": 2.1, "sl-11592": 0, "sl-11593": 2.9,
+    "sl-11596": 0, "sl-11597": 0, "sl-11599": 0, "sl-11608": 3.1, "sl-11616": 0,
+    "sl-11623": 0, "sl-11627": 3.1, "sl-11629": 0, "sl-11630": 15, "sl-11637": 4.7,
+    "sl-11647": 3, "sl-1166": 22.2, "sl-11729": 4.7, "sl-11834": 6.9, "sl-11942": 1.2,
+    "sl-11994": 0, "sl-12048": 10.8, "sl-12455": 1.4, "sl-12467": 0, "sl-12472": 9.1,
+    "sl-12473": 6.6, "sl-12483": 0, "sl-12485": 1.8, "sl-12491": 3.7, "sl-12492": 14.4,
+    "sl-12493": 0, "sl-12495": 14.5, "sl-12496": 0, "sl-12497": 7.8, "sl-12499": 2.1,
+    "sl-12502": 3.4, "sl-12503": 0, "sl-12504": 2.6, "sl-12505": 2.1, "sl-12521": 0,
+    "sl-12535": 9.6, "sl-12540": -0.7, "sl-12542": 1.7, "sl-12544": 2.9, "sl-12547": 4.4,
+    "sl-12634": 8, "sl-12641": 3.1, "sl-12699": 0, "sl-12700": 0, "sl-12718": 19.3,
+    "sl-12817": 0, "sl-12938": 1.8, "sl-12971": -2, "sl-13013": 0, "sl-13075": 6,
+    "sl-13079": 0, "sl-13150": 0, "sl-13264": 5.9, "sl-13273": 2.4, "sl-13277": 0.5,
+    "sl-13299": 0, "sl-13307": 0, "sl-13311": 10.7, "sl-13317": 11, "sl-13319": 0,
+    "sl-13322": 2.6, "sl-13324": 10.3, "sl-13329": 0, "sl-13333": 0, "sl-13338": 1.3,
+    "sl-13347": 0.1, "sl-1339": 1.9, "sl-13394": 8.2, "sl-13411": 1.1, "sl-13420": 0,
+    "sl-13424": 1.4, "sl-13425": -0.1, "sl-13434": 0, "sl-13477": 1.2, "sl-1373": 26,
+    "sl-13770": 5.2, "sl-14026": 0, "sl-1737": 24.5, "sl-2306": 6.1, "sl-2307": 20.4,
+    "sl-2359": 0.2, "sl-2505": 10.1, "sl-3155": 3, "sl-3200": 3.3, "sl-3202": 9.1,
+    "sl-3257": 25.6, "sl-3269": 7.4, "sl-3271": 20.2, "sl-3634": 21, "sl-4017": 20.3,
+    "sl-4039": 14.6, "sl-4054": 2.6, "sl-4066": 0, "sl-4144": 3.6, "sl-4147": 2.4,
+    "sl-4177": 14.7, "sl-4189": 8.3, "sl-4314": 1.4, "sl-4454": 4.2, "sl-4602": 1.2,
+    "sl-4993": 12.7, "sl-4995": 0, "sl-5008": 0, "sl-5409": 3.3, "sl-5773": 0,
+    "sl-5857": 19.3, "sl-5906": 1.5, "sl-5973": 0, "sl-5985": 8.7, "sl-5995": 3.3,
+    "sl-6001": 1, "sl-6012": 0, "sl-6039": 9, "sl-6271": 2.9, "sl-6826": 0,
+    "sl-6828": 2.4, "sl-6865": 0, "sl-6869": 0, "sl-6931": 0.2, "sl-7039": 7.4,
+    "sl-7090": 4.9, "sl-7204": 0, "sl-7521": 2, "sl-7528": 5.2, "sl-7535": 1.5,
+    "sl-7536": 0, "sl-7587": 0, "sl-7600": 5.1, "sl-7670": 0, "sl-7694": 7.1,
+    "sl-7716": 1.9, "sl-7757": 10.3, "sl-7812": 1, "sl-7828": 6.9, "sl-7842": 0,
+    "sl-7891": 2.7, "sl-8111": 8.6, "sl-8119": 2.1, "sl-8122": 0, "sl-8135": 9.3,
+    "sl-8145": 14.9, "sl-8147": 9.9, "sl-8168": 6.1, "sl-8172": 10.5, "sl-8181": 0,
+    "sl-8188": 4.2, "sl-8200": 0, "sl-8204": 0, "sl-8207": 2.7, "sl-8208": 2.4,
+    "sl-8225": 3.6, "sl-829": -1, "sl-8527": 0, "sl-8917": 8.8, "sl-9479": 9.7,
+    "sl-9482": 12.2, "sl-9501": 4.8, "sl-9506": 0, "sl-96": 23.7, "sl-9757": 3.9,
+    "smithnjigba": 35.4, "spears": 0.5, "stafford": 22.9, "stbrown": 11.9, "stevenson-r": 6.8,
+    "strange": 6.2, "stroud": 11.7, "sutton": 7.6, "swift": 10.8, "tate-c": 11.8,
+    "taylor-j": 9.2, "thomas-brian": 1.8, "tracy": 0.3, "tucker-tre": 8.3, "tuten": 17,
+    "waddle": 6.4, "walker-k": 21.3, "ward-cameron": 10.4, "warren-jaylen": 20.6, "warren-tyler": 14.7,
+    "washington-malik": 11.1, "washington-mike": 11.4, "washington-p": 13, "watson-c": 22.6, "white-rachaad": 11.1,
+    "wicks": 5.2, "williams-j": 18.3, "williams-jameson": 8.9, "willis-malik": 11, "wilson-g": 26.7,
+    "wilson-michael": 25.9, "worthy": 4, "young-bryce": 14.6, "zachariah-branch": 1.7,
   },
   4: {
     "adams-d": 7.2, "addison": 9.1, "allen-braelon": 8.7, "allen-cyrus": 0, "allen-j": 19.5,
@@ -494,25 +604,63 @@ const WEEKLY_SCORES = {
     "harrison": 8.2, "harvey-rj": 19.3, "henderson-t": 4.2, "henry-d": 15.9, "henry-hunter": 11.2,
     "herbert": 11.6, "higgins-t": 26.7, "hockenson": 24.9, "hubbard": 25.9, "hunter-travis": 0,
     "hurts": 13.5, "irving": 6.1, "jackson-l": 18.9, "jaylin-noel": 11.9, "jeanty": 18.6,
-    "jelani-woods": 2.1, "jennings-jauan": 1.8, "jeudy": 6.6, "johnson-emmett": 2, "johnston-q": 5,
-    "jones-aaron": 16.8, "jones-daniel": 8.9, "judkins": 21.6, "kaytron-allen": 0.1, "kelce": 3.5,
-    "kincaid": 1.7, "kittle": 17, "kraft": 16.5, "kwilliams": 36.7, "lamb": 41.3,
-    "laporta": 22.4, "lawrence": 13.1, "lemon": 5.7, "likely": 13.6, "lloyd-marshawn": 9.9,
-    "love-j": 6.5, "love-jordan": 14.1, "loveland": 11.7, "mahomes": 17, "malachi-corley": 0,
-    "malachi-fields": 13.2, "marks-woody": 8.2, "maye": 27.2, "mcbride": 10.1, "mccaffrey": 16,
-    "mcconkey": 0, "mcmillan": 45.2, "metcalf": 16.5, "meyers": 6.3, "mitchell-keaton": 11.3,
-    "monangai": 28, "montgomery": 4.3, "moore-dj": 2.7, "murray-kyler": 11.5, "nabers": 23.2,
-    "nacua": 27.7, "nailor": 0, "nix": 13.6, "odunze": 15.4, "okonkwo": 2.5,
-    "pickens": 9.5, "pittman": 3.5, "pollard": 13, "prescott": 18.1, "purdy": 19.6,
-    "rashod-bateman": 6.6, "rice": 0, "robinson-wandale": 11, "rodriguez-chris": 9.5, "sadiq": 0,
-    "samuel-deebo": 18, "schultz-dalton": 2.9, "shaheed": 12.3, "shakir": 13.2, "singleton-nicholas": 0.2,
-    "skattebo": 7.6, "smithnjigba": 12.6, "spears": 1.6, "stafford": 11.7, "stbrown": 15.5,
-    "stevenson-r": 18.4, "strange": 16.5, "stroud": 23.1, "sutton": 1.4, "swift": 7.4,
-    "tate-c": 21.5, "taylor-j": 22.7, "thomas-brian": 9.7, "tracy": -0.1, "tucker-tre": 8.4,
-    "tuten": 11.1, "waddle": 14.5, "walker-k": 30.9, "ward-cameron": 16.6, "warren-jaylen": 15.6,
-    "warren-tyler": 9.1, "washington-malik": 12, "washington-mike": 2.7, "washington-p": 2, "watson-c": 7.7,
-    "wicks": 4.8, "williams-j": 31.3, "williams-jameson": 16.2, "willis-malik": 2.5, "wilson-g": 5.7,
-    "wilson-michael": 16.5, "worthy": 11, "young-bryce": 21.5,
+    "jelani-woods": 2.1, "jennings-jauan": 1.8, "jeudy": 6.6, "johnson-emmett": 2, "johnson-juwan": 11.9,
+    "johnston-q": 5, "jones-aaron": 16.8, "jones-daniel": 8.9, "judkins": 21.6, "kamara": 22.8,
+    "kaytron-allen": 0.1, "kelce": 3.5, "kincaid": 1.7, "kittle": 17, "kraft": 16.5,
+    "kwilliams": 36.7, "lamb": 41.3, "laporta": 22.4, "lawrence": 13.1, "lemon": 5.7,
+    "likely": 13.6, "lloyd-marshawn": 9.9, "london": 14.6, "love-j": 6.5, "love-jordan": 14.1,
+    "loveland": 11.7, "mahomes": 17, "malachi-corley": 0, "malachi-fields": 13.2, "marks-woody": 8.2,
+    "maye": 27.2, "mcbride": 10.1, "mccaffrey": 16, "mcconkey": 0, "mcmillan": 45.2,
+    "metcalf": 16.5, "meyers": 6.3, "mitchell-keaton": 11.3, "monangai": 28, "montgomery": 4.3,
+    "moore-dj": 2.7, "murray-kyler": 11.5, "nabers": 23.2, "nacua": 27.7, "nailor": 0,
+    "nix": 13.6, "odunze": 15.4, "okonkwo": 2.5, "olave": 19.6, "pickens": 9.5,
+    "pittman": 3.5, "pitts": 7.7, "pollard": 13, "prescott": 18.1, "purdy": 19.6,
+    "rashod-bateman": 6.6, "rice": 0, "robinson-b": 27.7, "robinson-brian": 25.7, "robinson-wandale": 11,
+    "rodriguez-chris": 9.5, "sadiq": 0, "samuel-deebo": 18, "schultz-dalton": 2.9, "shaheed": 12.3,
+    "shakir": 13.2, "shough": 15.9, "singleton-nicholas": 0.2, "skattebo": 7.6, "sl-10214": 0,
+    "sl-10218": 7.6, "sl-10225": 0, "sl-10231": 9.9, "sl-10234": -0.4, "sl-10235": 3.3,
+    "sl-10871": 0, "sl-11056": 0, "sl-11068": 7.9, "sl-11157": 5.2, "sl-11201": 0,
+    "sl-11256": 9.8, "sl-11280": 0, "sl-11370": 4.5, "sl-11421": 0, "sl-11433": 0,
+    "sl-11435": 27, "sl-11439": 8.8, "sl-11559": 12.7, "sl-11574": 0, "sl-11577": 2.3,
+    "sl-11592": 0, "sl-11593": 0, "sl-11596": 0, "sl-11597": 8.1, "sl-11599": 3,
+    "sl-11608": 15.3, "sl-11616": 0.2, "sl-11623": 1.4, "sl-11627": 0, "sl-11629": 2.9,
+    "sl-11630": 16.4, "sl-11637": 23.6, "sl-11643": 0.7, "sl-11647": 11.6, "sl-1166": 23.6,
+    "sl-11729": 2.7, "sl-11834": 17.4, "sl-11942": 0, "sl-11994": 1.3, "sl-12048": 3,
+    "sl-12455": 0, "sl-12472": 3.6, "sl-12473": 1.8, "sl-12485": 4.7, "sl-12491": 0,
+    "sl-12492": 7.7, "sl-12493": 8.8, "sl-12495": 18, "sl-12496": 2.4, "sl-12497": 7.6,
+    "sl-12499": 3.2, "sl-12502": 3.5, "sl-12503": 1.2, "sl-12504": 2.2, "sl-12505": 0,
+    "sl-12521": 0, "sl-12535": 13.5, "sl-12540": 2.5, "sl-12542": 12.2, "sl-12544": 0,
+    "sl-12547": 0, "sl-12634": 0, "sl-12641": 0, "sl-12699": 0, "sl-12700": 1.4,
+    "sl-12718": 1.7, "sl-12817": 0, "sl-12938": 0, "sl-13013": 4.9, "sl-13075": 2.8,
+    "sl-13079": 0, "sl-13150": 18.3, "sl-13264": 15.2, "sl-13268": 2.3, "sl-13273": 0,
+    "sl-13277": 4.3, "sl-13299": 2.5, "sl-13311": 0, "sl-13317": 4.5, "sl-13319": 0,
+    "sl-13322": 1.8, "sl-13324": 5.4, "sl-13329": 0, "sl-13333": 1.6, "sl-13338": 1.3,
+    "sl-13347": 1.2, "sl-1339": 3.3, "sl-13394": 6.2, "sl-13411": 0, "sl-13420": 1.7,
+    "sl-13421": 2.2, "sl-13424": 4.8, "sl-13425": 13.4, "sl-13434": 2.5, "sl-13533": -0.5,
+    "sl-13557": 12, "sl-1373": 8.8, "sl-13770": 0, "sl-14026": 0, "sl-1737": 0,
+    "sl-2306": 20, "sl-2307": 5.3, "sl-2359": 0, "sl-2505": 6.6, "sl-3155": 9.2,
+    "sl-3200": 0, "sl-3202": 1.9, "sl-3257": 13.4, "sl-3271": 11.7, "sl-3634": 2.6,
+    "sl-4017": 13.9, "sl-4039": 2.3, "sl-4054": 0, "sl-4066": 1.6, "sl-4144": 2.9,
+    "sl-4147": 0.7, "sl-4177": 8.3, "sl-4189": 0, "sl-4314": 0, "sl-4454": 0,
+    "sl-4602": 0, "sl-4663": 5, "sl-4993": 13, "sl-4995": 11.2, "sl-5008": 0,
+    "sl-5409": 1.2, "sl-5906": 3.3, "sl-5985": 1.1, "sl-5995": 4.5, "sl-6001": 0,
+    "sl-6012": -0.1, "sl-6039": 3.2, "sl-6271": 0, "sl-6427": 5.9, "sl-6659": 0.4,
+    "sl-6826": 3.3, "sl-6828": 1.7, "sl-6869": 0, "sl-6931": 2, "sl-7039": 7.6,
+    "sl-7083": 4.1, "sl-7090": 0, "sl-7204": 0, "sl-7521": 0, "sl-7528": 3,
+    "sl-7535": 2, "sl-7536": 0, "sl-7562": 1.8, "sl-7568": 2.3, "sl-7587": 9.5,
+    "sl-7600": 10.7, "sl-7670": 1.3, "sl-7694": 5.2, "sl-7716": 0, "sl-7757": 1.7,
+    "sl-7812": 0, "sl-7828": 3.7, "sl-7842": 1, "sl-7891": 1.8, "sl-8111": 7.7,
+    "sl-8119": 13.4, "sl-8122": 0, "sl-8135": 11.7, "sl-8145": 0, "sl-8147": 6.7,
+    "sl-8168": 0.8, "sl-8172": 0, "sl-8181": 1.5, "sl-8188": 28.1, "sl-8200": 0,
+    "sl-8204": 0, "sl-8207": 1.2, "sl-8208": 7.9, "sl-8225": 1.2, "sl-8527": -0.1,
+    "sl-8917": 0, "sl-9479": 11.7, "sl-9482": 16.2, "sl-9501": 3.5, "sl-9506": 7,
+    "sl-96": 24, "sl-9757": 1.9, "smithnjigba": 12.6, "spears": 1.6, "stafford": 11.7,
+    "stbrown": 15.5, "stevenson-r": 18.4, "strange": 16.5, "stroud": 23.1, "sutton": 1.4,
+    "swift": 7.4, "tate-c": 21.5, "taylor-j": 22.7, "thomas-brian": 9.7, "tracy": -0.1,
+    "tucker-tre": 8.4, "tuten": 11.1, "waddle": 14.5, "walker-k": 30.9, "ward-cameron": 16.6,
+    "warren-jaylen": 15.6, "warren-tyler": 9.1, "washington-malik": 12, "washington-mike": 2.7, "washington-p": 2,
+    "watson-c": 7.7, "wicks": 4.8, "williams-j": 31.3, "williams-jameson": 16.2, "willis-malik": 2.5,
+    "wilson-g": 5.7, "wilson-michael": 16.5, "worthy": 11, "young-bryce": 21.5, "zachariah-branch": 3,
   },
 };
 
@@ -549,14 +697,241 @@ const DID_NOT_PLAY = {
     "achane", "allen-keenan", "benson-trey", "brooks-jonathon", "brown-aj",
     "caleb-douglas", "charbonnet", "coker", "coleman-jonah", "conner-james",
     "cooper-omar", "daniels-j", "dart", "dell", "dowdle",
-    "dsmith", "ferguson-terrance", "goedert", "hall-b", "higgins-jayden",
-    "jacobs", "jefferson", "kalinic-nikola", "kirk-christian", "lane-jakobi",
-    "mason-jordan", "mayfield", "mclaurin", "mcmillan-jalen", "mendoza",
-    "mitchell-adonai", "njoku-david", "pacheco", "pearsall-ricky", "pierce-alec",
-    "price-j", "reed-jayden", "ross-dwelley", "sampson-dylan", "stowers-eli",
-    "stribling", "tonges-jake", "white-rachaad", "williams-caleb",
+    "dsmith", "etienne", "ferguson-terrance", "goedert", "hall-b",
+    "higgins-jayden", "jacobs", "jefferson", "kalinic-nikola", "kirk-christian",
+    "lane-jakobi", "mason-jordan", "mayfield", "mclaurin", "mcmillan-jalen",
+    "mendoza", "mitchell-adonai", "njoku-david", "pacheco", "pearsall-ricky",
+    "pierce-alec", "price-j", "reed-jayden", "ross-dwelley", "sampson-dylan",
+    "stowers-eli", "stribling", "tonges-jake", "tyson-jordyn", "white-rachaad",
+    "williams-caleb",
   ],
 };
+
+// Everyone outside samplePlayers who has scored this season (waiver-wire
+// breakouts, backup QBs who started, etc.), keyed "sl-<Sleeper id>" in
+// WEEKLY_SCORES, so the rankings cover every player rather than just the
+// preseason top 200. Baked by scripts/refresh-scores.js; the live fetch
+// rebuilds it on every load.
+const EXTRA_PLAYERS = [
+  { id: "sl-10214", name: "Davis Allen", team: "LAR", position: "TE", extra: true },
+  { id: "sl-10218", name: "Xavier Hutchinson", team: "HOU", position: "WR", extra: true },
+  { id: "sl-10225", name: "Jonathan Mingo", team: "DAL", position: "WR", extra: true },
+  { id: "sl-10226", name: "Andrei Iosivas", team: "CIN", position: "WR", extra: true },
+  { id: "sl-10231", name: "Elijah Higgins", team: "ARI", position: "TE", extra: true },
+  { id: "sl-10234", name: "Derius Davis", team: "LAC", position: "WR", extra: true },
+  { id: "sl-10235", name: "Roschon Johnson", team: "CHI", position: "RB", extra: true },
+  { id: "sl-10857", name: "Stetson Bennett", team: "LAR", position: "QB", extra: true },
+  { id: "sl-10871", name: "Luke Schoonmaker", team: "DAL", position: "TE", extra: true },
+  { id: "sl-11056", name: "Jared Wayne", team: "HOU", position: "WR", extra: true },
+  { id: "sl-11068", name: "Mitch Tinsley", team: "CIN", position: "WR", extra: true },
+  { id: "sl-11157", name: "Brycen Tremayne", team: "CAR", position: "WR", extra: true },
+  { id: "sl-11199", name: "Emari Demercado", team: "DAL", position: "RB", extra: true },
+  { id: "sl-11201", name: "Blake Whiteheart", team: "CLE", position: "TE", extra: true },
+  { id: "sl-11256", name: "Tyson Bagent", team: "CHI", position: "QB", extra: true },
+  { id: "sl-11280", name: "Brady Russell", team: "SEA", position: "RB", extra: true },
+  { id: "sl-11292", name: "Tommy DeVito", team: "NE", position: "QB", extra: true },
+  { id: "sl-11370", name: "Chris Brooks", team: "GB", position: "RB", extra: true },
+  { id: "sl-11421", name: "Ryan Miller", team: "MIA", position: "WR", extra: true },
+  { id: "sl-11433", name: "Nate Adkins", team: "DEN", position: "TE", extra: true },
+  { id: "sl-11435", name: "Emanuel Wilson", team: "SEA", position: "RB", extra: true },
+  { id: "sl-11439", name: "Jaleel McLaughlin", team: "CLE", position: "RB", extra: true },
+  { id: "sl-11559", name: "Michael Penix", team: "ATL", position: "QB", extra: true },
+  { id: "sl-11573", name: "Frank Gore", team: "BUF", position: "RB", extra: true },
+  { id: "sl-11574", name: "Dylan Laube", team: "LV", position: "RB", extra: true },
+  { id: "sl-11577", name: "Will Shipley", team: "PHI", position: "RB", extra: true },
+  { id: "sl-11592", name: "Erick All", team: "CIN", position: "TE", extra: true },
+  { id: "sl-11593", name: "Brevyn Spann-Ford", team: "DAL", position: "TE", extra: true },
+  { id: "sl-11596", name: "Ben Sinnott", team: "WSH", position: "TE", extra: true },
+  { id: "sl-11597", name: "Theo Johnson", team: "NYG", position: "TE", extra: true },
+  { id: "sl-11599", name: "Cade Stover", team: "HOU", position: "TE", extra: true },
+  { id: "sl-11608", name: "Isaiah Williams", team: "NYJ", position: "WR", extra: true },
+  { id: "sl-11616", name: "Jacob Cowing", team: "SF", position: "WR", extra: true },
+  { id: "sl-11623", name: "Jordan Whittington", team: "LAR", position: "WR", extra: true },
+  { id: "sl-11626", name: "Xavier Legette", team: "CAR", position: "WR", extra: true },
+  { id: "sl-11627", name: "Troy Franklin", team: "DEN", position: "WR", extra: true },
+  { id: "sl-11629", name: "Devontez Walker", team: "BAL", position: "WR", extra: true },
+  { id: "sl-11630", name: "Roman Wilson", team: "PIT", position: "WR", extra: true },
+  { id: "sl-11637", name: "Keon Coleman", team: "BUF", position: "WR", extra: true },
+  { id: "sl-11643", name: "Jaylen Wright", team: "MIA", position: "RB", extra: true },
+  { id: "sl-11647", name: "Kimani Vidal", team: "LAC", position: "RB", extra: true },
+  { id: "sl-1166", name: "Kirk Cousins", team: "LV", position: "QB", extra: true },
+  { id: "sl-11729", name: "Sione Vaki", team: "DET", position: "RB", extra: true },
+  { id: "sl-11834", name: "Devaughn Vele", team: "NO", position: "WR", extra: true },
+  { id: "sl-11942", name: "Colson Yankoff", team: "WSH", position: "TE", extra: true },
+  { id: "sl-11994", name: "Kameron Johnson", team: "TB", position: "WR", extra: true },
+  { id: "sl-12048", name: "George Holani", team: "SEA", position: "RB", extra: true },
+  { id: "sl-12455", name: "Brashard Smith", team: "KC", position: "RB", extra: true },
+  { id: "sl-12467", name: "Jordan James", team: "SF", position: "RB", extra: true },
+  { id: "sl-12472", name: "Raheim Sanders", team: "CLE", position: "RB", extra: true },
+  { id: "sl-12473", name: "Mitchell Evans", team: "CAR", position: "TE", extra: true },
+  { id: "sl-12483", name: "Jack Bech", team: "LV", position: "WR", extra: true },
+  { id: "sl-12485", name: "Tez Johnson", team: "TB", position: "WR", extra: true },
+  { id: "sl-12491", name: "Corey Kiner", team: "NE", position: "RB", extra: true },
+  { id: "sl-12492", name: "Pat Bryant", team: "DEN", position: "WR", extra: true },
+  { id: "sl-12493", name: "Oronde Gadsden", team: "LAC", position: "TE", extra: true },
+  { id: "sl-12495", name: "Ollie Gordon", team: "MIA", position: "RB", extra: true },
+  { id: "sl-12496", name: "Tai Felton", team: "MIN", position: "WR", extra: true },
+  { id: "sl-12497", name: "Tory Horton", team: "SEA", position: "WR", extra: true },
+  { id: "sl-12498", name: "Mason Taylor", team: "NYJ", position: "TE", extra: true },
+  { id: "sl-12499", name: "Elic Ayomanor", team: "TEN", position: "WR", extra: true },
+  { id: "sl-12502", name: "Gunnar Helm", team: "TEN", position: "TE", extra: true },
+  { id: "sl-12503", name: "Isaiah Bond", team: "CLE", position: "WR", extra: true },
+  { id: "sl-12504", name: "Kaleb Johnson", team: "GB", position: "RB", extra: true },
+  { id: "sl-12505", name: "Jalen Royals", team: "KC", position: "WR", extra: true },
+  { id: "sl-12521", name: "Elijah Arroyo", team: "SEA", position: "TE", extra: true },
+  { id: "sl-12523", name: "Jimmy Horn", team: "CAR", position: "WR", extra: true },
+  { id: "sl-12535", name: "Isaac TeSlaa", team: "DET", position: "WR", extra: true },
+  { id: "sl-12540", name: "Chimere Dike", team: "TEN", position: "WR", extra: true },
+  { id: "sl-12542", name: "Efton Chism", team: "NE", position: "WR", extra: true },
+  { id: "sl-12544", name: "LeQuint Allen", team: "JAX", position: "RB", extra: true },
+  { id: "sl-12547", name: "Kyle Williams", team: "NE", position: "WR", extra: true },
+  { id: "sl-12634", name: "Jordan Watkins", team: "SF", position: "WR", extra: true },
+  { id: "sl-12641", name: "Jaylin Lane", team: "WSH", position: "WR", extra: true },
+  { id: "sl-12699", name: "LaJohntay Wester", team: "BAL", position: "WR", extra: true },
+  { id: "sl-12700", name: "Gavin Bartholomew", team: "MIN", position: "TE", extra: true },
+  { id: "sl-12718", name: "Konata Mumpfield", team: "LAR", position: "WR", extra: true },
+  { id: "sl-12817", name: "Jake Briningstool", team: "KC", position: "TE", extra: true },
+  { id: "sl-12938", name: "Jackson Meeks", team: "DET", position: "TE", extra: true },
+  { id: "sl-12969", name: "Lan Larison", team: "NE", position: "RB", extra: true },
+  { id: "sl-12971", name: "Ke'Shawn Williams", team: "CIN", position: "WR", extra: true },
+  { id: "sl-13013", name: "Mark Redman", team: "GB", position: "TE", extra: true },
+  { id: "sl-13075", name: "Myles Price", team: "MIN", position: "WR", extra: true },
+  { id: "sl-13079", name: "Jahdae Walker", team: "CHI", position: "WR", extra: true },
+  { id: "sl-13150", name: "Darius Cooper", team: "PHI", position: "WR", extra: true },
+  { id: "sl-13264", name: "Dohnte Meyers", team: "CIN", position: "WR", extra: true },
+  { id: "sl-13268", name: "Elijah Sarratt", team: "BAL", position: "WR", extra: true },
+  { id: "sl-13273", name: "Josh Cuevas", team: "BAL", position: "TE", extra: true },
+  { id: "sl-13277", name: "CJ Donaldson", team: "NO", position: "RB", extra: true },
+  { id: "sl-13299", name: "Nate Boerkircher", team: "JAX", position: "TE", extra: true },
+  { id: "sl-13307", name: "Marlin Klein", team: "HOU", position: "TE", extra: true },
+  { id: "sl-13311", name: "Chris Bell", team: "MIA", position: "WR", extra: true },
+  { id: "sl-13317", name: "Ted Hurst", team: "TB", position: "WR", extra: true },
+  { id: "sl-13319", name: "Oscar Delp", team: "NO", position: "TE", extra: true },
+  { id: "sl-13322", name: "Sam Roush", team: "CHI", position: "TE", extra: true },
+  { id: "sl-13324", name: "Matt Hibner", team: "BAL", position: "TE", extra: true },
+  { id: "sl-13329", name: "Malik Benson", team: "LV", position: "WR", extra: true },
+  { id: "sl-13333", name: "Deion Burks", team: "IND", position: "WR", extra: true },
+  { id: "sl-13338", name: "Kevin Coleman", team: "MIA", position: "WR", extra: true },
+  { id: "sl-13347", name: "Demond Claiborne", team: "MIN", position: "RB", extra: true },
+  { id: "sl-13380", name: "Brenen Thompson", team: "LAC", position: "WR", extra: true },
+  { id: "sl-1339", name: "Zach Ertz", team: "PHI", position: "TE", extra: true },
+  { id: "sl-13394", name: "Josh Cameron", team: "JAX", position: "WR", extra: true },
+  { id: "sl-13411", name: "Zavion Thomas", team: "CHI", position: "WR", extra: true },
+  { id: "sl-13420", name: "Bryce Lance", team: "NO", position: "WR", extra: true },
+  { id: "sl-13421", name: "Eli Raridon", team: "NE", position: "TE", extra: true },
+  { id: "sl-13424", name: "Seth McGowan", team: "IND", position: "RB", extra: true },
+  { id: "sl-13425", name: "Jalon Daniels", team: "TB", position: "QB", extra: true },
+  { id: "sl-13434", name: "Will Kacmarek", team: "MIA", position: "TE", extra: true },
+  { id: "sl-13477", name: "Colbie Young", team: "CIN", position: "WR", extra: true },
+  { id: "sl-13533", name: "Barion Brown", team: "NO", position: "WR", extra: true },
+  { id: "sl-13557", name: "Athan Kaliakmanis", team: "WSH", position: "QB", extra: true },
+  { id: "sl-13602", name: "Jack Strand", team: "ATL", position: "QB", extra: true },
+  { id: "sl-1373", name: "Geno Smith", team: "NYJ", position: "QB", extra: true },
+  { id: "sl-13770", name: "J. Michael Sturdivant", team: "GB", position: "WR", extra: true },
+  { id: "sl-14026", name: "DJ Herman", team: "MIA", position: "RB", extra: true },
+  { id: "sl-1737", name: "Case Keenum", team: "CHI", position: "QB", extra: true },
+  { id: "sl-2306", name: "Jameis Winston", team: "NYG", position: "QB", extra: true },
+  { id: "sl-2307", name: "Marcus Mariota", team: "WSH", position: "QB", extra: true },
+  { id: "sl-2359", name: "Ameer Abdullah", team: "JAX", position: "RB", extra: true },
+  { id: "sl-2505", name: "Darren Waller", team: "CAR", position: "TE", extra: true },
+  { id: "sl-3155", name: "Laquon Treadwell", team: "IND", position: "WR", extra: true },
+  { id: "sl-3161", name: "Carson Wentz", team: "MIN", position: "QB", extra: true },
+  { id: "sl-3200", name: "Sterling Shepard", team: "NYJ", position: "WR", extra: true },
+  { id: "sl-3202", name: "Austin Hooper", team: "ATL", position: "TE", extra: true },
+  { id: "sl-3257", name: "Jacoby Brissett", team: "ARI", position: "QB", extra: true },
+  { id: "sl-3269", name: "Chris Moore", team: "BAL", position: "WR", extra: true },
+  { id: "sl-3271", name: "Tyler Higbee", team: "LAR", position: "TE", extra: true },
+  { id: "sl-3286", name: "Demarcus Robinson", team: "SF", position: "WR", extra: true },
+  { id: "sl-3634", name: "Kalif Raymond", team: "CHI", position: "WR", extra: true },
+  { id: "sl-4017", name: "Deshaun Watson", team: "CLE", position: "QB", extra: true },
+  { id: "sl-4039", name: "Cooper Kupp", team: "SEA", position: "WR", extra: true },
+  { id: "sl-4054", name: "Mo Alie-Cox", team: "IND", position: "TE", extra: true },
+  { id: "sl-4066", name: "Evan Engram", team: "DEN", position: "TE", extra: true },
+  { id: "sl-4144", name: "Jonnu Smith", team: "GB", position: "TE", extra: true },
+  { id: "sl-4147", name: "Samaje Perine", team: "CIN", position: "RB", extra: true },
+  { id: "sl-4177", name: "Mack Hollins", team: "NE", position: "WR", extra: true },
+  { id: "sl-4189", name: "Eric Saubert", team: "SEA", position: "TE", extra: true },
+  { id: "sl-4314", name: "Johnny Mundt", team: "PHI", position: "TE", extra: true },
+  { id: "sl-4454", name: "Kendrick Bourne", team: "ARI", position: "WR", extra: true },
+  { id: "sl-4464", name: "Nick Mullens", team: "JAX", position: "QB", extra: true },
+  { id: "sl-4574", name: "Cooper Rush", team: "ATL", position: "QB", extra: true },
+  { id: "sl-4602", name: "Robert Tonyan", team: "PIT", position: "TE", extra: true },
+  { id: "sl-4663", name: "Austin Ekeler", team: "WSH", position: "RB", extra: true },
+  { id: "sl-4972", name: "Mason Rudolph", team: "PIT", position: "QB", extra: true },
+  { id: "sl-4993", name: "Mike Gesicki", team: "CIN", position: "TE", extra: true },
+  { id: "sl-4995", name: "Ian Thomas", team: "LV", position: "TE", extra: true },
+  { id: "sl-5008", name: "Durham Smythe", team: "BAL", position: "TE", extra: true },
+  { id: "sl-5409", name: "Tanner Hudson", team: "CIN", position: "TE", extra: true },
+  { id: "sl-5773", name: "KhaDarel Hodge", team: "SF", position: "WR", extra: true },
+  { id: "sl-5848", name: "Marquise Brown", team: "PHI", position: "WR", extra: true },
+  { id: "sl-5854", name: "Drew Lock", team: "SEA", position: "QB", extra: true },
+  { id: "sl-5857", name: "Noah Fant", team: "NO", position: "TE", extra: true },
+  { id: "sl-5906", name: "Dawson Knox", team: "BUF", position: "TE", extra: true },
+  { id: "sl-5973", name: "Josh Oliver", team: "MIN", position: "TE", extra: true },
+  { id: "sl-5985", name: "Foster Moreau", team: "HOU", position: "TE", extra: true },
+  { id: "sl-5995", name: "Justice Hill", team: "BAL", position: "RB", extra: true },
+  { id: "sl-6001", name: "Drew Sample", team: "CIN", position: "TE", extra: true },
+  { id: "sl-6012", name: "Travis Homer", team: "PIT", position: "RB", extra: true },
+  { id: "sl-6039", name: "Ty Johnson", team: "BUF", position: "RB", extra: true },
+  { id: "sl-6130", name: "Devin Singletary", team: "NYG", position: "RB", extra: true },
+  { id: "sl-6271", name: "Olamide Zaccheaus", team: "ATL", position: "WR", extra: true },
+  { id: "sl-6427", name: "Ashton Dulin", team: "IND", position: "WR", extra: true },
+  { id: "sl-6659", name: "Craig Reynolds", team: "WSH", position: "RB", extra: true },
+  { id: "sl-6826", name: "Cole Kmet", team: "CHI", position: "TE", extra: true },
+  { id: "sl-6828", name: "AJ Dillon", team: "CAR", position: "RB", extra: true },
+  { id: "sl-6865", name: "Colby Parkinson", team: "LAR", position: "TE", extra: true },
+  { id: "sl-6869", name: "Adam Trautman", team: "DEN", position: "TE", extra: true },
+  { id: "sl-6931", name: "DeeJay Dallas", team: "MIN", position: "RB", extra: true },
+  { id: "sl-7039", name: "Cody White", team: "LV", position: "WR", extra: true },
+  { id: "sl-7083", name: "Tyler Huntley", team: "BAL", position: "QB", extra: true },
+  { id: "sl-7090", name: "Darnell Mooney", team: "NYG", position: "WR", extra: true },
+  { id: "sl-7204", name: "Reggie Gilliam", team: "NE", position: "RB", extra: true },
+  { id: "sl-7521", name: "Chris Blair", team: "ATL", position: "WR", extra: true },
+  { id: "sl-7527", name: "Mac Jones", team: "SF", position: "QB", extra: true },
+  { id: "sl-7528", name: "Najee Harris", team: "NYG", position: "RB", extra: true },
+  { id: "sl-7535", name: "Hunter Long", team: "ARI", position: "TE", extra: true },
+  { id: "sl-7536", name: "Quintin Morris", team: "JAX", position: "TE", extra: true },
+  { id: "sl-7562", name: "Tutu Atwell", team: "LAR", position: "WR", extra: true },
+  { id: "sl-7568", name: "Brevin Jordan", team: "HOU", position: "TE", extra: true },
+  { id: "sl-7587", name: "Dyami Brown", team: "WSH", position: "WR", extra: true },
+  { id: "sl-7600", name: "Pat Freiermuth", team: "PIT", position: "TE", extra: true },
+  { id: "sl-7670", name: "Joshua Palmer", team: "BUF", position: "WR", extra: true },
+  { id: "sl-7694", name: "Tommy Tremble", team: "CAR", position: "TE", extra: true },
+  { id: "sl-7716", name: "John Bates", team: "WSH", position: "TE", extra: true },
+  { id: "sl-7757", name: "Ben Skowronek", team: "PIT", position: "WR", extra: true },
+  { id: "sl-7812", name: "Simi Fehoko", team: "ARI", position: "WR", extra: true },
+  { id: "sl-7828", name: "Noah Gray", team: "KC", position: "TE", extra: true },
+  { id: "sl-7842", name: "Luke Farrell", team: "SF", position: "TE", extra: true },
+  { id: "sl-7891", name: "Brock Wright", team: "DET", position: "TE", extra: true },
+  { id: "sl-8111", name: "Cade Otton", team: "TB", position: "TE", extra: true },
+  { id: "sl-8119", name: "Jahan Dotson", team: "ATL", position: "WR", extra: true },
+  { id: "sl-8122", name: "Zonovan Knight", team: "ARI", position: "RB", extra: true },
+  { id: "sl-8127", name: "Charlie Kolar", team: "LAC", position: "TE", extra: true },
+  { id: "sl-8135", name: "Treylon Burks", team: "WSH", position: "WR", extra: true },
+  { id: "sl-8145", name: "Jeremy Ruckert", team: "NYJ", position: "TE", extra: true },
+  { id: "sl-8147", name: "John Metchie", team: "CAR", position: "WR", extra: true },
+  { id: "sl-8160", name: "Kenny Pickett", team: "CAR", position: "QB", extra: true },
+  { id: "sl-8168", name: "Skyy Moore", team: "GB", position: "WR", extra: true },
+  { id: "sl-8172", name: "Greg Dulcich", team: "MIA", position: "TE", extra: true },
+  { id: "sl-8181", name: "Connor Heyward", team: "LV", position: "RB", extra: true },
+  { id: "sl-8188", name: "Tyquan Thornton", team: "KC", position: "WR", extra: true },
+  { id: "sl-8195", name: "Ronnie Rivers", team: "LAR", position: "RB", extra: true },
+  { id: "sl-8200", name: "Kevin Austin", team: "NO", position: "WR", extra: true },
+  { id: "sl-8204", name: "Bo Melton", team: "GB", position: "WR", extra: true },
+  { id: "sl-8207", name: "Tyler Goodson", team: "DAL", position: "RB", extra: true },
+  { id: "sl-8208", name: "Tyler Badie", team: "DEN", position: "RB", extra: true },
+  { id: "sl-8225", name: "Daniel Bellinger", team: "TEN", position: "TE", extra: true },
+  { id: "sl-829", name: "Andy Dalton", team: "PHI", position: "QB", extra: true },
+  { id: "sl-8527", name: "Dareke Young", team: "LV", position: "WR", extra: true },
+  { id: "sl-8755", name: "Kaden Davis", team: "CHI", position: "WR", extra: true },
+  { id: "sl-8917", name: "KaVontae Turpin", team: "DAL", position: "WR", extra: true },
+  { id: "sl-9479", name: "Darnell Washington", team: "PIT", position: "TE", extra: true },
+  { id: "sl-9482", name: "Michael Mayer", team: "LV", position: "TE", extra: true },
+  { id: "sl-9501", name: "DeMario Douglas", team: "NE", position: "WR", extra: true },
+  { id: "sl-9506", name: "Sean Tucker", team: "TB", position: "RB", extra: true },
+  { id: "sl-96", name: "Aaron Rodgers", team: "PIT", position: "QB", extra: true },
+  { id: "sl-9757", name: "Kendre Miller", team: "NO", position: "RB", extra: true },
+];
 
 // Players on injured reserve (or reserve/PUP) as of 2026-09-28, plus the ones
 // whose seasons are over, from Sleeper's injury designations and team news.
@@ -622,12 +997,20 @@ const playedWeeks = (scores) => Object.keys(scores).map(Number).sort((a, b) => a
 // week's trimmed result is cached in localStorage: finished weeks for a few
 // hours (stat corrections still trickle in), the current week for a few
 // minutes so in-progress games stay fresh.
-const LIVE_SCORES_CACHE_KEY = "ff-valuediff:live-scores-v2";
+const LIVE_SCORES_CACHE_KEY = "ff-valuediff:live-scores-v3";
 const LIVE_SCORES_TTL_MS = { done: 6 * 60 * 60 * 1000, current: 5 * 60 * 1000 };
+
+// Live extras replace baked ones with the same id; baked ones from weeks the
+// live fetch hasn't returned yet are kept.
+function mergeExtraPlayers(baked, live) {
+  const byId = new Map(baked.map((p) => [p.id, p]));
+  for (const p of live) byId.set(p.id, p);
+  return [...byId.values()];
+}
 
 function useLiveScores(players) {
   const [data, setData] = useState({
-    scores: WEEKLY_SCORES, dnp: DID_NOT_PLAY, teamsPlayed: {},
+    scores: WEEKLY_SCORES, dnp: DID_NOT_PLAY, teamsPlayed: {}, players: [...players, ...EXTRA_PLAYERS],
     status: "loading", updatedOn: WEEKLY_SCORES_UPDATED_ON,
   });
 
@@ -636,20 +1019,25 @@ function useLiveScores(players) {
       setData((d) => ({ ...d, status: "error", message: "scripts/lib/sleeper-scores.js didn't load" }));
       return;
     }
-    const { fetchState, fetchWeek, weeksToFetch } = window.SleeperScores;
+    const { fetchState, fetchWeek, weeksToFetch, mergeExtras } = window.SleeperScores;
     let cancelled = false;
     let cache = {};
     try { cache = JSON.parse(localStorage.getItem(LIVE_SCORES_CACHE_KEY) || "{}"); } catch (e) {}
 
-    const apply = (week, wk) => setData((d) => {
-      if (wk.teamsPlayed.length === 0) return d; // not started yet
-      return {
+    // Weeks fetched so far; each arrival re-merges the extras across them all.
+    const live = {};
+    const apply = (week, wk) => {
+      if (wk.teamsPlayed.length === 0) return; // not started yet
+      live[week] = wk;
+      const merged = mergeExtras(live);
+      setData((d) => ({
         ...d,
-        scores: { ...d.scores, [week]: wk.scores },
+        scores: { ...d.scores, ...merged.scores },
         dnp: { ...d.dnp, [week]: wk.dnp },
         teamsPlayed: { ...d.teamsPlayed, [week]: wk.teamsPlayed },
-      };
-    });
+        players: [...players, ...mergeExtraPlayers(EXTRA_PLAYERS, merged.players)],
+      }));
+    };
 
     (async () => {
       const state = await fetchState();
@@ -1250,8 +1638,10 @@ function InjuryReport({ players, positionFilter, data, sectionTitle }) {
   const [state, setState] = useState({ status: "loading", rows: [] });
 
   const pool = useMemo(() => {
-    const ids = new Set(players.map((p) => p.id));
-    return [...players, ...WAIVER_TARGETS.filter((t) => !ids.has(t.id))];
+    const { normalizeName } = window.SleeperScores;
+    const key = (p) => `${normalizeName(p.name)}|${p.position}`;
+    const known = new Set(players.map(key));
+    return [...players, ...WAIVER_TARGETS.filter((t) => !known.has(key(t)))];
   }, [players]);
 
   useEffect(() => {
@@ -1339,7 +1729,7 @@ function InjuryReport({ players, positionFilter, data, sectionTitle }) {
   );
 }
 
-function InjuredReserve({ players, data }) {
+function InjuredReserve({ players, reportPlayers, data }) {
   const [positionFilter, setPositionFilter] = useState("ALL");
   const byId = useMemo(() => Object.fromEntries(players.map((p) => [p.id, p])), [players]);
 
@@ -1392,7 +1782,7 @@ function InjuredReserve({ players, data }) {
         ))}
       </div>
 
-      <InjuryReport players={players} positionFilter={positionFilter} data={data} sectionTitle={sectionTitle} />
+      <InjuryReport players={reportPlayers} positionFilter={positionFilter} data={data} sectionTitle={sectionTitle} />
 
       <section className="flex flex-col gap-2">
         {sectionTitle("On IR / PUP", onIr.length)}
@@ -1427,13 +1817,10 @@ const PAGES = [
   { key: "injuries", label: "Injuries" },
 ];
 
-const SCORED_PLAYERS = [...samplePlayers, ...WAIVER_TARGETS.filter((t) => !samplePlayers.some((p) => p.id === t.id))];
-
 function App() {
   const [page, setPage] = useState("weekly");
   const players = samplePlayers;
-  // Waiver targets outside the pool get scores too, for the injury report's last-game column.
-  const liveScores = useLiveScores(SCORED_PLAYERS);
+  const liveScores = useLiveScores(players);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col gap-5">
@@ -1457,9 +1844,9 @@ function App() {
         ))}
       </nav>
 
-      {page === "weekly" && <WeeklyScores players={players} data={liveScores} />}
+      {page === "weekly" && <WeeklyScores players={liveScores.players} data={liveScores} />}
       {page === "waivers" && <WaiverTargets />}
-      {page === "injuries" && <InjuredReserve players={players} data={liveScores} />}
+      {page === "injuries" && <InjuredReserve players={players} reportPlayers={liveScores.players} data={liveScores} />}
     </div>
   );
 }

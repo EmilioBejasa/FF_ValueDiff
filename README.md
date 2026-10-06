@@ -61,8 +61,11 @@ app's `WSH`. If you add a player whose Sleeper name differs, add them there.
 `WEEKLY_SCORES` and `DID_NOT_PLAY` in `index.html` are a **baked-in
 snapshot**, shown until live data arrives and used if Sleeper can't be
 reached. To refresh the snapshot, run `node scripts/refresh-scores.js` (Node
-18+, `--dry-run` to preview). As of 2026-10-05 it holds Weeks 1-4. Week 4 is
-missing the Monday night NO@ATL game, which the live fetch picks up.
+18+, `--dry-run` to preview). A GitHub Action
+(`.github/workflows/refresh-scores.yml`) also runs it daily at 10:00 UTC
+and commits `index.html` when scores change; it can be run by hand from
+the repo's Actions tab too. As of 2026-10-06 it holds all of Weeks 1-4,
+including the Monday night NO@ATL game.
 
 **OUT and IR instead of 0.** `WEEKLY_SCORES` only lists players who
 actually played. Players whose team played but who didn't are listed in
@@ -143,6 +146,16 @@ added on 2026-09-28 (Conner, Benson, Njoku, Stowers, Tonges, Kirk, Pearsall,
 Kalinic) so every Injured Reserve entry also appears in Weekly Scores. To
 change what's shown, edit that array directly rather than anything in the
 browser (every table in the app is read-only).
+
+**Weekly Scores ranks everyone, not just that list.** Any QB/RB/WR/TE who
+has scored fantasy points this season but isn't in `samplePlayers`
+(waiver-wire breakouts, backup QBs who started, etc.) is added
+automatically from Sleeper's stats, as `sl-<Sleeper id>` (`mergeExtras` in
+`scripts/lib/sleeper-scores.js`; baked copy in `EXTRA_PLAYERS`). Players
+who've only ever logged zeros (blockers, kneel-down QBs) are left out. These
+added players never show OUT: they're blank in weeks they didn't play. As of
+2026-10-05 that's 218 extra players. Each week's top 24 QBs/TEs and top 50
+RBs/WRs match Sleeper's own numbers exactly.
 
 Each entry also still carries an `adp` field left over from this app's
 original ADP-comparison tool (see "History" below); nothing reads it

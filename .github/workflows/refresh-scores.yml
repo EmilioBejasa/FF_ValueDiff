@@ -1,0 +1,43 @@
+# Re-bakes the WEEKLY_SCORES / DID_NOT_PLAY / EXTRA_PLAYERS snapshot in
+# index.html from Sleeper and commits it if anything changed. The page still
+# pulls live scores on load; this keeps the offline fallback current.
+name: Refresh scores
+
+on:
+  schedule:
+    # 10:00 UTC daily (~6am ET), after every night's games have finished,
+    # so Thursday, Sunday and Monday games plus stat corrections are picked up.
+    - cron: "0 10 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-scores
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Refresh snapshot from Sleeper
+        run: node scripts/refresh-scores.js
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "No score changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Refresh scores from Sleeper ($(date -u +%Y-%m-%d))"
+          git push

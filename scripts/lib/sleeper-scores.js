@@ -28,11 +28,17 @@
   const normalizeName = (s) =>
     String(s || "").toLowerCase().replace(/\b(jr|sr|ii|iii|iv|v)\b\.?/g, "").replace(/[^a-z]/g, "");
 
+  const SKILL_POSITIONS = ["QB", "RB", "WR", "TE"];
+  const roundPts = (pts) => Math.round((pts || 0) * 10) / 10;
+
   // rows: the raw stats array for one week. players: samplePlayers.
-  // Returns { scores: {id: pts}, dnp: [id], teamsPlayed: [team] } — scores for
-  // anyone who took a snap, DNP for anyone whose team has played but who
-  // didn't. Players whose team hasn't played yet (bye, or a game later in the
-  // week) are in neither, so they stay blank instead of being guessed at.
+  // Returns { scores: {id: pts}, dnp: [id], teamsPlayed: [team], extras } —
+  // scores for anyone who took a snap, DNP for anyone whose team has played
+  // but who didn't. Players whose team hasn't played yet (bye, or a game later
+  // in the week) are in neither, so they stay blank instead of being guessed
+  // at. `extras` is every other QB/RB/WR/TE who played, keyed by Sleeper id
+  // ({name, team, position, pts}), so rankings aren't limited to `players`
+  // (see mergeExtras).
   function summarizeWeek(rows, players) {
     const byId = new Map();
     const byName = new Map();
@@ -48,16 +54,60 @@
 
     const scores = {};
     const dnp = [];
+    const matched = new Set();
     for (const p of players) {
       const override = SLEEPER_ID_OVERRIDES[p.id];
       const row = override ? byId.get(override) : byName.get(`${normalizeName(p.name)}|${p.position}`);
+      if (row) matched.add(row.player_id);
       if (row && row.stats && row.stats.gp > 0) {
-        scores[p.id] = Math.round((row.stats.pts_ppr || 0) * 10) / 10;
+        scores[p.id] = roundPts(row.stats.pts_ppr);
       } else if (teamsPlayed.has(row ? normalizeTeam(row.team) : p.team) || (p.team === "FA" && teamsPlayed.size > 0)) {
         dnp.push(p.id); // free agents count as not playing once the week has started
       }
     }
-    return { scores, dnp: dnp.sort(), teamsPlayed: [...teamsPlayed].sort() };
+
+    const extras = {};
+    for (const r of rows) {
+      if (!r || !r.player || matched.has(r.player_id) || !(r.stats && r.stats.gp > 0)) continue;
+      if (!SKILL_POSITIONS.includes(r.player.position)) continue;
+      extras[r.player_id] = {
+        name: `${r.player.first_name} ${r.player.last_name}`,
+        team: normalizeTeam(r.team),
+        position: r.player.position,
+        pts: roundPts(r.stats.pts_ppr),
+      };
+    }
+    return { scores, dnp: dnp.sort(), teamsPlayed: [...teamsPlayed].sort(), extras };
+  }
+
+  // byWeek: {week: summarizeWeek result}. Folds every week's `extras` into the
+  // scores (under "sl-<sleeper id>") and returns the players to add to the
+  // pool: anyone who has scored any points this season. Players who only ever
+  // logged zeros (blockers, backup QBs who knelt) are left out. Extras get no
+  // OUT marks — they're blank in weeks they didn't play.
+  function mergeExtras(byWeek) {
+    const totals = {};
+    const latest = {};
+    const weeks = Object.keys(byWeek).map(Number).sort((a, b) => a - b);
+    for (const w of weeks) {
+      for (const [sid, e] of Object.entries(byWeek[w].extras || {})) {
+        totals[sid] = (totals[sid] || 0) + Math.abs(e.pts);
+        latest[sid] = e;
+      }
+    }
+    const keep = Object.keys(totals).filter((sid) => totals[sid] > 0);
+    const scores = {};
+    for (const w of weeks) {
+      scores[w] = { ...byWeek[w].scores };
+      for (const sid of keep) {
+        const e = (byWeek[w].extras || {})[sid];
+        if (e) scores[w][`sl-${sid}`] = e.pts;
+      }
+    }
+    const players = keep
+      .map((sid) => ({ id: `sl-${sid}`, name: latest[sid].name, team: latest[sid].team, position: latest[sid].position, extra: true }))
+      .sort((a, b) => a.id.localeCompare(b.id));
+    return { scores, players };
   }
 
   // sleeperPlayers: {sleeperId: {name, position}} (e.g. the trimmed
@@ -96,7 +146,7 @@
   }
   const range = (n) => Array.from({ length: n }, (_, i) => i + 1);
 
-  const api = { summarizeWeek, matchSleeperIds, fetchState, fetchWeek, weeksToFetch, SLEEPER_ID_OVERRIDES };
+  const api = { summarizeWeek, mergeExtras, matchSleeperIds, normalizeName, fetchState, fetchWeek, weeksToFetch, SLEEPER_ID_OVERRIDES };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.SleeperScores = api;
 })(typeof window !== "undefined" ? window : globalThis);

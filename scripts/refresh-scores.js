@@ -10,7 +10,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { fetchState, fetchWeek, weeksToFetch } = require("./lib/sleeper-scores");
+const { fetchState, fetchWeek, weeksToFetch, mergeExtras } = require("./lib/sleeper-scores");
 
 const INDEX_HTML = path.join(__dirname, "..", "index.html");
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -20,19 +20,27 @@ async function main() {
   const players = eval(extractBlock(source, "const samplePlayers = [", "\n];").text.replace(/^const samplePlayers = /, ""));
 
   const state = await fetchState();
-  const scores = {};
+  const byWeek = {};
   const dnp = {};
   for (const week of weeksToFetch(state)) {
     const wk = await fetchWeek(state.season, week, players);
     if (wk.teamsPlayed.length === 0) continue;
-    scores[week] = wk.scores;
+    byWeek[week] = wk;
     dnp[week] = wk.dnp;
     console.log(`Week ${week}: ${Object.keys(wk.scores).length} scores, ${wk.dnp.length} did not play, ${wk.teamsPlayed.length}/32 teams played`);
   }
+  const { scores, players: extras } = mergeExtras(byWeek);
+  console.log(`${extras.length} players outside samplePlayers have scored this season`);
+  // Offseason/preseason: keep the last snapshot rather than blanking it.
+  if (Object.keys(byWeek).length === 0) return console.log("No weeks played yet — index.html left as is.");
 
-  const today = new Date().toISOString().slice(0, 10);
+  const before = source;
   source = replaceBlock(source, "const WEEKLY_SCORES = {", "\n};", formatScores(scores));
   source = replaceBlock(source, "const DID_NOT_PLAY = {", "\n};", formatDnp(dnp));
+  source = replaceBlock(source, "const EXTRA_PLAYERS = [", "\n];", formatExtras(extras), "];");
+  // Only bump the date when the data changed, so scheduled runs don't commit no-ops.
+  if (source === before) return console.log("Scores unchanged — index.html left as is.");
+  const today = new Date().toISOString().slice(0, 10);
   source = source.replace(/const WEEKLY_SCORES_UPDATED_ON = "[^"]*";/, `const WEEKLY_SCORES_UPDATED_ON = "${today}";`);
 
   if (DRY_RUN) return console.log("Dry run — index.html not written.");
@@ -47,9 +55,9 @@ function extractBlock(source, start, end) {
   return { start: i, end: j + end.length, text: source.slice(i, j + end.length) };
 }
 
-function replaceBlock(source, start, end, body) {
+function replaceBlock(source, start, end, body, close = "};") {
   const block = extractBlock(source, start, end);
-  return source.slice(0, block.start) + `${start}\n${body}\n};` + source.slice(block.end);
+  return source.slice(0, block.start) + `${start}\n${body}\n${close}` + source.slice(block.end);
 }
 
 // Five entries per line, sorted by id, matching the hand-entered layout.
@@ -64,6 +72,12 @@ function formatScores(byWeek) {
     const ids = Object.keys(byWeek[w]).sort();
     return `  ${w}: {\n${wrap(ids.map((id) => `"${id}": ${byWeek[w][id]}`))}\n  },`;
   }).join("\n");
+}
+
+function formatExtras(extras) {
+  return extras.map((p) =>
+    `  { id: "${p.id}", name: ${JSON.stringify(p.name)}, team: "${p.team}", position: "${p.position}", extra: true },`
+  ).join("\n");
 }
 
 function formatDnp(byWeek) {

@@ -194,6 +194,27 @@
   .pill:focus-visible, .btn-primary:focus-visible, .btn-secondary:focus-visible, .nav-link:focus-visible {
     outline: 2px solid var(--brass); outline-offset: 2px; }
 
+  /* Draft board: a Sleeper-style startup board, always dark like Sleeper's,
+     with each pick a card in its position color (Sleeper's own palette). */
+  .draft-board { background: #0f1724; border: 1px solid #22304a; border-radius: 12px; overflow: auto; max-height: 78vh; }
+  .draft-grid { display: grid; gap: 4px; padding: 0 6px 6px; }
+  .db-head { position: sticky; top: 0; z-index: 2; background: #0f1724; padding: 8px 2px 6px; text-align: center;
+    font: 600 11px/1.2 Inter, sans-serif; color: #c3cde0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .db-head span { display: block; font-size: 10px; font-weight: 500; color: #6f7f9c; }
+  .db-cell { --db-pos: #3a475e; position: relative; min-width: 0; height: 72px; border-radius: 6px; padding: 5px 6px;
+    background: var(--db-pos); color: #101624; overflow: hidden; display: flex; flex-direction: column;
+    transition: opacity .15s, transform .12s, box-shadow .12s; }
+  .db-cell:hover { transform: translateY(-1px); box-shadow: 0 6px 14px -6px rgba(0, 0, 0, .7); z-index: 1; }
+  .db-cell.empty { background: #172236; }
+  .db-cell.dim { opacity: .18; }
+  .db-cell.hit { box-shadow: 0 0 0 2px #ffffff, 0 0 14px rgba(255, 255, 255, .45); z-index: 1; }
+  .db-first { font-size: 10.5px; line-height: 1.15; opacity: .82; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 30px; }
+  .db-last { font-size: 13.5px; font-weight: 800; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .db-meta { margin-top: auto; display: flex; justify-content: space-between; align-items: baseline; gap: 4px;
+    font-size: 9.5px; font-weight: 600; line-height: 1; opacity: .85; white-space: nowrap; overflow: hidden; }
+  .db-pick { position: absolute; top: 5px; right: 7px; font-size: 10px; font-weight: 700; opacity: .7; }
+  .db-cell.empty .db-pick { color: #6f7f9c; opacity: 1; }
+
   /* Position badge (QB / RB / WR / TE / Pick), tinted with the position color. */
   .pos-badge { display: inline-block; font-size: 11px; font-weight: 700; line-height: 1; padding: 3px 6px; border-radius: 5px;
     letter-spacing: .02em; color: color-mix(in srgb, var(--pos) 72%, var(--text-primary));
@@ -3288,6 +3309,127 @@ function DynastyValues({ data, settings, setSettings }) {
   );
 }
 
+/* ---------------- draft board ---------------- */
+// A Sleeper-style draft board "drafted" straight down a value list: 1.01 is
+// the most valuable player, and so on, snaking (or not) across one column per
+// team. Football and basketball each feed it their own players and values.
+const SLEEPER_POS_COLOR = {
+  QB: "#ff2a6d", RB: "#00ceb8", WR: "#58a7ff", TE: "#ffae58",
+  PG: "#58a7ff", SG: "#00ceb8", SF: "#ffae58", PF: "#ff2a6d", C: "#b98cff", G: "#58a7ff", F: "#ffae58",
+};
+const BOARD_ORDER_OPTIONS = [{ key: "snake", label: "Snake" }, { key: "linear", label: "Linear" }];
+const roundOptions = (ns) => ns.map((n) => ({ key: n, label: String(n) }));
+
+// "Amon-Ra St. Brown" → ["Amon-Ra", "St. Brown"]
+function splitName(name) {
+  const i = name.indexOf(" ");
+  return i < 0 ? ["", name] : [name.slice(0, i), name.slice(i + 1)];
+}
+
+// The board itself plus its Rounds / Order / Highlight / search controls.
+// `players` must already be sorted best first; `stat(p)` is the number shown
+// in each card's corner and `tip(p)` the hover text; `matchPos(p, pos)` says
+// whether a player counts for the Highlight filter.
+function BoardGrid({ players, teams, roundChoices, defaultRounds, highlightOptions, matchPos, stat, tip }) {
+  const [pickedRounds, setRounds] = useState(defaultRounds);
+  const rounds = roundChoices.some((o) => o.key === pickedRounds) ? pickedRounds : defaultRounds;
+  const [order, setOrder] = useState("snake");
+  const [highlight, setHighlight] = useState("ALL");
+  const [query, setQuery] = useState("");
+
+  // One { label, player } per pick, in board order (row by row).
+  const cells = useMemo(() => {
+    const out = [];
+    for (let round = 0; round < rounds; round++) {
+      const row = Array(teams);
+      for (let slot = 0; slot < teams; slot++) {
+        const col = order === "snake" && round % 2 === 1 ? teams - 1 - slot : slot;
+        row[col] = { label: `${round + 1}.${String(slot + 1).padStart(2, "0")}`, player: players[round * teams + slot] || null };
+      }
+      out.push(...row);
+    }
+    return out;
+  }, [players, rounds, teams, order]);
+
+  const q = query.trim().toLowerCase();
+
+  return (
+    <>
+      <div className="flex items-end flex-wrap gap-x-4 gap-y-2">
+        <LabeledControl label="Rounds"><PillGroup options={roundChoices} value={rounds} onChange={setRounds} /></LabeledControl>
+        <LabeledControl label="Order"><PillGroup options={BOARD_ORDER_OPTIONS} value={order} onChange={setOrder} /></LabeledControl>
+        <LabeledControl label="Highlight"><PillGroup options={highlightOptions} value={highlight} onChange={setHighlight} /></LabeledControl>
+        <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a player"
+          className="rounded-md border px-3 py-1.5 text-sm w-full sm:w-48 sm:ml-auto" style={inputStyle} />
+      </div>
+
+      <div className="draft-board">
+        <div className="draft-grid" style={{ gridTemplateColumns: `repeat(${teams}, minmax(86px, 1fr))` }}>
+          {Array.from({ length: teams }, (_, t) => (
+            <div key={`h${t}`} className="db-head">Team {t + 1}<span>Pick {t + 1}</span></div>
+          ))}
+          {cells.map(({ label, player: p }) => {
+            if (!p) return <div key={label} className="db-cell empty"><span className="db-pick">{label}</span></div>;
+            const [first, last] = splitName(p.name);
+            const dim = highlight !== "ALL" && !matchPos(p, highlight);
+            const hit = q && p.name.toLowerCase().includes(q);
+            return (
+              <div key={label} className={`db-cell${dim ? " dim" : ""}${hit ? " hit" : ""}`}
+                style={{ "--db-pos": SLEEPER_POS_COLOR[p.position] }} title={`${label} · ${tip(p)}`}>
+                <span className="db-pick">{label}</span>
+                <span className="db-first">{first}</span>
+                <span className="db-last">{last}</span>
+                <span className="db-meta">
+                  <span>{p.position}-{p.team || "FA"}</span>
+                  <span>{stat(p)}</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// Football: FantasyCalc values for the shared league settings. Rookie picks
+// are left out, since this is a board of players. Dynasty startups run deep,
+// so dynasty boards go to 30 rounds.
+const BOARD_HIGHLIGHT_OPTIONS = ["ALL", "QB", "RB", "WR", "TE"].map((p) => ({ key: p, label: p, color: posPillColor(p) }));
+const FOOTBALL_ROUNDS = { dynasty: roundOptions([10, 15, 20, 25, 30]), redraft: roundOptions([5, 10, 15, 20]) };
+
+function DraftBoard({ data, settings, setSettings }) {
+  const isDynasty = settings.mode === "dynasty";
+  const players = useMemo(
+    () => data.rows.filter((r) => r.position !== "PICK").sort((a, b) => b.value - a.value),
+    [data.rows]
+  );
+
+  return (
+    <div className="flex flex-col gap-5">
+      <header>
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Draft Board</h2>
+        <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
+          A {describeSettings(settings)}{isDynasty ? " startup" : ""} draft if every team took the most valuable player
+          left: 1.01 is the top player on the Value Board, and so on down.
+        </p>
+        <AboutData>
+          <DynastyStatusLine data={data} /> Rookie picks are left off the board. If the value list runs out before the
+          board does, the last picks are left empty.
+        </AboutData>
+      </header>
+
+      <LeagueSettings settings={settings} setSettings={setSettings} />
+
+      <BoardGrid key={settings.mode} players={players} teams={settings.teams}
+        roundChoices={FOOTBALL_ROUNDS[settings.mode]} defaultRounds={isDynasty ? 25 : 15}
+        highlightOptions={BOARD_HIGHLIGHT_OPTIONS} matchPos={(p, pos) => p.position === pos}
+        stat={(p) => fmtValue(p.value)}
+        tip={(p) => `${p.name} · ${p.position}${p.posRank} · value ${fmtValue(p.value)}${p.age ? ` · age ${p.age}` : ""}`} />
+    </div>
+  );
+}
+
 /* ---------------- trade calculator ---------------- */
 // How a trade is judged when it isn't one-for-one, blending the two ways the
 // big market calculators handle it:
@@ -4796,6 +4938,44 @@ function NbaTrade({ data, settings, setSettings }) {
   );
 }
 
+// Draft board: the same Sleeper-style board as football, ranked by the Trade
+// Analyzer's values (projected rest-of-season fantasy points), so 1.01 is the
+// player expected to score the most from here on.
+const NBA_BOARD_ROUNDS = roundOptions([5, 10, 13, 15]);
+
+function NbaDraftBoard({ data, settings, setSettings }) {
+  const { rows, gamesLeft } = useMemo(() => nbaTradeRows(data, settings.scoring), [data, settings.scoring]);
+  const scoring = settings.scoring === "espn" ? "ESPN" : "Standard";
+
+  return (
+    <div className="flex flex-col gap-5">
+      <NbaPageHeader title="Draft Board"
+        lead={`A ${settings.teams >= 16 ? "16+" : settings.teams}-team ${scoring} points draft if every team took the most valuable player left: 1.01 is projected to score the most fantasy points the rest of the way.`}>
+        Values are the Trade Analyzer's: points per game × the {gamesLeft} team games left × how often he plays, with points
+        per game blending this season and last until he's played {NBA_BLEND_GAMES} games. Each card shows fantasy points per
+        game. Rookies and anyone without NBA games yet aren't on the board until they play. {NBA_SCORING_NOTE[settings.scoring]}
+      </NbaPageHeader>
+      <NbaSeasonNote data={data} />
+
+      <div className="flex items-end flex-wrap gap-x-4 gap-y-2">
+        <LabeledControl label="Scoring">
+          <PillGroup options={NBA_SETTING_OPTIONS.scoring} value={settings.scoring} accent="var(--hue-violet)"
+            onChange={(v) => setSettings((s) => ({ ...s, scoring: v }))} />
+        </LabeledControl>
+        <LabeledControl label="Teams">
+          <PillGroup options={NBA_SETTING_OPTIONS.teams} value={settings.teams} accent="var(--hue-violet)"
+            onChange={(v) => setSettings((s) => ({ ...s, teams: v }))} />
+        </LabeledControl>
+      </div>
+
+      <BoardGrid players={rows} teams={settings.teams} roundChoices={NBA_BOARD_ROUNDS} defaultRounds={13}
+        highlightOptions={NBA_POSITION_OPTIONS} matchPos={(p, pos) => nbaPosMatch(data.players[p.id] || p, pos)}
+        stat={(p) => fmt1(p.fpg)}
+        tip={(p) => `${p.name} · ${p.position}${p.posRank} · ${fmt1(p.fpg)} FPG · ${p.value.toLocaleString()} projected points${p.age ? ` · age ${p.age}` : ""}`} />
+    </div>
+  );
+}
+
 /* ---------------- site shell: routing, header, home page, footer ---------------- */
 
 // Each page has its own URL hash, so the back button, bookmarks and reloads
@@ -4817,6 +4997,8 @@ const PAGES = [
     blurb: "The live weekly injury report, who's on IR or PUP, and the earliest week each player can return." },
   { key: "dynasty", sport: "nfl", label: "Dynasty Values", short: "Value Board", hash: "#/values", group: "Dynasty",
     blurb: "Trade values for every player and rookie pick, set to your league's format, size, scoring and TE premium." },
+  { key: "draftboard", sport: "nfl", label: "Draft Board", short: "War Room", hash: "#/draftboard", group: "Dynasty",
+    blurb: "A Sleeper-style draft board filled in by current value: 1.01 is the most valuable player in your format." },
   { key: "trade", sport: "nfl", label: "Trade Calculator", short: "Trade Desk", hash: "#/trade", group: "Dynasty",
     blurb: "See who wins a trade, with market-style adjustments for 2-for-1s, plus every team in your Sleeper league ranked." },
   { key: "class2027", sport: "nfl", label: "2027 Rookie Class", short: "Scouting Dept.", hash: "#/2027", group: "Dynasty",
@@ -4829,6 +5011,8 @@ const PAGES = [
     blurb: "Every NBA player listed out, doubtful, questionable or day-to-day, most serious first." },
   { key: "nba-rankings", sport: "nba", label: "Player Rankings", short: "Big Board", hash: "#/nba/rankings", group: "Front office",
     blurb: "Every player ranked by fantasy points per game in your league's scoring, with per-game stats." },
+  { key: "nba-draftboard", sport: "nba", label: "Draft Board", short: "War Room", hash: "#/nba/draftboard", group: "Front office",
+    blurb: "A Sleeper-style draft board filled in by projected rest-of-season fantasy points." },
   { key: "nba-trade", sport: "nba", label: "Trade Analyzer", short: "Trade Desk", hash: "#/nba/trade", group: "Front office",
     blurb: "See who wins a season-long trade, valued on projected rest-of-season fantasy points." },
 ];
@@ -4847,6 +5031,7 @@ const PAGE_ICONS = {
   values: <path d="M3 17l6-6 4 4 8-8M15 7h6v6" />,
   trade: <path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" />,
   scouting: <path d="M22 9 12 4 2 9l10 5 10-5ZM6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5" />,
+  draft: <path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18" />,
   board: <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />,
 };
 const PAGE_STYLE = {
@@ -4855,12 +5040,14 @@ const PAGE_STYLE = {
   waivers: { hue: "var(--hue-aqua)", icon: PAGE_ICONS.waivers },
   injuries: { hue: "var(--hue-red)", icon: PAGE_ICONS.injuries },
   dynasty: { hue: "var(--hue-violet)", icon: PAGE_ICONS.values },
+  draftboard: { hue: "var(--hue-aqua)", icon: PAGE_ICONS.draft },
   trade: { hue: "var(--hue-orange)", icon: PAGE_ICONS.trade },
   class2027: { hue: "var(--hue-magenta)", icon: PAGE_ICONS.scouting },
   "nba-weekly": { hue: "var(--hue-blue)", icon: PAGE_ICONS.scores },
   "nba-waivers": { hue: "var(--hue-aqua)", icon: PAGE_ICONS.waivers },
   "nba-injuries": { hue: "var(--hue-red)", icon: PAGE_ICONS.injuries },
   "nba-rankings": { hue: "var(--hue-violet)", icon: PAGE_ICONS.board },
+  "nba-draftboard": { hue: "var(--hue-aqua)", icon: PAGE_ICONS.draft },
   "nba-trade": { hue: "var(--hue-orange)", icon: PAGE_ICONS.trade },
 };
 
@@ -5246,6 +5433,7 @@ function App() {
         {page === "waivers" && <WaiverTargets />}
         {page === "injuries" && <InjuredReserve players={players} reportPlayers={liveScores.players} data={liveScores} />}
         {page === "dynasty" && <DynastyValues data={dynasty} settings={settings} setSettings={setSettings} />}
+        {page === "draftboard" && <DraftBoard data={dynasty} settings={settings} setSettings={setSettings} />}
         {page === "trade" && <TradeCalculator data={dynasty} settings={settings} setSettings={setSettings} />}
         {page === "class2027" && (
           <DynastyClass2027 data={settings.mode === "dynasty" ? dynasty : classValues} settings={settings} setSettings={setSettings} />
@@ -5256,6 +5444,7 @@ function App() {
             {page === "nba-waivers" && <NbaWaivers {...nbaProps} />}
             {page === "nba-injuries" && <NbaInjuries {...nbaProps} />}
             {page === "nba-rankings" && <NbaRankings {...nbaProps} />}
+            {page === "nba-draftboard" && <NbaDraftBoard {...nbaProps} />}
             {page === "nba-trade" && <NbaTrade {...nbaProps} />}
           </NbaGate>
         )}

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Fantasy Front Office: a brass-trimmed navy plaque with an "F" monogram. -->
+  <defs>
+    <linearGradient id="brass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ead08a"/>
+      <stop offset=".55" stop-color="#b88c2e"/>
+      <stop offset="1" stop-color="#d9b960"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#brass)"/>
+  <rect x="7" y="7" width="50" height="50" rx="10" fill="#14213d"/>
+  <path d="M22 17h22v6H29v7h12v6H29v11h-7z" fill="url(#brass)"/>
+</svg>

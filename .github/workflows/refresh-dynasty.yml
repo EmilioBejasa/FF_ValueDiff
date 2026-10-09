@@ -1,0 +1,45 @@
+# Re-bakes the DYNASTY_VALUES snapshot in index.html from FantasyCalc and
+# commits it if anything changed. The page still pulls live values on load;
+# this keeps the offline fallback current.
+name: Refresh dynasty values
+
+on:
+  schedule:
+    # 11:00 UTC every Tuesday, after the week's games and the Monday-night
+    # trade activity that moves values most.
+    - cron: "0 11 * * 2"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Shares a group with refresh-scores so the two never push over each other.
+concurrency:
+  group: refresh-index-html
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Refresh snapshot from FantasyCalc
+        run: node scripts/refresh-dynasty.js
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "No value changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Refresh dynasty values from FantasyCalc ($(date -u +%Y-%m-%d))"
+          git pull --rebase
+          git push

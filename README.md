@@ -1,10 +1,22 @@
-# FF ValueDiff
+# Fantasy Front Office
 
-A fantasy football companion covering three tabs on one shared player pool:
+*Run your fantasy team like a GM.* (Formerly FF ValueDiff. The repo
+folder, the `ff-valuediff:` browser-storage keys and the dormant
+`extension/` still use the old name, so saved settings carry over.)
+
+A fantasy football companion. Three tabs cover this season, on one shared player pool:
 **Weekly Scores** (real results by week, or a full-season grid),
 **Waiver Wire Targets** (live Sleeper trending activity plus a hand-picked
 pickup list), and **Injuries** (a live weekly injury report, plus who's out for the season or on IR/PUP,
-and the earliest week each player can return).
+and the earliest week each player can return). Three more cover dynasty
+leagues: **Dynasty Values** (live trade values for every player and rookie
+pick), a **Trade Calculator** (plus every team in a Sleeper league ranked by
+value), and a **2027 Class** preview of next year's rookies.
+
+There's also a **basketball** side for season-long (redraft) points
+leagues, with five rooms: Scoreboard, Waiver Desk, Training Room, Big Board
+and Trade Desk. See "Basketball" below. A Football | Basketball switch in
+the header moves between the two sports.
 
 ## Running it
 
@@ -12,7 +24,7 @@ No build step, no install. Just open `index.html` in a browser (double-click it,
 or drag it into a browser window). It loads React and Babel from a CDN and
 transforms the JSX in-browser.
 
-The live parts of Waiver Wire Targets (the "Trending on Sleeper" panel) need
+The whole basketball side, and the live parts of Waiver Wire Targets (the "Trending on Sleeper" panel), need
 the page served over http(s) with network access — they won't work from a
 plain double-clicked file, since `fetch` calls from a `file://` page hit
 browser restrictions that a real server doesn't. Any static file server
@@ -27,6 +39,74 @@ both), packaged so you can pin it in your toolbar instead of opening a file.
 See `extension/README.md` to load it. (Note: the extension was built around
 this app's original ADP-comparison tool, since removed from `index.html` —
 see "History" below.)
+
+## Site layout
+
+The page is laid out like a website, themed as an **executive front office**
+(the site shell section at the bottom of `index.html`, styles in `<head>`):
+
+- **Look:** navy and brass. There's a navy header with a brass trim line and
+  a brass nameplate logo ("FFO"). Light mode uses warm paper tones and dark
+  mode a night-office navy. Page and section titles are set in the Fraunces
+  serif, body text in Inter (both from Google Fonts).
+- **Every tool is a room in the office** (the `short` name in `PAGES`):
+  | Room | Tool |
+  |---|---|
+  | Scoreboard | Weekly Scores |
+  | Waiver Desk | Waiver Wire Targets |
+  | Training Room | Injuries |
+  | Value Board | Dynasty Values |
+  | Trade Desk | Trade Calculator |
+  | Scouting Dept. | 2027 Rookie Class |
+
+  The nav, home folder tabs, page labels and browser tab titles use the room
+  name. The page heading still says what the tool is.
+- **Home page** (the Lobby, `#/`): a "Run your fantasy team like a GM"
+  intro and buttons into the Trade Desk and Scoreboard. Each tool is a
+  **manila folder** card with its room on the tab. Below them are the
+  biggest 30-day risers in dynasty value.
+- **Sport switch:** a Football | Basketball control next to the logo
+  (`SportSwitch`). Switching keeps you in the same room when the other sport
+  has one (Scoreboard → Scoreboard), otherwise it opens that sport's first
+  room. On the home page it just changes which sport the nav shows
+  (remembered in `ff-valuediff:sport`).
+- **Sticky top navigation** with two dropdowns per sport: *Game week* and
+  *Dynasty* for football, *Game week* and *Front office* for basketball
+  (`NavDropdown`). Each lists its rooms with an icon and a one-line
+  description. They open on hover or click and close on outside click,
+  Escape or picking a room. A brass **Trade Desk** button sits on the right.
+  Below 768px wide it all becomes a hamburger menu. A sun/moon
+  button switches light and dark. It follows the OS until used, then
+  remembers the choice (`ff-valuediff:theme`). The choice is applied in
+  `<head>` before render, so there's no flash.
+- **Every page has its own URL**: `#/scores`, `#/waivers`, `#/injuries`,
+  `#/values`, `#/trade`, `#/2027`, and for basketball `#/nba/scores`,
+  `#/nba/waivers`, `#/nba/injuries`, `#/nba/rankings`, `#/nba/trade`. So the
+  back button, bookmarks and reloads all work. A trade link (`#trade=…`, or
+  `#nbatrade=…` for basketball) opens that Trade Desk with the trade, and
+  leaving and coming back keeps it.
+- A **footer** with links to every room and the data sources (Sleeper,
+  FantasyCalc, DraftSharks, Yahoo Sports).
+- **Color:** each tool keeps its own color and icon (`PAGE_STYLE`), used on
+  its folder, its nav underline and the label above its title.
+  - Position filters and the `PosBadge` chips in tables use position colors
+    (QB blue, RB orange, WR green, TE gold, picks pink, `POS_PILL_COLOR`).
+  - League settings are violet. Trade sides are blue (A) and orange (B).
+  - Value trends are green up and red down.
+- **Favicon:** `favicon.svg`, a navy plaque with a brass "F" monogram.
+- **Segmented controls:** each group of filter or setting options (format,
+  QB, teams, scoring, TE premium, positions, weeks, views, adds/drops) is one
+  rounded track. The highlight slides to the selected option (`PillGroup`,
+  `.segmented` / `.seg`). Position options use position colors.
+- **Less boxy pages:** the longer "where this data comes from" notes under
+  each page title sit behind an **About this data** toggle (`AboutData`).
+  The Sleeper league instructions stay visible. Panels have rounder corners,
+  lighter edges and a soft shadow, and table headers have a tinted band.
+- **Buttons:** standalone toggles (Raw values, Clear trade, +A / +B) use one shared `.pill` style. It
+  tints on hover, presses down on click, and when selected fills with its
+  color (set through `--pill-accent`) and a soft glow. Main actions are
+  polished brass buttons that lift on hover, and table and team rows
+  highlight on hover.
 
 ## Weekly Scores
 
@@ -138,9 +218,186 @@ As of 2026-09-28 it holds 24 players, from Sleeper's injury designations
 players are placed on or activated from IR. The same list drives the IR
 cells in Weekly Scores.
 
+## Dynasty tabs
+
+All three read the same values: **FantasyCalc's** trade values
+(`https://api.fantasycalc.com/values/current?isDynasty=<true|false>&numQbs=<1|2>&numTeams=<8-14>&ppr=<0|0.5|1>`),
+built from real trades on fantasy platforms. FantasyCalc sends an open CORS
+header, so the page fetches them directly on load, the same way it fetches
+Sleeper. Each settings combination's trimmed list (dynasty: about 400
+players plus 24 generic rookie picks like "2027 1st (Early)"; redraft: about
+200 players, no picks) is cached in `localStorage` for 12 hours. Players are
+keyed by their **Sleeper player_id**, which FantasyCalc includes, so nothing
+is matched by name.
+
+**League settings** sit at the top of Dynasty Values and the Trade
+Calculator. They're shared between the tabs and remembered in the browser
+(`DYNASTY_SETTINGS_KEY`):
+
+| Setting | Options | How it's applied |
+|---|---|---|
+| Format | Dynasty · Redraft | FantasyCalc's `isDynasty`. Redraft has no picks |
+| QB | 1QB · Superflex | `numQbs` |
+| Teams | 8 · 10 · 12 · 14 · 16+ | `numTeams` (FantasyCalc stops at 14, so 16+ uses its 14-team values) and the trade calculator's roster-spot credit |
+| Scoring | PPR · Half · Std | `ppr` |
+| TE premium | None · +0.5 · +1.0 · +1.5 per catch | **An estimate**: FantasyCalc has no TE-premium values, so TE values are boosted by 10% / 20% / 30% for the top TE, scaling down to half that for fringe TEs (`TEP_BOOST`, `applyTePremium`) |
+
+Loading a Sleeper league on the Trade Calculator sets all five from the
+league (`settingsFromLeague`). Keeper leagues count as dynasty. The 2027 Class
+tab only uses the QB setting and always uses dynasty values.
+
+The fetch-and-trim logic lives in `scripts/lib/fantasycalc.js`, loaded with
+a plain `<script>` tag like `sleeper-scores.js`. `DYNASTY_VALUES` in
+`index.html` is a **baked-in snapshot** of the 12-team PPR dynasty values in
+both QB formats, shown until live data arrives and used if FantasyCalc can't
+be reached (for other settings the page says the snapshot is only an
+approximation). Each row is stored as
+a compact array in `DYNASTY_FIELDS` order to keep the file small. To
+refresh it, run `node scripts/refresh-dynasty.js` (`--dry-run` to
+preview). A GitHub Action (`.github/workflows/refresh-dynasty.yml`) runs
+it every Tuesday at 11:00 UTC and commits on change. It shares a
+concurrency group with the scores Action so the two never push over each
+other. Both scripts use `scripts/lib/bake.js` to rewrite their block of
+`index.html`.
+
+### Dynasty Values
+
+Every player and pick, ranked by value for the selected league settings,
+filterable by position (or Picks, in dynasty) and searchable by name or team. Each row shows position rank, age, value (with a
+bar relative to #1) and the 30-day trend. It also shows the player's live Sleeper
+injury designation, from the same cached `/players/nfl` map as the
+Injuries tab. Two tags compare FantasyCalc's redraft value (this season
+only) with dynasty value, for players worth at least 1,500:
+**Win-now** when redraft value is 15%+ higher (older producers a contender
+should buy), **Future** when it's under half and the player is 25 or younger
+(young stashes, and anyone out for the season).
+
+### Trade Calculator
+
+Add players or picks to what each team gets. Each side shows its plain value,
+any adjustments, and an adjusted total. Trades that aren't one-for-one are
+adjusted the way the big calculators do it (`evaluateTrade`, constants in
+`TRADE_FORMULA`):
+
+- **Stud adjustment** (like KeepTradeCut and DynastyDaddy): each asset
+  counts toward a "trade score" at 20% (filler) to 40% (the best player in
+  the league) of its value. The share is higher the closer the asset is to
+  the best asset in the trade and in the league. The side with the lower
+  score is behind by the value of the one extra player it would need to catch
+  up, found by bisection as KTC does.
+- **Roster spot credit** (like FantasyCalc): the side getting fewer players
+  can fill each open spot from waivers. So it's credited with the value of
+  about the (teams × 25)th-best player, a slightly better one for each extra
+  spot. That's where **league size** matters: in 8 teams the free agent is
+  worth about 900, in 14 teams under 100. Bigger leagues credit less, so
+  depth matters more.
+
+The constants were tuned against reference trades. A 2-for-1 of equal value
+favors the 1 side by about 15-20% in 12 teams, and four mid players don't
+beat a star on volume. That lands between FantasyCalc (credit only) and KTC
+(a much steeper stud premium). It's this app's own blend, not any one site's
+exact formula. Within 5% (or 250) is "fair", and up to 15% "slightly
+favors". **Raw values** turns both adjustments off. A collapsible "How this
+is calculated" note on the page shows the current waiver-level player and
+value. "To even it out" re-runs the whole formula for every candidate to find
+the three closest.
+
+The trade is stored in the URL hash (`#trade=<ids>|<ids>`), so a reload
+keeps it and the link can be shared. A link with a trade in it opens
+straight on this tab.
+
+**League team values** (below the calculator): enter a Sleeper username
+(then pick a league) or a league ID. Every team is ranked by the value of its
+roster plus the rookie picks it owns, with a bar split by position, and
+"starters": the best lineup it can field for the league's roster slots.
+Sleeper only lists picks that have changed hands (`/traded_picks`), so each
+team starts with its own picks for the next three drafts (rounds 1-4) and
+trades are applied on top. Picks are valued as FantasyCalc's generic
+mid-round pick for that year. Loading a league syncs the settings above to
+it. Expand a team and use **+A / +B** to drop any player or pick into the
+trade.
+
+### 2027 Class
+
+A hand-curated list (`CLASS_2027` in `index.html`, like
+`WAIVER_TARGETS`) of the top 2027 rookie prospects, with their 1QB and
+Superflex rookie-draft ranks, school, size and a short note. It's sorted by
+whichever format is selected. There's no live source for college
+prospects, so ranks and notes are copied from published rankings, listed in
+`CLASS_2027_SOURCES` and linked at the bottom of the tab. As of 2026-10-07
+it holds 31 prospects from DraftSharks' Oct 1, 2026 1QB and Superflex
+rankings and Yahoo's Sep 3, 2026 big board. Replace it wholesale as new
+rankings come out.
+
+The top of the tab is live: what each 2027 1st and 2nd (early/mid/late) is
+worth right now, and the player with the closest value. Each prospect also
+shows the pick his rank lines up with in a 12-team league (ranks 1-4 early
+1st, 5-8 mid, 9-12 late, and so on) at its current value.
+
+## Basketball
+
+Season-long (redraft) **points leagues** only. No dynasty, no category
+leagues. Everything is live from Sleeper's public NBA API
+(`scripts/lib/sleeper-nba.js`, loaded with a plain `<script>` tag as
+`window.SleeperNBA`). There's no baked snapshot, so these pages need the
+site served over http(s). The data loads the first time a basketball page
+opens and is cached in `localStorage` (`ff-valuediff:nba-v1:*`):
+- the NBA state (10 minutes)
+- this season's totals (1 hour) and last season's (1 day)
+- the trimmed player list with injuries (6 hours)
+- each fantasy week (1 day, or 10 minutes for the current week)
+
+**Seasons.** Sleeper names a season by the year it starts ("2025" is
+2025-26). Until the current season has games (2026-27 tips off Oct 20,
+2026), every page shows last season and says so. It switches over on its
+own once games are played.
+
+**Scoring** (a setting on each page, remembered in
+`ff-valuediff:nba-settings-v1`). Fantasy points are computed from the box
+score, not taken from Sleeper's own number:
+
+| Preset | Points |
+|---|---|
+| Standard (the NBA's official fantasy scoring, Yahoo's default) | PTS 1, REB 1.2, AST 1.5, STL 3, BLK 3, TO −1 |
+| ESPN (ESPN's default points league) | PTS 1, 3PM 1, FGM 2, FGA −1, FTM 1, FTA −1, REB 1, AST 2, STL 4, BLK 4, TO −2 |
+
+Presets live in `SCORING` in `sleeper-nba.js`. Sleeper's own NBA default
+isn't documented anywhere I could find, so there's no Sleeper preset.
+
+**Rooms:**
+- **Scoreboard** (`NbaScoreboard`): one fantasy week (Monday to Sunday), with
+  every player's points for each game, games played, points per game and
+  the week total. The data comes from Sleeper's per-game feed
+  (`/stats/nba/<season>/<week>`). A game counts only if the player logged
+  minutes, because sat-out games come through with empty stats. The older
+  `/v1/stats/nba/regular/<season>/<week>` feed only returns each player's
+  last game of the week, so it isn't used. A finished season has 25 weeks.
+- **Waiver Desk** (`NbaWaivers`): Sleeper's live trending adds and drops,
+  with each player's points per game. Once the current season has two
+  weeks, a **Heating up** list appears. It shows players whose last two
+  weeks (2+ games, 20+ points per game) beat their season average by the
+  most.
+- **Training Room** (`NbaInjuries`): everyone with a current Sleeper
+  designation. The order is Out and IR, then suspended, doubtful,
+  questionable, game-time decision (GTD) and day-to-day (DTD). You can
+  filter to fantasy-relevant players (15+ points per game) or everyone.
+- **Big Board** (`NbaRankings`): every player ranked by fantasy points per
+  game, with games played, total and per-game PTS / REB / AST / STL / BLK /
+  3PM / TO. A player needs 20 games for a finished season, or a third of the
+  games played so far mid-season.
+- **Trade Desk** (`NbaTrade`): the football Trade Desk's formula
+  (`evaluateTrade`, same stud adjustment and roster spot credit) with
+  13-man rosters. Values are **projected rest-of-season fantasy points**
+  (`nbaTradeRows`):
+  - points per game × team games left × availability
+  - points per game blends this season with last season's average, which
+    counts as (15 − games played) games and fades out after 15 games
+  - availability is games played ÷ team games, kept between 50% and 100%
+  - rookies have no value until they've played
+
 ## The shared player pool
 
-All three tabs read from one list, `samplePlayers` in `index.html`:
+The three season tabs read from one list, `samplePlayers` in `index.html` (the dynasty tabs use FantasyCalc's own player list instead):
 id/name/team/position for the top 200 overall players, plus 8 IR players
 added on 2026-09-28 (Conner, Benson, Njoku, Stowers, Tonges, Kirk, Pearsall,
 Kalinic) so every Injured Reserve entry also appears in Weekly Scores. To

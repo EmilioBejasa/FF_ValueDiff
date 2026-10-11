@@ -364,7 +364,7 @@ const ALL_WEEKS = Array.from({ length: 18 }, (_, i) => i + 1);
 // it offline. Only players who actually played are listed; players who didn't
 // are in DID_NOT_PLAY below, and a week with no key here hasn't been played
 // yet, so it isn't guessed at.
-const WEEKLY_SCORES_UPDATED_ON = "2026-10-09";
+const WEEKLY_SCORES_UPDATED_ON = "2026-10-11";
 const WEEKLY_SCORES = {
   1: {
     "achane": 10.6, "adams-d": 5.6, "addison": 0, "allen-braelon": 4, "allen-cyrus": 0,
@@ -665,10 +665,14 @@ const WEEKLY_SCORES = {
   },
   5: {
     "egbuka": 17.2, "ferguson-jake": 4.9, "flournoy": 12, "gainwell": 5.8, "godwin": 7,
-    "irving": 31.5, "lamb": 2.9, "pickens": 28, "prescott": 14.6, "sl-10225": 4,
-    "sl-10227": 1.5, "sl-10871": 1.9, "sl-11593": 0, "sl-11994": 0, "sl-12485": 7.4,
-    "sl-13317": 0, "sl-13425": 13.9, "sl-8111": 5.5, "sl-8207": 0, "sl-8917": 2.2,
-    "sl-9506": 1.8, "williams-j": 14.2,
+    "goedert": 5.7, "hunter-travis": 1.9, "hurts": 10.4, "irving": 31.5, "lamb": 2.9,
+    "lawrence": 13.3, "lemon": 4.8, "meyers": 2.8, "pickens": 28, "prescott": 14.6,
+    "rodriguez-chris": 2.1, "sl-10225": 4, "sl-10227": 1.5, "sl-10871": 1.9, "sl-11577": 8.3,
+    "sl-11593": 0, "sl-11994": 0, "sl-12485": 7.4, "sl-12544": 0, "sl-13150": 13.2,
+    "sl-13299": 4, "sl-13317": 0, "sl-1339": 0, "sl-13394": 7.3, "sl-13425": 13.9,
+    "sl-2359": 0, "sl-4314": 0, "sl-7536": 0, "sl-8111": 5.5, "sl-8129": 4.3,
+    "sl-8207": 0, "sl-8917": 2.2, "sl-9506": 1.8, "strange": 10.1, "thomas-brian": 0,
+    "tuten": 6.6, "washington-p": 16.4, "wicks": 7.7, "williams-j": 14.2,
   },
 };
 
@@ -714,7 +718,8 @@ const DID_NOT_PLAY = {
     "williams-caleb",
   ],
   5: [
-    "mayfield", "mcmillan-jalen", "ross-dwelley",
+    "barkley", "bigsby", "dsmith", "mayfield", "mcmillan-jalen",
+    "ross-dwelley", "stowers-eli",
   ],
 };
 
@@ -919,6 +924,7 @@ const EXTRA_PLAYERS = [
   { id: "sl-8119", name: "Jahan Dotson", team: "ATL", position: "WR", extra: true },
   { id: "sl-8122", name: "Zonovan Knight", team: "ARI", position: "RB", extra: true },
   { id: "sl-8127", name: "Charlie Kolar", team: "LAC", position: "TE", extra: true },
+  { id: "sl-8129", name: "Dameon Pierce", team: "PHI", position: "RB", extra: true },
   { id: "sl-8135", name: "Treylon Burks", team: "WSH", position: "WR", extra: true },
   { id: "sl-8145", name: "Jeremy Ruckert", team: "NYJ", position: "TE", extra: true },
   { id: "sl-8147", name: "John Metchie", team: "CAR", position: "WR", extra: true },

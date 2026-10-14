@@ -1,0 +1,45 @@
+# Re-writes data/market-values.js (KeepTradeCut, DynastyProcess and Dynasty
+# Superflex values via Dynasty Daddy) and commits it if anything changed.
+# These sites don't allow the page to fetch them directly, so this file is
+# the only way the trade calculator gets their values.
+name: Refresh market values
+
+on:
+  schedule:
+    # 10:30 UTC daily (~6:30am ET), after Dynasty Daddy's overnight update.
+    - cron: "30 10 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Shares a group with the other refresh jobs so they never push over each other.
+concurrency:
+  group: refresh-index-html
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Refresh market values from Dynasty Daddy
+        run: node scripts/refresh-market-values.js
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- data/market-values.js && git ls-files --error-unmatch data/market-values.js >/dev/null 2>&1; then
+            echo "No value changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add data/market-values.js
+          git commit -m "Refresh market values from Dynasty Daddy ($(date -u +%Y-%m-%d))"
+          git pull --rebase
+          git push

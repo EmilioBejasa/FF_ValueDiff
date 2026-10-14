@@ -24,6 +24,8 @@
 <script src="scripts/lib/sleeper-scores.js"></script>
 <script src="scripts/lib/fantasycalc.js"></script>
 <script src="scripts/lib/sleeper-nba.js"></script>
+<script src="scripts/lib/dynasty-daddy.js"></script>
+<script src="data/market-values.js"></script>
 <style>
   /* An executive front office: navy and brass, with warm paper in light
      mode and a night-office navy in dark mode. Light is the default; dark
@@ -4062,6 +4064,112 @@ function LeagueValues({ rows, byId, settings, setSettings, onAdd }) {
   );
 }
 
+/* ---------------- other calculators' take ---------------- */
+// The same trade judged with KeepTradeCut, DynastyProcess and Dynasty
+// Superflex values instead of FantasyCalc's, run through the same formula
+// (evaluateTrade) so only the values differ. Their values come from
+// data/market-values.js, baked daily from Dynasty Daddy by
+// scripts/refresh-market-values.js, since none of these sites let the page
+// fetch them directly. They're 12-team PPR values with no league size,
+// scoring or TE-premium options, and there are no generic "2027 1st" picks:
+// those use the mid pick.
+function marketPickKey(name) {
+  const p = window.FantasyCalc?.parsePick(name);
+  return p && `${p.year}-${p.round}-${p.slot || "mid"}`;
+}
+
+function MarketComparison({ sides, byId, settings, result }) {
+  const bundle = window.MARKET_VALUES;
+  const markets = (window.DynastyDaddy?.MARKETS || []).filter((m) => m.mode === settings.mode);
+
+  const rows = useMemo(() => {
+    if (!bundle) return [];
+    return markets.map((m) => {
+      const values = bundle.values[m.key]?.[settings.qb] || {};
+      const lookup = (id) => {
+        const r = byId[id];
+        return values[r?.position === "PICK" ? marketPickKey(r.name) : id];
+      };
+      const missing = [];
+      const sideValues = sides.map((ids) => ids.map((id) => {
+        const v = lookup(id);
+        if (v == null) missing.push(byId[id]?.name || id);
+        return v || 0;
+      }));
+      const all = Object.values(values);
+      const playerValues = Object.entries(values)
+        .filter(([k]) => !k.includes("-")).map(([, v]) => v).sort((a, b) => b - a);
+      const ctx = { topValue: Math.max(1, ...all), playerValues, teams: settings.teams, raw: settings.raw };
+      return { m, result: evaluateTrade(sideValues, ctx), missing };
+    });
+  }, [bundle, settings.mode, sides, byId, settings.qb, settings.teams, settings.raw]);
+
+  if (!sides[0].length || !sides[1].length) return null;
+
+  const verdictText = (r) => {
+    if (r.verdict === "fair") return "Fair";
+    const who = `Team ${TRADE_SIDES[r.winner]}`;
+    return `${r.verdict === "slight" ? "Slightly favors" : "Favors"} ${who} by ${Math.round(r.pct * 100)}%`;
+  };
+  const verdictColor = (r) => (r.verdict === "fair" ? "var(--text-primary)" : SIDE_COLOR[TRADE_SIDES[r.winner]]);
+  const all = [{ m: { key: "fc", label: "FantasyCalc", url: "https://fantasycalc.com/trade-calculator" }, result, missing: [], main: true }, ...rows];
+  const agree = rows.filter((r) => r.result.verdict === result.verdict && (r.result.verdict === "fair" || r.result.winner === result.winner)).length;
+
+  return (
+    <div className="rounded-lg border p-4 flex flex-col gap-3" style={{ borderColor: "var(--border)", background: "var(--surface-1)" }}>
+      <div className="flex items-baseline justify-between flex-wrap gap-2">
+        <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>What other calculators say</h3>
+        {rows.length > 0 && (
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            {agree} of {rows.length} agree with FantasyCalc
+          </p>
+        )}
+      </div>
+      {!bundle ? (
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Other sites' values didn't load (data/market-values.js is missing).</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm tabular-nums">
+            <thead>
+              <tr className="text-xs text-left" style={{ color: "var(--text-muted)" }}>
+                <th className="font-medium py-1 pr-3">Calculator</th>
+                <th className="font-medium py-1 pr-3 text-right">Team A</th>
+                <th className="font-medium py-1 pr-3 text-right">Team B</th>
+                <th className="font-medium py-1">Verdict</th>
+              </tr>
+            </thead>
+            <tbody>
+              {all.map(({ m, result: r, missing, main }) => (
+                <tr key={m.key} className="border-t" style={{ borderColor: "var(--border)" }}>
+                  <td className="py-1.5 pr-3 whitespace-nowrap">
+                    <a href={m.url} target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "var(--text-primary)" }}>{m.label}</a>
+                    {main && <span className="text-xs" style={{ color: "var(--text-muted)" }}> (above)</span>}
+                    {missing.length > 0 && (
+                      <span className="block text-xs" style={{ color: "var(--text-muted)" }} title={missing.join(", ")}>
+                        No value for {missing.length === 1 ? missing[0] : `${missing.length} assets`}
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-1.5 pr-3 text-right">{fmtValue(Math.round(r.adjusted[0]))}</td>
+                  <td className="py-1.5 pr-3 text-right">{fmtValue(Math.round(r.adjusted[1]))}</td>
+                  <td className="py-1.5 font-medium" style={{ color: verdictColor(r) }}>{verdictText(r)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+        Each site's {settings.qb === "sf" ? "Superflex" : "1QB"} {settings.mode} values run through this calculator's
+        {settings.raw ? " raw sums" : " adjustments"}, so the verdicts differ only by whose values are used; each site's own
+        calculator adjusts a bit differently. These sites only publish 12-team PPR values (no TE premium), via{" "}
+        <a href="https://dynasty-daddy.com" target="_blank" rel="noopener noreferrer" className="underline">Dynasty Daddy</a>,
+        updated {bundle?.updatedOn || "never"}.
+      </p>
+    </div>
+  );
+}
+
 function TradeCalculator({ data, settings, setSettings }) {
   const [sides, setSides] = useState(readTradeHash);
   useEffect(() => { writeTradeHash(sides); }, [sides]);
@@ -4124,6 +4232,8 @@ function TradeCalculator({ data, settings, setSettings }) {
       </div>
 
       <TradeVerdict sides={sides} byId={byId} rows={data.rows} ctx={ctx} result={result} />
+
+      <MarketComparison sides={sides} byId={byId} settings={settings} result={result} />
 
       <LeagueValues rows={data.rows} byId={byId} settings={settings} setSettings={setSettings} onAdd={add} />
     </div>

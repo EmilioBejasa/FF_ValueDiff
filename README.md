@@ -335,6 +335,22 @@ worth right now, and the player with the closest value. Each prospect also
 shows the pick his rank lines up with in a 12-team league (ranks 1-4 early
 1st, 5-8 mid, 9-12 late, and so on) at its current value.
 
+### What other calculators say
+
+Under the trade verdict, the Trade Calculator re-runs the same trade with
+KeepTradeCut, DynastyProcess and Dynasty Superflex values (KeepTradeCut's
+redraft values in redraft mode), through this app's own formula, so you can
+see whether the other markets agree. None of these sites let a web page fetch
+their values, so they come from
+[Dynasty Daddy](https://dynasty-daddy.com), which collects them:
+`dynasty-daddy.com/api/v1/player/all/today?market=<n>` (0 KeepTradeCut, 2
+DynastyProcess, 3 Dynasty Superflex, 4 KeepTradeCut redraft), keyed by
+Sleeper player_id. `scripts/refresh-market-values.js` writes them to
+`data/market-values.js`, and the **Refresh market values** Action runs it
+daily at 10:30 UTC. These are 12-team PPR values in 1QB and Superflex only,
+with no league size, scoring or TE-premium options; FantasyCalc's generic
+"2027 1st" picks use the mid pick.
+
 ## Basketball
 
 Season-long (redraft) **points leagues** only. No dynasty, no category

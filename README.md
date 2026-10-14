@@ -426,6 +426,23 @@ in memory for 10 minutes):
 - `api.sleeper.com/stats/nba/player/<id>?season=<year>&grouping=week`, every
   game of the season.
 
+Football profiles also graph **dynasty value over time**, one line per site
+(1M / 3M / 6M / All, hover for any day's values):
+
+- FantasyCalc, live and daily since Jan 1, in your league size, scoring and
+  QB format: `api.fantasycalc.com/trades/implied/<FantasyCalc id>?isDynasty=true&numQbs=..&numTeams=..&ppr=..`
+  (CORS-open; the id is FantasyCalc's own, kept on each value row as `fcId`).
+- KeepTradeCut, DynastyProcess and Dynasty Superflex, one point a week for
+  up to a year, from `data/market-history.js`. The daily **Refresh market
+  values** Action adds each day's values from Dynasty Daddy; it was started
+  with `node scripts/refresh-market-values.js --backfill`, which pulls each
+  player's last ~180 days from `dynasty-daddy.com/api/v1/player/<name_id>?isAllTime=false`
+  (one request per player, so it's only for starting over). The file is
+  loaded only when a profile opens.
+
+The graph is always dynasty value (no redraft history is kept) without TE
+premium.
+
 Football profiles show bio and injury status, dynasty (or redraft) value,
 rank, 30-day trend and Draft Board slot in your league settings, fantasy
 points by week against Sleeper's projection in your scoring, a game log, the

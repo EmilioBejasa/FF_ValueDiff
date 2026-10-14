@@ -17,7 +17,7 @@ const INDEX_HTML = path.join(__dirname, "..", "index.html");
 const DRY_RUN = process.argv.includes("--dry-run");
 
 // Must match DYNASTY_FIELDS in index.html, which expands each row back into an object.
-const FIELDS = ["id", "name", "position", "team", "age", "value", "redraftValue", "overallRank", "posRank", "trend30", "tier"];
+const FIELDS = ["id", "name", "position", "team", "age", "value", "redraftValue", "overallRank", "posRank", "trend30", "tier", "fcId"];
 
 async function main() {
   let source = fs.readFileSync(INDEX_HTML, "utf8");

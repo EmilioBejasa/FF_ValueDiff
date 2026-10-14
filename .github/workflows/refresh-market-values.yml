@@ -1,7 +1,8 @@
 # Re-writes data/market-values.js (KeepTradeCut, DynastyProcess and Dynasty
-# Superflex values via Dynasty Daddy) and commits it if anything changed.
-# These sites don't allow the page to fetch them directly, so this file is
-# the only way the trade calculator gets their values.
+# Superflex values via Dynasty Daddy) and adds today's values to
+# data/market-history.js, committing them if anything changed. These sites
+# don't allow the page to fetch them directly, so these files are the only way
+# the trade calculator and the profile value graphs get their values.
 name: Refresh market values
 
 on:
@@ -33,13 +34,13 @@ jobs:
 
       - name: Commit if changed
         run: |
-          if git diff --quiet -- data/market-values.js && git ls-files --error-unmatch data/market-values.js >/dev/null 2>&1; then
+          git add data/market-values.js data/market-history.js
+          if git diff --cached --quiet; then
             echo "No value changes."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add data/market-values.js
           git commit -m "Refresh market values from Dynasty Daddy ($(date -u +%Y-%m-%d))"
           git pull --rebase
           git push

@@ -44,6 +44,7 @@
           posRank: e.positionRank,
           trend30: e.trend30Day || 0,
           tier: e.maybeTier ?? null,
+          fcId: p.id ?? null, // FantasyCalc's own id, for its value-history endpoint
         };
       })
       .sort((a, b) => b.value - a.value);

@@ -41,13 +41,29 @@
     return out;
   }
 
-  async function fetchMarket(market) {
-    const res = await fetch(URL(market));
-    if (!res.ok) throw new Error(`Dynasty Daddy market ${market} fetch failed (${res.status})`);
-    return trimMarket(await res.json());
+  async function getJson(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Dynasty Daddy fetch failed (${res.status}): ${url}`);
+    return res.json();
   }
 
-  const api = { MARKETS, fetchMarket, trimMarket, ddPickKey };
+  const fetchMarketRaw = (market) => getJson(URL(market));
+  const fetchMarket = async (market) => trimMarket(await fetchMarketRaw(market));
+
+  // A player's daily values over the last ~180 days, every market in one
+  // row per day. `nameId` is Dynasty Daddy's own id ("bijanrobinsonrb"),
+  // listed as name_id in the market feed.
+  // - dynasty-daddy.com/api/v1/player/<name_id>?isAllTime=false
+  const fetchHistory = (nameId) => getJson(`https://dynasty-daddy.com/api/v1/player/${encodeURIComponent(nameId)}?isAllTime=false`);
+
+  // Which history field holds each market's value, by format.
+  const HISTORY_FIELDS = {
+    ktc: { "1qb": "trade_value", sf: "sf_trade_value" },
+    dp: { "1qb": "dp_trade_value", sf: "dp_sf_trade_value" },
+    dsf: { "1qb": "ds_trade_value", sf: "ds_sf_trade_value" },
+  };
+
+  const api = { MARKETS, HISTORY_FIELDS, fetchMarket, fetchMarketRaw, fetchHistory, trimMarket, ddPickKey };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.DynastyDaddy = api;
 })(typeof window !== "undefined" ? window : globalThis);

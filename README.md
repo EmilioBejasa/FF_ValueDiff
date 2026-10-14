@@ -226,7 +226,8 @@ built from real trades on fantasy platforms. FantasyCalc sends an open CORS
 header, so the page fetches them directly on load, the same way it fetches
 Sleeper. Each settings combination's trimmed list (dynasty: about 400
 players plus 24 generic rookie picks like "2027 1st (Early)"; redraft: about
-200 players, no picks) is cached in `localStorage` for 12 hours. Players are
+200 players, no picks) is cached in `localStorage` for 2 hours, and an open page re-checks
+when you return to the tab and every 30 minutes. Players are
 keyed by their **Sleeper player_id**, which FantasyCalc includes, so nothing
 is matched by name.
 
@@ -394,6 +395,32 @@ isn't documented anywhere I could find, so there's no Sleeper preset.
     counts as (15 − games played) games and fades out after 15 games
   - availability is games played ÷ team games, kept between 50% and 100%
   - rookies have no value until they've played
+
+## Player profiles
+
+Every player has a profile page, football at `#/player/<Sleeper id>` and
+basketball at `#/nba/player/<Sleeper id>`. Nothing is written per player: the
+page pulls that player's own feeds from Sleeper when it opens (CORS-open, kept
+in memory for 10 minutes):
+
+- `api.sleeper.com/stats/nfl/player/<id>?season=<year>&grouping=week` (and
+  `grouping=season`, for this season's and last season's totals and position
+  ranks), plus `api.sleeper.com/projections/nfl/player/<id>?...&grouping=week`
+  for weekly projections.
+- `api.sleeper.com/stats/nba/player/<id>?season=<year>&grouping=week`, every
+  game of the season.
+
+Football profiles show bio and injury status, dynasty (or redraft) value,
+rank, 30-day trend and Draft Board slot in your league settings, fantasy
+points by week against Sleeper's projection in your scoring, a game log, the
+next three games, last season and players of similar value. Basketball
+profiles show trade value, FPG, availability, the last 20 games, the full game
+log, season averages and similar players. Headshots come from
+`sleepercdn.com`. There's no separate profiles tab: player names in every
+tab link to their profile, and the profile's back link returns to the tab you
+came from. Football tabs that use this app's short ids (Weekly Scores, Waiver
+Wire, Injuries) are matched to Sleeper ids by name and position, the same way
+the live scores are. Rookie picks and 2027 prospects have no profile.
 
 ## The shared player pool
 

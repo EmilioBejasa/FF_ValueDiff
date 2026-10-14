@@ -16,6 +16,9 @@
 // - api.sleeper.app/v1/players/nba — every player with injury designations
 //   (~2.5MB; trimmed and cached, as Sleeper asks).
 // - api.sleeper.app/v1/players/nba/trending/<add|drop> — Sleeper add/drop counts.
+// - api.sleeper.com/projections/nba/<season>?season_type=regular — Sleeper's
+//   season projections: one per-game stat line per player (`gp` is 1), plus
+//   its redraft ADP (`adp_std`).
 (function (root) {
   const API = "https://api.sleeper.app/v1";
   const STATS = "https://api.sleeper.com/stats/nba";
@@ -93,10 +96,19 @@
     return out;
   }
 
+  // Season projections: [{ id, name, position, positions, team, stats, adp }],
+  // stats being a projected per-game line.
+  async function fetchProjections(season) {
+    const rows = await getJson(`https://api.sleeper.com/projections/nba/${season}?season_type=regular`);
+    return (rows || [])
+      .filter((r) => isPlayer(r) && r.stats && r.stats.pts > 0)
+      .map((r) => ({ ...info(r), stats: trim(r.stats), adp: r.stats.adp_std || null }));
+  }
+
   const fetchTrending = (direction, limit = 25) =>
     getJson(`${API}/players/nba/trending/${direction}?lookback_hours=24&limit=${limit}`);
 
-  const api = { SCORING, fantasyPoints, fetchState, fetchSeason, fetchWeek, fetchPlayers, fetchTrending };
+  const api = { SCORING, fantasyPoints, fetchState, fetchSeason, fetchWeek, fetchPlayers, fetchTrending, fetchProjections };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.SleeperNBA = api;
 })(typeof window !== "undefined" ? window : globalThis);

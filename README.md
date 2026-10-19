@@ -229,7 +229,28 @@ cells in Weekly Scores.
 
 ## Dynasty tabs
 
-All three read the same values: **FantasyCalc's** trade values
+**Values default to KeepTradeCut.** Every football value in the app (Value
+Board, War Room, Trade Desk, league pages, profiles, home-page risers) is
+KTC's (`applyMarketValues` in `useDynastyValues`), from the daily
+`data/market-values.js` (see "Consensus across calculators" below):
+
+- dynasty uses KTC's dynasty values, and KTC's redraft values for the
+  this-season comparisons (Win-now / Future tags, a team's lean); redraft
+  uses KTC redraft for both;
+- FantasyCalc still supplies the player list (names, ages, teams, picks).
+  Players KTC doesn't list keep FantasyCalc's value, rescaled to KTC's scale
+  by the KTC ÷ FantasyCalc ratio of the 10 players nearest them in value
+  (`marketRescaler`). FantasyCalc's generic "2027 1st" is KTC's mid 1st;
+- the 30-day trend is KTC's (`trends` in `data/market-values.js`, from the
+  weekly history), falling back to FantasyCalc's;
+- KTC's values don't change with league size or scoring, so those settings
+  only affect the FantasyCalc fallbacks and the trade calculator's
+  roster-spot credit. TE premium is applied on top as before;
+- FantasyCalc's own values stay on each row (`fcValue`, `fcRedraftValue`)
+  for the trade calculator's consensus. If `data/market-values.js` is
+  missing, the app falls back to FantasyCalc's values throughout.
+
+The player list and fallback values are **FantasyCalc's** trade values
 (`https://api.fantasycalc.com/values/current?isDynasty=<true|false>&numQbs=<1|2>&numTeams=<8-14>&ppr=<0|0.5|1>`),
 built from real trades on fantasy platforms. FantasyCalc sends an open CORS
 header, so the page fetches them directly on load, the same way it fetches
@@ -276,7 +297,7 @@ Every player and pick, ranked by value for the selected league settings,
 filterable by position (or Picks, in dynasty) and searchable by name or team. Each row shows position rank, age, value (with a
 bar relative to #1) and the 30-day trend. It also shows the player's live Sleeper
 injury designation, from the same cached `/players/nfl` map as the
-Injuries tab. Two tags compare FantasyCalc's redraft value (this season
+Injuries tab. Two tags compare redraft value (this season
 only) with dynasty value, for players worth at least 1,500:
 **Win-now** when redraft value is 15%+ higher (older producers a contender
 should buy), **Future** when it's under half and the player is 25 or younger
@@ -441,12 +462,17 @@ worth right now, and the player with the closest value. Each prospect also
 shows the pick his rank lines up with in a 12-team league (ranks 1-4 early
 1st, 5-8 mid, 9-12 late, and so on) at its current value.
 
-### What other calculators say
+### Consensus across calculators
 
-Under the trade verdict, the Trade Calculator re-runs the same trade with
-KeepTradeCut, DynastyProcess and Dynasty Superflex values (KeepTradeCut's
-redraft values in redraft mode), through this app's own formula, so you can
-see whether the other markets agree. None of these sites let a web page fetch
+Under the trade verdict (which uses KTC, like the rest of the app), the
+Trade Calculator re-runs the same trade with each calculator's values,
+through this app's own formula: KeepTradeCut, FantasyCalc (live, in the
+league's size and scoring), and in dynasty DynastyProcess and Dynasty
+Superflex (redraft: KTC redraft and FantasyCalc only). The **consensus**
+on top averages each calculator's signed margin (gap ÷ bigger side) and
+reads it with the same fair / slight / favors thresholds
+(`consensusVerdict`), with a count of how many calculators make the same
+call and a note when KTC alone disagrees. None of these sites let a web page fetch
 their values, so they come from
 [Dynasty Daddy](https://dynasty-daddy.com), which collects them:
 `dynasty-daddy.com/api/v1/player/all/today?market=<n>` (0 KeepTradeCut, 2

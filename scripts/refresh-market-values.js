@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Writes two files from Dynasty Daddy (see lib/dynasty-daddy.js):
 // - data/market-values.js: today's KeepTradeCut, DynastyProcess and Dynasty
-//   Superflex trade values, for the trade calculator's "What other
-//   calculators say" panel.
+//   Superflex trade values, plus KTC's 30-day change per player. KTC is the
+//   page's default value source; all of them feed the trade calculator's
+//   consensus.
 // - data/market-history.js: a weekly history of the same dynasty values per
 //   player, for the value graph on player profiles (loaded only when a
 //   profile opens).
@@ -52,10 +53,32 @@ async function main() {
     if (n < 100) throw new Error(`Suspiciously few ${m.label} values — files left as is.`);
   }
 
-  writeIfChanged(VALUES_OUT, "MARKET_VALUES", { updatedOn: today, values }, JSON.stringify(values));
-
   const history = BACKFILL ? await backfill(ktcRaw) : addToday(readHistory(), values);
+  const trends = { ktc: ktcTrends(history) };
+  writeIfChanged(VALUES_OUT, "MARKET_VALUES", { updatedOn: today, values, trends }, JSON.stringify({ values, trends }));
   writeIfChanged(HISTORY_OUT, "MARKET_HISTORY", history, JSON.stringify(history));
+}
+
+// Each player's KTC change over about 30 days: today's value minus the one at
+// the history point nearest 30 days back. The page shows it as the 30-day
+// trend, since KTC is its default value source.
+// { <format>: { <sleeper id>: change } }
+function ktcTrends(history) {
+  const { dates } = history;
+  const last = dates.length - 1;
+  let then = -1;
+  for (let i = 0; i < last; i++) {
+    if (then < 0 || Math.abs(daysBetween(dates[i], today) - 30) < Math.abs(daysBetween(dates[then], today) - 30)) then = i;
+  }
+  const out = { "1qb": {}, sf: {} };
+  if (then < 0) return out;
+  for (const f of FORMATS) {
+    for (const [id, p] of Object.entries(history.players[f])) {
+      const s = p.ktc;
+      if (s && s[last] != null && s[then] != null) out[f][id] = s[last] - s[then];
+    }
+  }
+  return out;
 }
 
 // { dates: [...], players: { <format>: { <sleeper id>: { <market>: [values aligned to dates] } } } }

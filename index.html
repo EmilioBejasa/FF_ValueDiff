@@ -3242,11 +3242,76 @@ function useDynastyValues(settings, { enabled = true } = {}) {
     return () => { cancelled = true; };
   }, [key, baked, enabled, tick]);
 
-  const tepRows = useMemo(() => applyTePremium(data.rows, settings.tep), [data.rows, settings.tep]);
-  return { ...data, rows: tepRows, settings };
+  const market = useMemo(() => applyMarketValues(data.rows, settings), [data.rows, settings.mode, settings.qb]);
+  const tepRows = useMemo(() => applyTePremium(market.rows, settings.tep), [market.rows, settings.tep]);
+  return { ...data, rows: tepRows, settings, source: market.source, sourceUpdatedOn: market.updatedOn };
 }
 
-// TE premium: FantasyCalc has no TE-premium values, so this estimates them.
+// Default values: KeepTradeCut's (data/market-values.js, baked daily from
+// Dynasty Daddy), on FantasyCalc's player list. Dynasty uses KTC's dynasty
+// values, with its redraft values as redraftValue; redraft uses KTC redraft
+// for both. KTC has no league-size or scoring options, so those settings only
+// change the fallbacks. Players KTC doesn't list keep FantasyCalc's value,
+// rescaled to KTC's scale by the KTC ÷ FantasyCalc ratio of the players
+// nearest them in value. FantasyCalc's "2027 1st" is KTC's mid 1st. KTC's
+// 30-day change replaces FantasyCalc's trend where it has one. FantasyCalc's
+// own values stay on each row (fcValue, fcRedraftValue) for the trade
+// calculator's consensus. Without the baked file, FantasyCalc's values stand.
+const VALUE_SOURCE = { key: "ktc", label: "KeepTradeCut", url: "https://keeptradecut.com/trade-calculator" };
+const RESCALE_NEIGHBORS = 10;
+
+// fc → market-scale value, from [fcValue, marketValue] pairs of listed players.
+function marketRescaler(pairs) {
+  const sorted = pairs.filter(([f, m]) => f > 0 && m > 0).sort((a, b) => a[0] - b[0]);
+  if (sorted.length < RESCALE_NEIGHBORS) return null;
+  return (fc) => {
+    let lo = 0, hi = sorted.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (sorted[mid][0] < fc) lo = mid + 1; else hi = mid; }
+    const from = Math.max(0, Math.min(lo - RESCALE_NEIGHBORS / 2, sorted.length - RESCALE_NEIGHBORS));
+    const ratios = sorted.slice(from, from + RESCALE_NEIGHBORS).map(([f, m]) => m / f).sort((a, b) => a - b);
+    return Math.round(fc * ratios[RESCALE_NEIGHBORS >> 1]);
+  };
+}
+
+// Best first, with overall and position ranks to match (picks keep theirs).
+function rankRows(rows) {
+  const posCount = {};
+  return [...rows].sort((a, b) => b.value - a.value).map((r, i) => ({
+    ...r,
+    overallRank: i + 1,
+    posRank: r.position === "PICK" ? r.posRank : (posCount[r.position] = (posCount[r.position] || 0) + 1),
+  }));
+}
+
+function applyMarketValues(rows, settings) {
+  const bundle = window.MARKET_VALUES;
+  const dynasty = settings.mode === "dynasty";
+  const main = bundle?.values[dynasty ? "ktc" : "ktcRedraft"]?.[settings.qb];
+  if (!main) return { rows, source: null };
+  const redraft = bundle.values.ktcRedraft?.[settings.qb] || {};
+  const trends = (dynasty && bundle.trends?.ktc?.[settings.qb]) || {};
+  const pairs = (vals, field) =>
+    rows.filter((r) => r.position !== "PICK" && vals[r.id] && r[field] > 0).map((r) => [r[field], vals[r.id]]);
+  const scaleMain = marketRescaler(pairs(main, "value"));
+  const scaleRedraft = marketRescaler(pairs(redraft, "redraftValue"));
+  if (!scaleMain) return { rows, source: null };
+
+  const out = rows.map((r) => {
+    const listed = main[r.position === "PICK" ? marketPickKey(r.name) : r.id];
+    const value = listed ?? scaleMain(r.value);
+    const rv = r.position === "PICK" ? null : redraft[r.id];
+    return {
+      ...r, value, fcValue: r.value, fcRedraftValue: r.redraftValue, ktcListed: listed != null,
+      redraftValue: !dynasty ? value
+        : rv ?? (r.redraftValue != null && scaleRedraft ? scaleRedraft(r.redraftValue) : r.redraftValue),
+      trend30: trends[r.id] ?? r.trend30,
+    };
+  });
+  return { rows: rankRows(out), source: VALUE_SOURCE, updatedOn: bundle.updatedOn };
+}
+
+// TE premium: neither KTC's baked values nor FantasyCalc's have TE premium, so
+// this estimates it (on both, fcValue included).
 // A bonus per TE catch helps high-volume TEs most, so the boost scales with
 // how good the TE is: the top TE gets the full boost, a fringe TE about half.
 // Boosts per +0.5 / +1.0 / +1.5 points per catch are this app's own estimate
@@ -3257,14 +3322,10 @@ function applyTePremium(rows, tep) {
   const boost = TEP_BOOST[tep];
   if (!boost) return rows;
   const topTe = Math.max(1, ...rows.filter((r) => r.position === "TE").map((r) => r.value));
-  const boosted = rows
-    .map((r) => (r.position === "TE" ? { ...r, value: Math.round(r.value * (1 + boost * (0.5 + 0.5 * (r.value / topTe)))) } : r))
-    .sort((a, b) => b.value - a.value);
-  const posCount = {};
-  return boosted.map((r, i) => ({
-    ...r,
-    overallRank: i + 1,
-    posRank: r.position === "PICK" ? r.posRank : (posCount[r.position] = (posCount[r.position] || 0) + 1),
+  return rankRows(rows.map((r) => {
+    if (r.position !== "TE") return r;
+    const lift = 1 + boost * (0.5 + 0.5 * (r.value / topTe));
+    return { ...r, value: Math.round(r.value * lift), fcValue: r.fcValue != null ? Math.round(r.fcValue * lift) : r.fcValue };
   }));
 }
 
@@ -3283,11 +3344,24 @@ function useSleeperStatuses() {
 
 function DynastyStatusLine({ data }) {
   const what = describeSettings(data.settings);
-  const tep = data.settings.tep ? " TE premium is this app's estimate on top of FantasyCalc's values." : "";
-  if (data.status === "live") return <>Live from FantasyCalc for {what} leagues (updated {data.updatedOn}), rechecked every 2 hours.{tep}</>;
+  const tep = data.settings.tep ? " TE premium is this app's estimate on top of those values." : "";
   const snapshot = data.approximate
     ? <>the saved {data.updatedOn} snapshot of 12-team PPR dynasty values, not your exact settings</>
     : <>the saved {data.updatedOn} snapshot</>;
+  const fc = data.status === "live" ? <>live from FantasyCalc for {what} leagues (updated {data.updatedOn})</>
+    : data.status === "loading" ? <>loading from FantasyCalc, {snapshot} until then</>
+    : <>FantasyCalc's {snapshot}, since it couldn't be reached ({data.message})</>;
+  if (data.source) {
+    return (
+      <>
+        Values are <a href={data.source.url} target="_blank" rel="noopener noreferrer" className="underline">{data.source.label}</a>'s
+        {" "}{data.settings.qb === "sf" ? "Superflex" : "1QB"} {data.settings.mode} values (updated {data.sourceUpdatedOn}, via Dynasty
+        Daddy). KTC doesn't change them for league size or scoring. Players KTC doesn't list use FantasyCalc's value, rescaled to
+        KTC's scale; the player list itself is {fc}.{tep}
+      </>
+    );
+  }
+  if (data.status === "live") return <>Live from FantasyCalc for {what} leagues (updated {data.updatedOn}), rechecked every 2 hours.{tep}</>;
   return data.status === "loading"
     ? <>Loading {what} values from FantasyCalc… showing {snapshot} until then.{tep}</>
     : <>Couldn't reach FantasyCalc ({data.message}), so this is {snapshot}.{tep}</>;
@@ -3409,7 +3483,7 @@ function DynastyValues({ data, settings, setSettings }) {
       <header>
         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Dynasty Values</h2>
         <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
-          What every player{isDynasty && " and rookie pick"} is worth in a {describeSettings(settings)} league, based on real trades.
+          What every player{isDynasty && " and rookie pick"} is worth in a {describeSettings(settings)} league, by KeepTradeCut's crowdsourced values.
         </p>
         <AboutData>
           <DynastyStatusLine data={data} />{" "}
@@ -3876,7 +3950,7 @@ function TradeVerdict({ sport = "nfl", sides, byId, rows, ctx, result }) {
       <details className="text-xs" style={{ color: "var(--text-muted)" }}>
         <summary className="cursor-pointer select-none" style={{ color: "var(--text-secondary)" }}>How this is calculated</summary>
         {ctx.raw ? (
-          <p className="mt-2">Raw values is on, so each side is just the sum of FantasyCalc's values with no adjustments.</p>
+          <p className="mt-2">Raw values is on, so each side is just the sum of its values with no adjustments.</p>
         ) : (
           <div className="mt-2 flex flex-col gap-1.5">
             <p>
@@ -4240,11 +4314,11 @@ function leagueRules(league, mode) {
         : `Viewing as ${mode} instead` },
     ...(league.settings?.best_ball ? [{ label: "Best ball", value: "Yes", use: "Lineups set themselves, so the best lineup below is how teams score" }] : []),
     { label: "Teams", value: league.total_rosters,
-      use: league.total_rosters > 14 ? "FantasyCalc's 14-team values (its largest)" : `${s.teams}-team values` },
+      use: `KTC values don't change with league size (FantasyCalc's fallbacks use ${league.total_rosters > 14 ? "14-team, its largest" : `${s.teams}-team`})` },
     { label: "QB", value: slots.includes("SUPER_FLEX") ? "Superflex" : qbSlots >= 2 ? `${qbSlots}QB` : "1QB",
       use: s.qb === "sf" ? "Superflex values" : "1QB values" },
     { label: "Receptions", value: `${rec} pt${rec === 1 ? "" : "s"} per catch`,
-      use: `${{ 1: "PPR", 0.5: "Half-PPR", 0: "Standard" }[s.ppr]} values${rec !== s.ppr ? " (closest match)" : ""}` },
+      use: `KTC values don't change with scoring (FantasyCalc's fallbacks use ${{ 1: "PPR", 0.5: "Half-PPR", 0: "Standard" }[s.ppr]}${rec !== s.ppr ? ", the closest match" : ""})` },
     { label: "TE premium", value: scoring.bonus_rec_te ? `+${scoring.bonus_rec_te} per catch` : "None",
       use: s.tep ? "TE values boosted (this app's estimate)" : "–" },
     { label: "Passing TD", value: `${passTd} pts`,
@@ -4252,7 +4326,7 @@ function leagueRules(league, mode) {
     { label: "Starters", value: lineupSummary(slots), use: "Each team's best lineup fills these slots" },
     { label: "Roster", value: [`${count("BN")} bench`, league.settings?.reserve_slots && `${league.settings.reserve_slots} IR`,
       league.settings?.taxi_slots && `${league.settings.taxi_slots} taxi`].filter(Boolean).join(" · "), use: "For reference" },
-    ...(unvalued.length ? [{ label: "Not valued", value: unvalued.join(", "), use: "FantasyCalc only values QB, RB, WR and TE" }] : []),
+    ...(unvalued.length ? [{ label: "Not valued", value: unvalued.join(", "), use: "Trade values only cover QB, RB, WR and TE" }] : []),
   ];
 }
 
@@ -5026,10 +5100,10 @@ function MyLeagues({ settings, setSettings, navigate }) {
           </header>
           <AboutData>
             <DynastyStatusLine data={values} />{" "}
-            Values are FantasyCalc's, picked to match this league's settings (see the settings table at the bottom). "Starters"
+            Values are matched to this league's format and QB setting (see the settings table at the bottom). "Starters"
             is the best lineup a roster can field in the league's slots. In dynasty, a team's total also counts the rookie picks
             it owns (the next three drafts, rounds 1-{LEAGUE_PICK_ROUNDS}, valued as mid-round picks), and its lean compares how
-            good its lineup is this season (FantasyCalc's redraft values) with its long-term value. In redraft, teams are
+            good its lineup is this season (redraft values) with its long-term value. In redraft, teams are
             ranked by their lineup alone. Records and points come straight from Sleeper.
           </AboutData>
 
@@ -5321,105 +5395,134 @@ function MyLeagues({ settings, setSettings, navigate }) {
   );
 }
 
-/* ---------------- other calculators' take ---------------- */
-// The same trade judged with KeepTradeCut, DynastyProcess and Dynasty
-// Superflex values instead of FantasyCalc's, run through the same formula
-// (evaluateTrade) so only the values differ. Their values come from
+/* ---------------- consensus across calculators ---------------- */
+// The same trade judged with each calculator's values: KeepTradeCut (the
+// app's default, as on the rest of the page), FantasyCalc (live, in the
+// league's size and scoring), and in dynasty DynastyProcess and Dynasty
+// Superflex. Each runs through the same formula (evaluateTrade), so only the
+// values differ. The consensus averages each calculator's margin (signed,
+// as a share of the bigger side) and reads it with the same fair / slight /
+// favors thresholds. KTC, DynastyProcess and Dynasty Superflex come from
 // data/market-values.js, baked daily from Dynasty Daddy by
 // scripts/refresh-market-values.js, since none of these sites let the page
-// fetch them directly. They're 12-team PPR values with no league size,
-// scoring or TE-premium options, and there are no generic "2027 1st" picks:
-// those use the mid pick.
+// fetch them directly. They have no league-size, scoring or TE-premium
+// options, and no generic "2027 1st" picks: those use the mid pick.
 function marketPickKey(name) {
   const p = window.FantasyCalc?.parsePick(name);
   return p && `${p.year}-${p.round}-${p.slot || "mid"}`;
 }
 
-function MarketComparison({ sides, byId, settings, result }) {
-  const bundle = window.MARKET_VALUES;
-  const markets = (window.DynastyDaddy?.MARKETS || []).filter((m) => m.mode === settings.mode);
+const FC_SOURCE = { key: "fc", label: "FantasyCalc", url: "https://fantasycalc.com/trade-calculator" };
 
-  const rows = useMemo(() => {
-    if (!bundle) return [];
-    return markets.map((m) => {
-      const values = bundle.values[m.key]?.[settings.qb] || {};
-      const lookup = (id) => {
-        const r = byId[id];
-        return values[r?.position === "PICK" ? marketPickKey(r.name) : id];
-      };
-      const missing = [];
-      const sideValues = sides.map((ids) => ids.map((id) => {
-        const v = lookup(id);
-        if (v == null) missing.push(byId[id]?.name || id);
-        return v || 0;
-      }));
-      const all = Object.values(values);
-      const playerValues = Object.entries(values)
-        .filter(([k]) => !k.includes("-")).map(([, v]) => v).sort((a, b) => b - a);
-      const ctx = { topValue: Math.max(1, ...all), playerValues, teams: settings.teams, raw: settings.raw };
-      return { m, result: evaluateTrade(sideValues, ctx), missing };
-    });
-  }, [bundle, settings.mode, sides, byId, settings.qb, settings.teams, settings.raw]);
+// One calculator's verdict on the trade, from `valueOf(row)` (null = no value).
+function judgeWith(sides, byId, values, valueOf, settings) {
+  const missing = [];
+  const sideValues = sides.map((ids) => ids.map((id) => {
+    const v = valueOf(byId[id], id);
+    if (v == null) missing.push(byId[id]?.name || id);
+    return v || 0;
+  }));
+  const playerValues = values.filter((v) => !v.pick).map((v) => v.value).sort((a, b) => b - a);
+  const ctx = { topValue: Math.max(1, ...values.map((v) => v.value)), playerValues, teams: settings.teams, raw: settings.raw };
+  return { result: evaluateTrade(sideValues, ctx), missing };
+}
+
+// Margin as a signed share: + favors Team A, − Team B.
+const signedMargin = (r) => (r.gap >= 0 ? 1 : -1) * r.pct;
+
+function consensusVerdict(margins) {
+  const avg = margins.reduce((s, m) => s + m, 0) / Math.max(1, margins.length);
+  const pct = Math.abs(avg);
+  return {
+    pct, winner: avg >= 0 ? 0 : 1,
+    verdict: pct <= TRADE_FAIR_PCT ? "fair" : pct <= TRADE_SLIGHT_PCT ? "slight" : "favors",
+  };
+}
+
+function MarketComparison({ sides, byId, rows, settings, result, source }) {
+  const bundle = window.MARKET_VALUES;
+  const markets = (window.DynastyDaddy?.MARKETS || [])
+    .filter((m) => m.mode === settings.mode && !(source && m.key === (settings.mode === "dynasty" ? "ktc" : "ktcRedraft")));
+
+  const judged = useMemo(() => {
+    const main = { m: source || FC_SOURCE, result, missing: [], main: true };
+    const out = [main];
+    // FantasyCalc's own values, when KTC is the main source.
+    if (source) {
+      const fcValues = rows.filter((r) => r.fcValue != null).map((r) => ({ value: r.fcValue, pick: r.position === "PICK" }));
+      out.push({ m: FC_SOURCE, ...judgeWith(sides, byId, fcValues, (r) => r?.fcValue ?? null, settings) });
+    }
+    if (bundle) {
+      for (const m of markets) {
+        const vals = bundle.values[m.key]?.[settings.qb] || {};
+        const list = Object.entries(vals).map(([k, v]) => ({ value: v, pick: k.includes("-") }));
+        const valueOf = (r, id) => vals[r?.position === "PICK" ? marketPickKey(r.name) : id] ?? null;
+        out.push({ m, ...judgeWith(sides, byId, list, valueOf, settings) });
+      }
+    }
+    return out;
+  }, [bundle, settings.mode, settings.qb, settings.teams, settings.raw, sides, byId, rows, result, source]);
 
   if (!sides[0].length || !sides[1].length) return null;
 
+  const consensus = consensusVerdict(judged.map((j) => signedMargin(j.result)));
+  const sameCall = (r) => r.verdict === consensus.verdict && (r.verdict === "fair" || r.winner === consensus.winner);
+  const agree = judged.filter((j) => sameCall(j.result)).length;
   const verdictText = (r) => {
     if (r.verdict === "fair") return "Fair";
     const who = `Team ${TRADE_SIDES[r.winner]}`;
     return `${r.verdict === "slight" ? "Slightly favors" : "Favors"} ${who} by ${Math.round(r.pct * 100)}%`;
   };
   const verdictColor = (r) => (r.verdict === "fair" ? "var(--text-primary)" : SIDE_COLOR[TRADE_SIDES[r.winner]]);
-  const all = [{ m: { key: "fc", label: "FantasyCalc", url: "https://fantasycalc.com/trade-calculator" }, result, missing: [], main: true }, ...rows];
-  const agree = rows.filter((r) => r.result.verdict === result.verdict && (r.result.verdict === "fair" || r.result.winner === result.winner)).length;
+  const mainLabel = (source || FC_SOURCE).label;
 
   return (
     <div className="rounded-lg border p-4 flex flex-col gap-3" style={{ borderColor: "var(--border)", background: "var(--surface-1)" }}>
       <div className="flex items-baseline justify-between flex-wrap gap-2">
-        <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>What other calculators say</h3>
-        {rows.length > 0 && (
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            {agree} of {rows.length} agree with FantasyCalc
-          </p>
-        )}
+        <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Consensus across calculators</h3>
+        <p className="text-xs" style={{ color: "var(--text-muted)" }}>{agree} of {judged.length} calculators make the same call</p>
       </div>
-      {!bundle ? (
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Other sites' values didn't load (data/market-values.js is missing).</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm tabular-nums">
-            <thead>
-              <tr className="text-xs text-left" style={{ color: "var(--text-muted)" }}>
-                <th className="font-medium py-1 pr-3">Calculator</th>
-                <th className="font-medium py-1 pr-3 text-right">Team A</th>
-                <th className="font-medium py-1 pr-3 text-right">Team B</th>
-                <th className="font-medium py-1">Verdict</th>
+      <div className="rounded-md px-3 py-2 flex items-baseline justify-between flex-wrap gap-2" style={{ background: "var(--surface-2)" }}>
+        <span className="text-lg font-semibold" style={{ color: verdictColor(consensus) }}>{verdictText(consensus)}</span>
+        <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+          {sameCall(result) ? `${mainLabel} agrees` : `${mainLabel} alone says: ${verdictText(result).toLowerCase()}`}
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm tabular-nums">
+          <thead>
+            <tr className="text-xs text-left" style={{ color: "var(--text-muted)" }}>
+              <th className="font-medium py-1 pr-3">Calculator</th>
+              <th className="font-medium py-1 pr-3 text-right">Team A</th>
+              <th className="font-medium py-1 pr-3 text-right">Team B</th>
+              <th className="font-medium py-1">Verdict</th>
+            </tr>
+          </thead>
+          <tbody>
+            {judged.map(({ m, result: r, missing, main }) => (
+              <tr key={m.key} className="border-t" style={{ borderColor: "var(--border)" }}>
+                <td className="py-1.5 pr-3 whitespace-nowrap">
+                  <a href={m.url} target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "var(--text-primary)" }}>{m.label}</a>
+                  {main && <span className="text-xs" style={{ color: "var(--text-muted)" }}> (above)</span>}
+                  {missing.length > 0 && (
+                    <span className="block text-xs" style={{ color: "var(--text-muted)" }} title={missing.join(", ")}>
+                      No value for {missing.length === 1 ? missing[0] : `${missing.length} assets`}
+                    </span>
+                  )}
+                </td>
+                <td className="py-1.5 pr-3 text-right">{fmtValue(Math.round(r.adjusted[0]))}</td>
+                <td className="py-1.5 pr-3 text-right">{fmtValue(Math.round(r.adjusted[1]))}</td>
+                <td className="py-1.5 font-medium" style={{ color: verdictColor(r) }}>{verdictText(r)}</td>
               </tr>
-            </thead>
-            <tbody>
-              {all.map(({ m, result: r, missing, main }) => (
-                <tr key={m.key} className="border-t" style={{ borderColor: "var(--border)" }}>
-                  <td className="py-1.5 pr-3 whitespace-nowrap">
-                    <a href={m.url} target="_blank" rel="noopener noreferrer" className="underline" style={{ color: "var(--text-primary)" }}>{m.label}</a>
-                    {main && <span className="text-xs" style={{ color: "var(--text-muted)" }}> (above)</span>}
-                    {missing.length > 0 && (
-                      <span className="block text-xs" style={{ color: "var(--text-muted)" }} title={missing.join(", ")}>
-                        No value for {missing.length === 1 ? missing[0] : `${missing.length} assets`}
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-1.5 pr-3 text-right">{fmtValue(Math.round(r.adjusted[0]))}</td>
-                  <td className="py-1.5 pr-3 text-right">{fmtValue(Math.round(r.adjusted[1]))}</td>
-                  <td className="py-1.5 font-medium" style={{ color: verdictColor(r) }}>{verdictText(r)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            ))}
+          </tbody>
+        </table>
+      </div>
       <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-        Each site's {settings.qb === "sf" ? "Superflex" : "1QB"} {settings.mode} values run through this calculator's
+        Each calculator's {settings.qb === "sf" ? "Superflex" : "1QB"} {settings.mode} values run through this page's
         {settings.raw ? " raw sums" : " adjustments"}, so the verdicts differ only by whose values are used; each site's own
-        calculator adjusts a bit differently. These sites only publish 12-team PPR values (no TE premium), via{" "}
+        calculator adjusts a bit differently. The consensus is the average of their margins. FantasyCalc's values match your
+        league size and scoring; the others don't change with them (no TE premium either), and come via{" "}
         <a href="https://dynasty-daddy.com" target="_blank" rel="noopener noreferrer" className="underline">Dynasty Daddy</a>,
         updated {bundle?.updatedOn || "never"}.
       </p>
@@ -5490,7 +5593,7 @@ function TradeCalculator({ data, settings, setSettings }) {
 
       <TradeVerdict sides={sides} byId={byId} rows={data.rows} ctx={ctx} result={result} />
 
-      <MarketComparison sides={sides} byId={byId} settings={settings} result={result} />
+      <MarketComparison sides={sides} byId={byId} rows={data.rows} settings={settings} result={result} source={data.source} />
 
       <LeagueValues rows={data.rows} byId={byId} settings={settings} setSettings={setSettings} onAdd={add} />
     </div>
@@ -5685,7 +5788,7 @@ function DynastyClass2027({ data, settings, setSettings }) {
 
       <p className="text-xs" style={{ color: "var(--text-muted)" }}>
         "Projected pick" is the 2027 rookie pick that rank lines up with in a 12-team league (ranks 1-4 are early 1sts,
-        5-8 mid, 9-12 late, and so on), at FantasyCalc's current value. Sources:{" "}
+        5-8 mid, 9-12 late, and so on), at its current value. Sources:{" "}
         {CLASS_2027_SOURCES.map((s, i) => (
           <span key={s.url}>
             {i > 0 && "; "}
@@ -7225,7 +7328,7 @@ function NflProfile({ dynasty, settings }) {
       </div>
 
       <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-        Stats, projections, injuries and bio from Sleeper. Value from FantasyCalc for {describeSettings(settings)} leagues;
+        Stats, projections, injuries and bio from Sleeper. Value from KeepTradeCut (FantasyCalc where KTC has none) for {describeSettings(settings)} leagues;
         change the league settings on the <a href="#/values" className="underline">Value Board</a>.
       </p>
     </div>
@@ -7783,7 +7886,7 @@ function HomePage({ navigate, scores, dynasty }) {
               </li>
             ))}
           </ol>
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>30-day change in FantasyCalc football value, {describeSettings(dynasty.settings)}.</p>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>30-day change in KeepTradeCut football value, {describeSettings(dynasty.settings)}.</p>
         </section>
       )}
     </div>
@@ -7813,7 +7916,7 @@ function SiteFooter({ navigate }) {
       <div className="border-t" style={{ borderColor: "var(--border)" }}>
         <p className="max-w-6xl mx-auto px-4 py-5 text-xs" style={{ color: "var(--text-muted)" }}>
           Scores, stats, injuries and trends from <a href="https://sleeper.com" className="underline" target="_blank" rel="noopener noreferrer">Sleeper</a>.
-          Football trade values from <a href="https://fantasycalc.com" className="underline" target="_blank" rel="noopener noreferrer">FantasyCalc</a>.
+          Football trade values from <a href="https://keeptradecut.com" className="underline" target="_blank" rel="noopener noreferrer">KeepTradeCut</a> and <a href="https://fantasycalc.com" className="underline" target="_blank" rel="noopener noreferrer">FantasyCalc</a>.
           Prospect rankings from DraftSharks and Yahoo Sports. Not affiliated with the NFL, the NBA or any of these sites.
         </p>
       </div>

@@ -55,6 +55,7 @@ The page is laid out like a website, themed as an **executive front office**
   | Scoreboard | Weekly Scores |
   | Waiver Desk | Waiver Wire Targets |
   | Training Room | Injuries |
+  | Boardroom | My Leagues |
   | Value Board | Dynasty Values |
   | Trade Desk | Trade Calculator |
   | Scouting Dept. | 2027 Rookie Class |
@@ -66,7 +67,12 @@ The page is laid out like a website, themed as an **executive front office**
   **manila folder** card with its room on the tab. Below them are the
   biggest 30-day risers in dynasty value.
 - **Sport switch:** a Football | Basketball control next to the logo
-  (`SportSwitch`). Switching keeps you in the same room when the other sport
+  (`SportSwitch`), green for football and orange for basketball like
+  Sleeper's sport colors (`color` in `SPORTS`). The same color carries
+  through the site as `--sport` (set by `data-sport` on `<html>`): the
+  header trim, active nav underline, Trade Desk and other main buttons,
+  links, row and menu hovers and focus rings. The logo and home headline
+  stay brass. Switching keeps you in the same room when the other sport
   has one (Scoreboard → Scoreboard), otherwise it opens that sport's first
   room. On the home page it just changes which sport the nav shows
   (remembered in `ff-valuediff:sport`).
@@ -80,7 +86,7 @@ The page is laid out like a website, themed as an **executive front office**
   remembers the choice (`ff-valuediff:theme`). The choice is applied in
   `<head>` before render, so there's no flash.
 - **Every page has its own URL**: `#/scores`, `#/waivers`, `#/injuries`,
-  `#/values`, `#/trade`, `#/2027`, and for basketball `#/nba/scores`,
+  `#/leagues`, `#/values`, `#/trade`, `#/2027`, and for basketball `#/nba/scores`,
   `#/nba/waivers`, `#/nba/injuries`, `#/nba/rankings`, `#/nba/trade`. So the
   back button, bookmarks and reloads all work. A trade link (`#trade=…`, or
   `#nbatrade=…` for basketball) opens that Trade Desk with the trade, and
@@ -212,9 +218,12 @@ and, unless it's season-ending, the **earliest return** week: four team
 games after `sinceWeek`, skipping the team's bye (`irReturnWeek`). That
 date is a minimum, and many players take longer.
 
-As of 2026-09-28 it holds 24 players, from Sleeper's injury designations
-(IR/PUP) plus team news. Three are season-ending: Achane (torn ACL), Dart
-(knee surgery) and Jayden Higgins (torn ACL). Edit the list by hand as
+As of 2026-10-19 it holds 48 players, from Sleeper's injury designations
+(IR/PUP) plus team news. Nine are season-ending: Achane (torn ACL), Dart
+(knee surgery), Jayden Higgins (torn ACL), Pearsall (PCL surgery), Hurts
+(blood clots), Jayden Reed (neck surgery), Jaylin Lane (ankle fracture),
+Durham Smythe (torn Achilles) and Josh Oliver (torn biceps). Entries can
+use an extra player's `sl-` id too. Edit the list by hand as
 players are placed on or activated from IR. The same list drives the IR
 cells in Weekly Scores.
 
@@ -244,7 +253,7 @@ Calculator. They're shared between the tabs and remembered in the browser
 | TE premium | None · +0.5 · +1.0 · +1.5 per catch | **An estimate**: FantasyCalc has no TE-premium values, so TE values are boosted by 10% / 20% / 30% for the top TE, scaling down to half that for fringe TEs (`TEP_BOOST`, `applyTePremium`) |
 
 Loading a Sleeper league on the Trade Calculator sets all five from the
-league (`settingsFromLeague`). Keeper leagues count as dynasty. The 2027 Class
+league (`settingsFromLeague`). Keeper leagues count as dynasty, and guillotine leagues as redraft. The 2027 Class
 tab only uses the QB setting and always uses dynasty values.
 
 The fetch-and-trim logic lives in `scripts/lib/fantasycalc.js`, loaded with
@@ -317,6 +326,103 @@ trades are applied on top. Picks are valued as FantasyCalc's generic
 mid-round pick for that year. Loading a league syncs the settings above to
 it. Expand a team and use **+A / +B** to drop any player or pick into the
 trade.
+
+### My Leagues
+
+The **Boardroom** (`MyLeagues`) has two kinds of page:
+
+- **`#/leagues`** lists your leagues. Enter a Sleeper username (remembered in `ff-valuediff:sleeper-user`) to list
+  every football league that user is in this season, each tagged with its format, size, QB format, scoring and TE
+  premium. A league ID opens that league directly.
+- **`#/leagues/<id>`** is one league's own page. It has a link back to all leagues, works with the browser's back
+  button and bookmarks, and the browser tab shows the league's name. A loaded league is kept, so reopening it is
+  instant.
+
+A league page values the league with **its own settings**, not the shared ones above. It loads a separate FantasyCalc
+value set through the same `useDynastyValues` cache. From top to bottom, the page has your team, trade targets,
+position rooms and lineup, bench, power rankings and the settings table:
+
+- **Value as Dynasty | Redraft** switches context; it starts on the league's own type. Keepers count as dynasty, and
+  guillotine leagues (Sleeper type 3) count as redraft.
+- **Your team** is the user's roster (any team can be picked). It shows ranks among the league for roster value
+  (dynasty, including owned picks), lineup value and record/points. Dynasty adds a **This season** rank (the lineup's
+  FantasyCalc redraft values) and a lean (Contender / In the mix / Rebuilding, by thirds of the league,
+  `teamLean`). Redraft shows bench depth instead. It also shows each position room's rank against the league
+  average, the best lineup in the league's slots (`bestLineup`), and the bench.
+- **Any team can be viewed**: click it in the power rankings or pick it from the team menu. **← Your team** goes back.
+- **Trade targets** (`suggestTrades`) suggest deals for whichever team is shown, grouped by position (QB, RB, WR, TE) with up to three per position, weakest room first. Each deal is a player on another
+  team, alone or with a second player from that team, plus an offer from this roster that the Trade Desk's formula
+  (`evaluateTrade`, same league size) calls fair or a slight overpay. Offers are the roster's 14 most valuable assets,
+  one or two at a time; 2-for-2s are left to the Trade Desk. What counts as a better deal depends on the team:
+  - In redraft, and for a dynasty team in the mix, it's the biggest gain in best-lineup value. The gain must be at
+    least 250, or 10% of the target's value if that's more.
+  - For a dynasty contender, it's the same, scored on this season's (redraft) values.
+  - For a dynasty rebuilder, it's players who are cheap now but valuable later, paid for with veterans (26 and up).
+    The deal must make the roster at least two years younger on average. Picks aren't suggested. Targets are:
+    - young players, 24 and under
+    - players 27 and under who are **out for the season but back next year**, bought while the price is down. An
+      injured player counts as three extra years of age drop, since this season is all a rebuilder gives up. A player
+      counts as out for the season if:
+      - `INJURED_RESERVE` marks them `seasonEnding`, or
+      - Sleeper has them on IR/PUP with an ACL or Achilles injury (`outForYearIds`).
+
+      Low redraft value alone isn't used, because rookies on short IR stints have it too. These players are never
+      suggested to other teams as lineup upgrades.
+
+  **Deals are built around the other team.** Every offer has to fix something for them (`partnerHelps`). It can do
+  that in three ways:
+  - fill a position where they're in the league's bottom 40%; a rebuilding team gets only 40% credit for a veteran
+    (27 and up)
+  - bring a rebuilding team picks or players 24 and under
+  - make a contending team's lineup better
+
+  Each deal's base score is multiplied by fit factors (`FIT`), strongest first:
+  1. how badly the other team needs what's offered (0.45× to 1.9×)
+  2. whether the target comes from a room where they have plenty (1.35×) or are thin (0.7×)
+  3. this team's own need at the target's position (0.8× to 1.3×)
+  4. whether the two teams' windows complement each other: a contender trading with a rebuilder gets 1.35×, while two
+     contenders or two rebuilders get 0.75×
+  5. for a dynasty team in the mix, whether the target's age matches its core's value-weighted age (young under 25.5,
+     veteran over 27.5)
+
+  Each card explains the deal from the other team's side first. It names the hole the offer fills ("Chabuda is 10th
+  of 10 at WR: Emeka Egbuka fills that"), the room they can spare the target from, and their window. It then gives
+  this team's need and who moves to the bench.
+
+  To keep the ideas varied, each position's deals come from different trade partners with different offers, no
+  player is targeted twice, and no asset is offered in more than three deals overall. A position with nothing fair
+  says so. **Open in Trade Desk** loads the trade with the league's settings.
+- **Standings** (`ProjectedStandings`, above the power rankings) show this season's record, points for, points
+  against and max points for, from Sleeper. **End of season** (the default) projects them through the regular season:
+  - the remaining weeks are played on the league's real schedule (Sleeper's matchups), using Sleeper's weekly
+    projections scored in the league's own scoring (each stat line × `scoring_settings`, so TE premium, IDP and K/DEF
+    count);
+  - each future week a team scores its best projected lineup in the league's slots (taxi squads left out), times how
+    close to its best lineup it has started so far (PF ÷ max PF, kept between 75% and 100%). That best lineup is its
+    projected max PF;
+  - a week already under way uses the lineups actually set, with points already scored in place of projections;
+  - players out for the season score nothing (`seasonOverIds`: season-ending entries in `INJURED_RESERVE`, plus
+    Sleeper IR/PUP players with a torn ACL or Achilles). Sleeper's weekly projections sit out the four-game IR
+    minimum, then bring every player back, season-ending or not;
+  - 2,000 seasons are simulated (each team-week drawn around its projection, 18% as one standard deviation) for the
+    average record, PF and PA, playoff odds and 1-seed odds. Median leagues get the extra game vs the median. Seeds
+    go by wins, then points for. A dashed line marks the playoff cutoff.
+
+  **Today** shows the current standings only. Projections are about 2 MB per week, fetched when a league page opens
+  and kept for the visit. Hidden for guillotine leagues and before the draft.
+- **Power rankings** rank every team by total value in dynasty, or by best lineup in redraft. Each team has a bar split
+  by position.
+- **Use in Trade Desk** copies the league's settings to the shared settings and opens the Trade Desk with that
+  league's ID filled in.
+- A **League settings** table, at the bottom, shows each setting, what the league uses and how it's applied:
+  - format
+  - teams (over 14 uses 14-team values)
+  - QB (Superflex or 2QB both get Superflex values)
+  - points per catch (nearest of PPR/half/std)
+  - TE premium (the TEP estimate)
+  - starting slots and roster size
+
+  Settings FantasyCalc has no option for are listed but not modeled: 6-point passing TDs, and K/DEF/IDP slots.
 
 ### 2027 Class
 

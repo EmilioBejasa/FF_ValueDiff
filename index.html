@@ -8,10 +8,11 @@
 <meta name="theme-color" content="#14213d" />
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
 <script>
-  // Apply a saved light/dark choice before anything renders, so there's no flash.
+  // Apply a saved light/dark choice (and sport accent) before anything renders, so there's no flash.
   try {
     var savedTheme = localStorage.getItem("ff-valuediff:theme");
     if (savedTheme === "light" || savedTheme === "dark") document.documentElement.dataset.theme = savedTheme;
+    if (localStorage.getItem("ff-valuediff:sport") === "nba") document.documentElement.dataset.sport = "nba";
   } catch (e) {}
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -64,7 +65,14 @@
     --brass: #a9822f;
     --brass-grad-a: #8a6420; --brass-grad-b: #c39a3c;
     --folder: #f6ead0;
+    /* Sport accent, Sleeper-style: green football, orange basketball
+       (data-sport on <html>). Used for the header trim, active nav, main
+       buttons, links and hovers; the logo and headline stay brass. */
+    --sport-nfl: #178a50; --sport-nba: #c95a12;
+    --sport: var(--sport-nfl);
+    --sport-btn-a: #2bb672; --sport-btn-b: #178a50;
   }
+  :root[data-sport="nba"] { --sport: var(--sport-nba); --sport-btn-a: #f5853a; --sport-btn-b: #d4600f; }
   :root[data-theme="dark"] {
     color-scheme: dark;
     --surface-1: #131d31;
@@ -94,6 +102,7 @@
     --brass: #d4ae55;
     --brass-grad-a: #d4ae55; --brass-grad-b: #f0d68c;
     --folder: #17223a;
+    --sport-nfl: #3ecf8e; --sport-nba: #ff8a3d;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -125,6 +134,7 @@
       --brass: #d4ae55;
       --brass-grad-a: #d4ae55; --brass-grad-b: #f0d68c;
       --folder: #17223a;
+      --sport-nfl: #3ecf8e; --sport-nba: #ff8a3d;
     }
   }
   * { box-sizing: border-box; }
@@ -136,8 +146,8 @@
   /* Headings in an editorial serif, like a letterhead. */
   h1, main h2, .font-display { font-family: Fraunces, Georgia, "Times New Roman", serif; letter-spacing: -0.01em; }
 
-  /* Site chrome: a navy header with a brass trim line. */
-  .site-header { background: color-mix(in srgb, var(--header-bg) 95%, transparent); border-bottom: 2px solid var(--brass);
+  /* Site chrome: a navy header with a trim line in the sport color. */
+  .site-header { background: color-mix(in srgb, var(--header-bg) 95%, transparent); border-bottom: 2px solid var(--sport);
     backdrop-filter: saturate(1.4) blur(10px); -webkit-backdrop-filter: saturate(1.4) blur(10px); }
   .brand-text { color: var(--text-primary); }
   .site-header .brand-text { color: var(--header-text); }
@@ -146,7 +156,7 @@
   .site-header .nav-link { color: color-mix(in srgb, var(--header-text) 72%, transparent); }
   .site-header .nav-link:hover { background: rgba(255, 255, 255, 0.08); color: var(--header-text); }
   .site-header .nav-link[aria-current="page"] { background: rgba(255, 255, 255, 0.1); color: var(--header-text);
-    box-shadow: inset 0 -2px 0 var(--link-hue, var(--brass)); }
+    box-shadow: inset 0 -2px 0 var(--link-hue, var(--sport)); }
   .site-header .nav-group { color: color-mix(in srgb, var(--header-text) 45%, transparent); }
 
   /* Brass nameplate logo. */
@@ -161,24 +171,24 @@
     font: 700 9.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted);
     transition: border-color .15s; }
   .card-link { transition: border-color .15s, transform .15s, box-shadow .15s; }
-  .card-link:hover { border-color: var(--card-hue, var(--brass)) !important; transform: translateY(-3px);
+  .card-link:hover { border-color: var(--card-hue, var(--sport)) !important; transform: translateY(-3px);
     box-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.45); }
-  .card-link.folder:hover::before { border-color: var(--card-hue, var(--brass)); }
+  .card-link.folder:hover::before { border-color: var(--card-hue, var(--sport)); }
   .card-link:hover .card-arrow { transform: translateX(3px); }
   .card-arrow { transition: transform .15s; display: inline-block; }
 
-  /* Buttons: polished brass for the main action. */
-  .btn-primary { background: linear-gradient(180deg, #e0c06e, #b88c2e); color: #14213d;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 6px 16px -8px rgba(184, 140, 46, .8);
+  /* Buttons: the sport color for the main action. */
+  .btn-primary { background: linear-gradient(180deg, var(--sport-btn-a), var(--sport-btn-b)); color: #ffffff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 6px 16px -8px color-mix(in srgb, var(--sport-btn-b) 80%, transparent);
     transition: transform .15s, box-shadow .15s, filter .15s; }
   .btn-primary:hover { transform: translateY(-1px); filter: brightness(1.06);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 10px 22px -8px rgba(184, 140, 46, .9); }
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 10px 22px -8px color-mix(in srgb, var(--sport-btn-b) 90%, transparent); }
   .btn-primary:active { transform: translateY(0) scale(.97); }
   .btn-secondary { border: 1px solid var(--border); color: var(--text-primary); background: var(--surface-1);
     transition: background-color .15s, border-color .15s, transform .15s; }
-  .btn-secondary:hover { background: var(--surface-2); border-color: var(--brass); transform: translateY(-1px); }
+  .btn-secondary:hover { background: var(--surface-2); border-color: var(--sport); transform: translateY(-1px); }
   .btn-secondary:active { transform: translateY(0) scale(.97); }
-  .hero-glow { background: radial-gradient(55% 120% at 50% 0%, color-mix(in srgb, var(--brass) 20%, transparent), transparent 70%); }
+  .hero-glow { background: radial-gradient(55% 120% at 50% 0%, color-mix(in srgb, var(--sport) 20%, transparent), transparent 70%); }
   .text-gradient { background: linear-gradient(90deg, var(--brass-grad-a), var(--brass-grad-b) 55%, var(--brass-grad-a));
     -webkit-background-clip: text; background-clip: text; color: transparent; }
 
@@ -194,7 +204,7 @@
   .pill[aria-pressed="true"] { background: var(--pill-accent); border-color: var(--pill-accent); color: #ffffff; font-weight: 600;
     box-shadow: 0 3px 10px -3px color-mix(in srgb, var(--pill-accent) 70%, transparent); }
   .pill:focus-visible, .btn-primary:focus-visible, .btn-secondary:focus-visible, .nav-link:focus-visible {
-    outline: 2px solid var(--brass); outline-offset: 2px; }
+    outline: 2px solid var(--sport); outline-offset: 2px; }
 
   /* Draft board: a Sleeper-style startup board, always dark like Sleeper's,
      with each pick a card in its position color (Sleeper's own palette). */
@@ -220,14 +230,14 @@
   /* Player profiles: name links, round headshots, the points-by-week bars. */
   .player-link { color: var(--text-primary); text-decoration: underline; text-decoration-color: transparent;
     text-underline-offset: 3px; transition: text-decoration-color .15s, color .15s; }
-  .player-link:hover { text-decoration-color: var(--brass); }
+  .player-link:hover { text-decoration-color: var(--sport); }
   .headshot { position: relative; flex-shrink: 0; border-radius: 9999px; overflow: hidden; background: var(--surface-2);
     box-shadow: 0 0 0 2px var(--ring, var(--border)); }
   .headshot img { width: 100%; height: 100%; object-fit: cover; }
   .pts-chart { position: relative; display: flex; align-items: flex-end; gap: 4px; height: 160px;
     border-bottom: 1px solid var(--border); }
   .pts-col { position: relative; flex: 1; height: 100%; min-width: 0; padding: 0; border: 0; background: transparent; cursor: default; }
-  .pts-col:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .pts-col:focus-visible { outline: 2px solid var(--sport); outline-offset: 2px; }
   .pts-col[data-active="true"] { background: color-mix(in srgb, var(--text-primary) 6%, transparent); border-radius: 4px 4px 0 0; }
   .pts-bar { position: absolute; left: 18%; right: 18%; bottom: 0; border-radius: 4px 4px 0 0; }
   .pts-proj { position: absolute; left: 6%; right: 6%; height: 2px; margin-bottom: -1px; border-radius: 1px; background: var(--text-primary); }
@@ -242,11 +252,11 @@
     background: color-mix(in srgb, var(--pos) 16%, transparent); vertical-align: 1px; white-space: nowrap; }
 
   .row-hover > td { transition: background-color .12s; }
-  .row-hover:hover > td { background: color-mix(in srgb, var(--brass) 10%, transparent); }
+  .row-hover:hover > td { background: color-mix(in srgb, var(--sport) 10%, transparent); }
   .row-btn { transition: background-color .15s; border-radius: 8px; }
   .row-btn:hover { background: var(--surface-2); }
   .menu-item { transition: background-color .1s; }
-  .menu-item:hover { background: color-mix(in srgb, var(--brass) 14%, var(--surface-1)); }
+  .menu-item:hover { background: color-mix(in srgb, var(--sport) 14%, var(--surface-1)); }
   .icon-btn-danger { color: var(--text-muted); transition: color .15s, background-color .15s; }
   .icon-btn-danger:hover { color: var(--series-red); background: color-mix(in srgb, var(--series-red) 12%, transparent); }
 
@@ -262,7 +272,7 @@
   .seg:hover:not([aria-pressed="true"]) { color: var(--text-primary); background: color-mix(in srgb, var(--pill-accent) 14%, transparent); }
   .seg[aria-pressed="true"] { color: #ffffff; font-weight: 600; }
   .seg:active { transform: scale(.95); }
-  .seg:focus-visible { outline: 2px solid var(--brass); outline-offset: 1px; }
+  .seg:focus-visible { outline: 2px solid var(--sport); outline-offset: 1px; }
 
   /* Sport switch (a segmented control) inside the navy header. */
   .site-header .segmented { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 255, 255, 0.14); }
@@ -274,10 +284,10 @@
   .nav-trigger { display: flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 8px; font-size: 14px; font-weight: 500;
     color: color-mix(in srgb, var(--header-text) 75%, transparent); transition: background-color .15s, color .15s; }
   .nav-trigger:hover, .nav-trigger[aria-expanded="true"] { color: var(--header-text); background: rgba(255, 255, 255, 0.08); }
-  .nav-trigger[data-active="true"] { color: var(--header-text); box-shadow: inset 0 -2px 0 var(--brass); }
+  .nav-trigger[data-active="true"] { color: var(--header-text); box-shadow: inset 0 -2px 0 var(--sport); }
   .nav-trigger svg { transition: transform .2s; }
   .nav-trigger[aria-expanded="true"] svg { transform: rotate(180deg); }
-  .nav-trigger:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .nav-trigger:focus-visible { outline: 2px solid var(--sport); outline-offset: 2px; }
   .nav-menu > div { animation: menu-in .14s ease-out; }
   @keyframes menu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
   .menu-row { transition: background-color .12s; }
@@ -290,8 +300,8 @@
   .about-data summary::-webkit-details-marker { display: none; }
   .about-data summary::before { content: "i"; display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px;
     border-radius: 50%; font: italic 700 10px/1 Georgia, serif; color: #14213d; background: var(--brass); }
-  .about-data summary:hover { border-color: var(--brass); color: var(--text-primary); }
-  .about-data[open] summary { border-color: var(--brass); }
+  .about-data summary:hover { border-color: var(--sport); color: var(--text-primary); }
+  .about-data[open] summary { border-color: var(--sport); }
 
   /* Softer panels: rounder corners, lighter edges and a gentle shadow instead of hard boxes. */
   main .rounded-lg.border { border-radius: 14px; border-color: color-mix(in srgb, var(--border) 70%, transparent) !important;
@@ -1397,18 +1407,17 @@ const EXTRA_PLAYERS = [
   { id: "sl-9757", name: "Kendre Miller", team: "NO", position: "RB", extra: true },
 ];
 
-// Players on injured reserve (or reserve/PUP) as of 2026-09-28, plus the ones
+// Players on injured reserve (or reserve/PUP) as of 2026-10-19, plus the ones
 // whose seasons are over, from Sleeper's injury designations and team news.
 // Both lists carry a four-game minimum, so the grid shows "IR" from
 // `sinceWeek` through the earliest week they're allowed back (see irReturnWeek),
 // or through Week 18 when `seasonEnding` is set. `sinceWeek` is the first game
 // of their current absence — 1 for players who started the season there.
-const INJURED_RESERVE_UPDATED_ON = "2026-09-28";
+const INJURED_RESERVE_UPDATED_ON = "2026-10-19";
 const INJURED_RESERVE = [
   { id: "achane", list: "IR", injury: "Torn ACL", sinceWeek: 4, seasonEnding: true },
   { id: "dart", list: "IR", injury: "Knee (MCL, PCL, meniscus surgery)", sinceWeek: 3, seasonEnding: true },
   { id: "higgins-jayden", list: "IR", injury: "Torn ACL", sinceWeek: 1, seasonEnding: true },
-  { id: "brown-aj", list: "IR", injury: "Ankle sprain", sinceWeek: 2 },
   { id: "tyson-jordyn", list: "IR", injury: "Hamstring", sinceWeek: 1 },
   { id: "brooks-jonathon", list: "IR", injury: "Abdomen (surgery)", sinceWeek: 3 },
   { id: "conner-james", list: "IR", injury: "Foot", sinceWeek: 1 },
@@ -1421,14 +1430,39 @@ const INJURED_RESERVE = [
   { id: "sampson-dylan", list: "IR", injury: "Knee", sinceWeek: 2 },
   { id: "njoku-david", list: "IR", injury: "Lower leg", sinceWeek: 3 },
   { id: "stowers-eli", list: "IR", injury: "Hamstring", sinceWeek: 1 },
-  { id: "lane-jakobi", list: "IR", injury: "Wrist (surgery)", sinceWeek: 2 },
   { id: "pacheco", list: "IR", injury: "Back", sinceWeek: 1 },
-  { id: "cooper-omar", list: "IR", injury: "Ankle sprain", sinceWeek: 2 },
   { id: "tonges-jake", list: "IR", injury: "Knee", sinceWeek: 2 },
   { id: "dell", list: "IR", injury: "ACL/MCL recovery", sinceWeek: 1 },
   { id: "kirk-christian", list: "IR", injury: "Calf", sinceWeek: 1 },
-  { id: "pearsall-ricky", list: "IR", injury: "Knee (PCL)", sinceWeek: 1 },
+  { id: "pearsall-ricky", list: "IR", injury: "Knee (PCL surgery)", sinceWeek: 1, seasonEnding: true },
   { id: "kalinic-nikola", list: "IR", injury: "Knee", sinceWeek: 1 },
+  { id: "hurts", list: "IR", injury: "Blood clots (calf DVT, lungs)", sinceWeek: 6, seasonEnding: true },
+  { id: "reed-jayden", list: "IR", injury: "Neck (surgery)", sinceWeek: 3, seasonEnding: true },
+  { id: "sl-12641", list: "IR", injury: "Ankle (fracture, dislocation)", sinceWeek: 5, seasonEnding: true },
+  { id: "sl-5008", list: "IR", injury: "Torn Achilles", sinceWeek: 5, seasonEnding: true },
+  { id: "sl-5973", list: "IR", injury: "Torn biceps (surgery)", sinceWeek: 4, seasonEnding: true },
+  { id: "etienne", list: "IR", injury: "Hamstring", sinceWeek: 4 },
+  { id: "price-j", list: "IR", injury: "Chest", sinceWeek: 4 },
+  { id: "pittman", list: "IR", injury: "Foot (plantar fasciitis)", sinceWeek: 5 },
+  { id: "bigsby", list: "IR", injury: "Core muscle (surgery)", sinceWeek: 5 },
+  { id: "mcmillan-jalen", list: "IR", injury: "Knee (PCL sprain)", sinceWeek: 4 },
+  { id: "ferguson-terrance", list: "IR", injury: "Ankle sprain", sinceWeek: 4 },
+  { id: "sl-11577", list: "IR", injury: "Foot (plantar fasciitis)", sinceWeek: 6 },
+  { id: "sl-11630", list: "IR", injury: "Finger", sinceWeek: 6 },
+  { id: "sl-10226", list: "IR", injury: "Thumb (ligament surgery)", sinceWeek: 3 },
+  { id: "sl-11370", list: "IR", injury: "Ankle", sinceWeek: 5 },
+  { id: "sl-11626", list: "IR", injury: "Knee", sinceWeek: 3 },
+  { id: "sl-12472", list: "IR", injury: "Hip", sinceWeek: 6 },
+  { id: "sl-12483", list: "IR", injury: "Forearm (fracture)", sinceWeek: 4 },
+  { id: "sl-12492", list: "IR", injury: "Ankle sprain", sinceWeek: 5 },
+  { id: "sl-3286", list: "IR", injury: "Ankle", sinceWeek: 3 },
+  { id: "sl-4177", list: "IR", injury: "Calf", sinceWeek: 5 },
+  { id: "sl-5409", list: "IR", injury: "Pectoral strain", sinceWeek: 6 },
+  { id: "sl-7204", list: "IR", injury: "Ankle", sinceWeek: 5 },
+  { id: "sl-7535", list: "IR", injury: "Knee", sinceWeek: 5 },
+  { id: "sl-8168", list: "IR", injury: "Ankle", sinceWeek: 6 },
+  { id: "sl-8188", list: "IR", injury: "Ankle (dislocation, surgery; out 12-16 weeks)", sinceWeek: 5 },
+  { id: "sl-8195", list: "IR", injury: "Calf", sinceWeek: 3 },
 ];
 const IR_MIN_GAMES = 4;
 const INJURED_BY_ID = Object.fromEntries(INJURED_RESERVE.map((r) => [r.id, r]));
@@ -3024,7 +3058,8 @@ function InjuryReport({ players, positionFilter, data, sectionTitle }) {
 
 function InjuredReserve({ players, reportPlayers, data }) {
   const [positionFilter, setPositionFilter] = useState("ALL");
-  const byId = useMemo(() => Object.fromEntries(players.map((p) => [p.id, p])), [players]);
+  // Entries can be extra players (sl- ids) too.
+  const byId = useMemo(() => Object.fromEntries([...EXTRA_PLAYERS, ...players].map((p) => [p.id, p])), [players]);
 
   const { onIr, seasonEnding } = useMemo(() => {
     const rows = INJURED_RESERVE
@@ -3902,13 +3937,13 @@ const nearestOption = (value, options) =>
   options.reduce((best, o) => (Math.abs(o - value) < Math.abs(best - value) ? o : best), options[0]);
 
 // The league settings that matter for values, read from a Sleeper league:
-// settings.type is 0 for redraft, 1 keeper, 2 dynasty (keepers value the
-// future, so they get dynasty values); `rec` is points per catch and
-// `bonus_rec_te` the TE premium on top.
+// settings.type is 0 for redraft, 1 keeper, 2 dynasty, 3 guillotine (keepers
+// value the future, so they get dynasty values; guillotine is season-long);
+// `rec` is points per catch and `bonus_rec_te` the TE premium on top.
 function settingsFromLeague(league) {
   const scoring = league.scoring_settings || {};
   return {
-    mode: league.settings?.type === 0 ? "redraft" : "dynasty",
+    mode: [1, 2].includes(league.settings?.type) ? "dynasty" : "redraft",
     qb: isSuperflexLeague(league) ? "sf" : "1qb",
     teams: nearestOption(league.total_rosters || 12, [8, 10, 12, 14, 16]),
     ppr: nearestOption(scoring.rec ?? 1, [0, 0.5, 1]),
@@ -3918,16 +3953,15 @@ function settingsFromLeague(league) {
 
 // Best possible starting lineup by value: fill the strictest slots first
 // (QB/RB/WR/TE), then flex spots, each with the best player left who fits.
-function startersValue(players, rosterPositions) {
+// Returns [{ slot, player }] (player null when nobody fits).
+function bestLineup(players, rosterPositions) {
   const slots = (rosterPositions || []).filter((s) => SLOT_ELIGIBLE[s])
     .sort((x, y) => SLOT_ELIGIBLE[x].length - SLOT_ELIGIBLE[y].length);
   const left = [...players].sort((a, b) => b.value - a.value);
-  let total = 0;
-  for (const slot of slots) {
+  return slots.map((slot) => {
     const i = left.findIndex((p) => SLOT_ELIGIBLE[slot].includes(p.position));
-    if (i >= 0) total += left.splice(i, 1)[0].value;
-  }
-  return total;
+    return { slot, player: i >= 0 ? left.splice(i, 1)[0] : null };
+  });
 }
 
 function buildLeagueTeams(raw, rows, byId) {
@@ -3976,10 +4010,13 @@ function buildLeagueTeams(raw, rows, byId) {
       .filter((p) => p.id);
     const assets = [...players, ...picks].sort((a, b) => b.value - a.value);
     const byPos = Object.fromEntries(POS_KEYS.map((k) => [k, assets.filter((a) => a.position === k).reduce((s, a) => s + a.value, 0)]));
+    const lineup = bestLineup(players, league.roster_positions);
+    const st = r.settings || {};
     return {
-      rosterId: r.roster_id, name: teamName[r.roster_id], assets, byPos,
+      rosterId: r.roster_id, ownerIds: [r.owner_id, ...(r.co_owners || [])], name: teamName[r.roster_id], assets, byPos, lineup,
       total: assets.reduce((s, a) => s + a.value, 0),
-      starters: startersValue(players, league.roster_positions),
+      starters: lineup.reduce((s, l) => s + (l.player?.value || 0), 0),
+      record: { wins: st.wins || 0, losses: st.losses || 0, ties: st.ties || 0, pf: (st.fpts || 0) + (st.fpts_decimal || 0) / 100 },
     };
   });
   return teams.sort((a, b) => b.total - a.total);
@@ -4151,6 +4188,1136 @@ function LeagueValues({ rows, byId, settings, setSettings, onAdd }) {
         </div>
       )}
     </section>
+  );
+}
+
+/* ---------------- my leagues ---------------- */
+// Every Sleeper league a user is in, each read with its own settings: its
+// format, size, QB slots, scoring and TE premium pick which FantasyCalc
+// values are used (settingsFromLeague), and its lineup slots decide each
+// team's starters (bestLineup). Any league can be looked at as dynasty or
+// redraft. Settings FantasyCalc has no option for are listed, not modeled.
+const SLEEPER_USER_KEY = "ff-valuediff:sleeper-user";
+const LEAGUES_HASH = "#/leagues";
+const LEAGUE_TYPE_LABEL = { 0: "Redraft", 1: "Keeper", 2: "Dynasty", 3: "Guillotine" };
+const SLOT_LABEL = { FLEX: "Flex", WRRB_FLEX: "W/R flex", REC_FLEX: "W/T flex", SUPER_FLEX: "Superflex", DEF: "DEF", K: "K" };
+const IDP_SLOTS = ["DL", "LB", "DB", "IDP_FLEX"];
+const CONTEXT_OPTIONS = [{ key: "dynasty", label: "Dynasty" }, { key: "redraft", label: "Redraft" }];
+const ROOM_POSITIONS = ["QB", "RB", "WR", "TE"];
+
+const leagueIdFromHash = () => (/^#\/leagues\/(\d+)/.exec(window.location.hash) || [])[1] || null;
+
+// "QB, 2 RB, 3 WR, TE, 2 Flex, Superflex"
+function lineupSummary(rosterPositions) {
+  const counts = {};
+  for (const s of rosterPositions || []) if (s !== "BN") counts[s] = (counts[s] || 0) + 1;
+  return Object.entries(counts).map(([s, n]) => `${n > 1 ? `${n} ` : ""}${SLOT_LABEL[s] || s.replace(/_/g, " ")}`).join(", ");
+}
+
+// "Dynasty · 12 teams · Superflex · PPR · TEP +0.5"
+function leagueTags(league) {
+  const s = settingsFromLeague(league);
+  return [
+    LEAGUE_TYPE_LABEL[league.settings?.type] || "Redraft", league.settings?.best_ball ? "Best ball" : null, `${league.total_rosters} teams`,
+    s.qb === "sf" ? "Superflex" : "1QB", { 1: "PPR", 0.5: "Half PPR", 0: "Standard" }[s.ppr], s.tep ? `TEP +${s.tep}` : null,
+  ].filter(Boolean).join(" · ");
+}
+
+// Each league setting, what it is, and how (or whether) it's used here.
+function leagueRules(league, mode) {
+  const scoring = league.scoring_settings || {};
+  const slots = league.roster_positions || [];
+  const s = settingsFromLeague(league);
+  const qbSlots = slots.filter((p) => p === "QB").length;
+  const rec = scoring.rec ?? 0;
+  const passTd = scoring.pass_td ?? 4;
+  const count = (k) => slots.filter((p) => p === k).length;
+  const unvalued = [count("K") && "K", count("DEF") && "DEF", slots.some((p) => IDP_SLOTS.includes(p)) && "IDP"].filter(Boolean);
+  const type = league.settings?.type;
+  return [
+    { label: "Format", value: LEAGUE_TYPE_LABEL[type] || "Redraft",
+      use: mode === s.mode ? `${mode === "dynasty" ? "Dynasty" : "Redraft"} values${type === 1 ? " (keepers value the future)" : ""}`
+        : `Viewing as ${mode} instead` },
+    ...(league.settings?.best_ball ? [{ label: "Best ball", value: "Yes", use: "Lineups set themselves, so the best lineup below is how teams score" }] : []),
+    { label: "Teams", value: league.total_rosters,
+      use: league.total_rosters > 14 ? "FantasyCalc's 14-team values (its largest)" : `${s.teams}-team values` },
+    { label: "QB", value: slots.includes("SUPER_FLEX") ? "Superflex" : qbSlots >= 2 ? `${qbSlots}QB` : "1QB",
+      use: s.qb === "sf" ? "Superflex values" : "1QB values" },
+    { label: "Receptions", value: `${rec} pt${rec === 1 ? "" : "s"} per catch`,
+      use: `${{ 1: "PPR", 0.5: "Half-PPR", 0: "Standard" }[s.ppr]} values${rec !== s.ppr ? " (closest match)" : ""}` },
+    { label: "TE premium", value: scoring.bonus_rec_te ? `+${scoring.bonus_rec_te} per catch` : "None",
+      use: s.tep ? "TE values boosted (this app's estimate)" : "–" },
+    { label: "Passing TD", value: `${passTd} pts`,
+      use: passTd > 4 ? "Not modeled: values assume 4, so QBs are worth a bit more here than shown" : "Standard" },
+    { label: "Starters", value: lineupSummary(slots), use: "Each team's best lineup fills these slots" },
+    { label: "Roster", value: [`${count("BN")} bench`, league.settings?.reserve_slots && `${league.settings.reserve_slots} IR`,
+      league.settings?.taxi_slots && `${league.settings.taxi_slots} taxi`].filter(Boolean).join(" · "), use: "For reference" },
+    ...(unvalued.length ? [{ label: "Not valued", value: unvalued.join(", "), use: "FantasyCalc only values QB, RB, WR and TE" }] : []),
+  ];
+}
+
+// Rank of each team (1 = best) by `f`.
+const rankTeams = (teams, f) =>
+  Object.fromEntries([...teams].sort((a, b) => f(b) - f(a)).map((t, i) => [t.rosterId, i + 1]));
+
+// Dynasty lean: how good the lineup is this season (FantasyCalc's redraft
+// values) against the whole roster's long-term value.
+function teamLean(nowRank, futureRank, n) {
+  if (nowRank <= Math.ceil(n / 3)) return { label: "Contender", color: "var(--hue-orange)",
+    tip: "Your lineup is one of the best this season. Win-now veterans and depth at your weakest spot are worth paying for." };
+  if (nowRank > Math.floor((2 * n) / 3)) return { label: "Rebuilding", color: "var(--hue-violet)",
+    tip: futureRank <= Math.ceil(n / 2)
+      ? "The lineup trails this season, but the roster holds long-term value. Sell older starters for picks and young players."
+      : "The lineup trails this season and the long-term value is thin too. Sell older starters for picks and young players." };
+  return { label: "In the mix", color: "var(--text-secondary)",
+    tip: "A middle-of-the-pack lineup. Pick a direction: buy to contend, or sell veterans to build for later." };
+}
+
+// Trade targets: players on other teams worth going after, each with an
+// offer from the team's own roster that this app's trade formula
+// (evaluateTrade) calls fair, or a slight overpay. What counts as better
+// depends on the team:
+// - redraft, or a dynasty team in the mix: the most lineup value gained
+//   (the best lineup in the league's slots, before and after);
+// - a dynasty contender: the same, but on this season's (redraft) values;
+// - a dynasty rebuilder: young players (24 and under, no picks), and
+//   players 27 and under who are out for the season but back next year
+//   (bought while their value is down), paid for with veterans (26 and up),
+//   the bigger the age drop the better. A season-long injury counts as
+//   INJURED_BONUS_YEARS of extra age drop, since this season is all a
+//   rebuilder gives up.
+// A target can come alone or with a second player from the same team (for
+// one asset back), which is how a thin roster turns one star into two
+// starters. Offers that also help the other team's lineup rank higher, since
+// they're likelier to be accepted.
+// Targets are grouped by position (QB, RB, WR, TE), several to a position.
+// Within a position each partner and each offered asset shows up once; across
+// all positions an asset is offered at most TARGETS_PER_ASSET times.
+const TARGETS_PER_POSITION = 3;
+const TARGETS_PER_ASSET = 3;
+const OFFER_POOL = 14; // the team's most valuable tradeable assets, offered alone or in pairs
+const SECOND_POOL = 8;  // the other team's players considered as a second piece
+const TARGET_MIN_VALUE = 500;
+const TARGET_MIN_GAIN = 250; // lineup gain needed, or 10% of the target's value if more
+const PICK_AGE = 21; // a rookie pick counts as a 21-year-old when comparing ages
+const INJURED_MAX_AGE = 27;
+const INJURED_BONUS_YEARS = 3;
+// Injuries that end a season, read from Sleeper's injury body part ("Knee - ACL").
+const SEASON_ENDING_INJURY = /ACL|Achilles/i;
+
+// Sleeper ids of players out for the season who should be back next year:
+// season-ending entries in the hand-kept INJURED_RESERVE list, plus anyone
+// Sleeper has on IR or PUP with a torn ACL or Achilles. (Low redraft value
+// alone isn't a sign: rookies on short IR stints have that too.)
+function outForYearIds(rows, sleeperPlayers, resolve) {
+  const ids = new Set();
+  for (const r of INJURED_RESERVE) {
+    if (!r.seasonEnding) continue;
+    if (r.id.startsWith("sl-")) { ids.add(r.id.slice(3)); continue; } // extra players carry their Sleeper id
+    const p = samplePlayers.find((x) => x.id === r.id);
+    const id = p && resolve(r.id, p.name, p.position);
+    if (id) ids.add(id);
+  }
+  for (const r of rows) {
+    const sp = sleeperPlayers[r.id];
+    if (sp && ["IR", "PUP"].includes(sp.status) && SEASON_ENDING_INJURY.test(sp.injury || "")) ids.add(r.id);
+  }
+  return ids;
+}
+
+const lineupTotal = (assets, slots, val) =>
+  bestLineup(assets.filter((a) => a.position !== "PICK").map((a) => ({ ...a, value: val(a) })), slots)
+    .reduce((s, l) => s + (l.player?.value || 0), 0);
+const avgAge = (assets) => sumOf(assets.map((a) => (a.position === "PICK" ? PICK_AGE : a.age ?? 26))) / assets.length;
+
+// Deals are built around the trade partner: every offer has to fix
+// something for them (partnerHelps), and the score leans hardest on how much
+// it does, then on taking from a room where they have plenty, then on this
+// team's own needs. Fit factors are multiplied into each deal's score;
+// ranges run from a position room that's the league's strongest to its
+// weakest.
+const FIT = {
+  partnerNeed: [0.45, 1.9],  // the partner's room at what's offered to them
+  surplus: [1.35, 0.7],      // the partner's room at what's taken from them (strong = can spare it)
+  need: [0.8, 1.3],          // this team's own room at the target's position
+  rebuildNeed: [0.9, 1.15],  // rebuilders care less about this season's holes
+  window: { opposite: 1.35, same: 0.75 }, // contender <-> rebuilder, or two of a kind
+  age: { fits: 1.15, clashes: 0.75 },     // a team in the mix, by its core's age
+};
+const PARTNER_WEAK = 0.6; // a room in the league's bottom 40% counts as a hole
+// A team in the mix leans young or win-now by its lineup's value-weighted age.
+const YOUNG_CORE_AGE = 25.5;
+const OLD_CORE_AGE = 27.5;
+const lerp = ([lo, hi], t) => lo + (hi - lo) * t;
+const weightedBy = (assets, f) => sumOf(assets.map((a) => a.value * f(a))) / Math.max(1, sumOf(assets.map((a) => a.value)));
+
+// leanOf(team) is the team's dynasty lean (teamLean), or null in redraft.
+function suggestTrades(team, teams, league, rows, mode, leanOf, outForYear = new Set()) {
+  const slots = league.roster_positions;
+  const lean = leanOf(team);
+  const rebuild = mode === "dynasty" && lean?.label === "Rebuilding";
+  const val = mode === "dynasty" && lean?.label === "Contender" ? (a) => a.redraftValue ?? a.value : (a) => a.value;
+  const lineupOf = (assets) => lineupTotal(assets, slots, val);
+  // The same context the Trade Desk uses for this league, so "Open in Trade
+  // Desk" shows the same verdict.
+  const ctx = {
+    topValue: rows[0]?.value || 1,
+    playerValues: rows.filter((r) => r.position !== "PICK").map((r) => r.value),
+    teams: settingsFromLeague(league).teams,
+  };
+
+  const pool = team.assets.filter((a) => (rebuild ? a.position !== "PICK" && (a.age ?? 0) >= 26 : true)).slice(0, OFFER_POOL);
+  const offers = [];
+  pool.forEach((a, i) => { offers.push([a]); pool.slice(i + 1).forEach((b) => offers.push([a, b])); });
+  const base = lineupOf(team.assets);
+
+  // Position room ranks (1 = strongest), as 0 (strongest) to 1 (weakest).
+  const n = teams.length;
+  const posRank = {};
+  for (const pos of ROOM_POSITIONS) {
+    [...teams].sort((a, b) => b.byPos[pos] - a.byPos[pos]).forEach((t, i) => { (posRank[t.rosterId] ||= {})[pos] = i + 1; });
+  }
+  const weakness = (t, pos) => (n > 1 && posRank[t.rosterId][pos] ? (posRank[t.rosterId][pos] - 1) / (n - 1) : 0.5);
+  const needFit = (get) => weightedBy(get, (a) => lerp(rebuild ? FIT.rebuildNeed : FIT.need, weakness(team, a.position)));
+  // What the offer does for the partner: players count by how weak the
+  // partner is at their position; picks and young players count fully for a
+  // rebuilding partner and barely for a contender.
+  const forPartner = (a, other) => {
+    const theirLean = leanOf(other)?.label;
+    if (a.position === "PICK") return theirLean === "Rebuilding" ? 1 : theirLean === "Contender" ? 0 : 0.5;
+    if (theirLean !== "Rebuilding") return weakness(other, a.position);
+    // A rebuilder wants youth; a veteran only half-fixes a hole for them.
+    return (a.age ?? 99) <= 24 ? 1 : (a.age ?? 99) >= 27 ? weakness(other, a.position) * 0.4 : weakness(other, a.position);
+  };
+  const partnerFit = (give, other) => weightedBy(give, (a) => lerp(FIT.partnerNeed, forPartner(a, other)));
+  const surplusFit = (get, other) => weightedBy(get, (a) => lerp(FIT.surplus, weakness(other, a.position)));
+  // An offer has to fix something for them: fill a hole, bring a rebuilder
+  // youth or picks, or make a contender's lineup better.
+  const partnerHelps = (give, other, theirGain) =>
+    give.some((a) => forPartner(a, other) > PARTNER_WEAK) || (leanOf(other)?.label === "Contender" && theirGain > 0);
+  const windowFit = (other) => {
+    const mine = lean?.label, theirs = leanOf(other)?.label;
+    if (!mine || !theirs) return 1;
+    if ((mine === "Contender" && theirs === "Rebuilding") || (mine === "Rebuilding" && theirs === "Contender")) return FIT.window.opposite;
+    return mine === theirs && mine !== "In the mix" ? FIT.window.same : 1;
+  };
+  // A team in the mix leans the way its core already does.
+  const starters = team.lineup.map((l) => l.player).filter(Boolean);
+  const coreAge = weightedBy(starters, (a) => a.age ?? 26);
+  const ageLean = lean?.label === "In the mix" ? (coreAge < YOUNG_CORE_AGE ? "young" : coreAge > OLD_CORE_AGE ? "win-now" : null) : null;
+  const ageFit = (get) => (!ageLean ? 1 : weightedBy(get, (a) => {
+    const age = a.age ?? 26;
+    if (ageLean === "young") return age <= 26 ? FIT.age.fits : age >= 29 ? FIT.age.clashes : 1;
+    return age >= 27 ? FIT.age.fits : age <= 23 ? FIT.age.clashes : 1;
+  }));
+
+  const found = [];
+  for (const other of teams) {
+    if (other === team) continue;
+    const theirBase = lineupOf(other.assets);
+    const otherWindow = windowFit(other);
+    for (const p of other.assets) {
+      if (p.value < TARGET_MIN_VALUE) continue;
+      const injured = rebuild && outForYear.has(p.id) && (p.age ?? 99) <= INJURED_MAX_AGE;
+      if (p.position === "PICK" || (rebuild && !injured && !(p.age && p.age <= 24))) continue;
+      if (!rebuild && outForYear.has(p.id)) continue; // no help to this season's lineup
+      if (!rebuild && lineupOf([...team.assets, p]) <= base) continue; // wouldn't even start
+      const seconds = rebuild ? [] : other.assets
+        .filter((q) => q !== p && q.position !== "PICK" && q.value >= TARGET_MIN_VALUE && q.value <= p.value).slice(0, SECOND_POOL);
+      const packages = [[p], ...seconds.map((q) => [p, q])];
+      let best = null;
+      for (const get of packages) {
+        const getSum = sumOf(get.map((a) => a.value));
+        for (const give of offers) {
+          if (get.length > 1 && give.length > 1) continue; // 2-for-2s are left to the Trade Desk
+          const giveSum = sumOf(give.map((a) => a.value));
+          if (giveSum < getSum * 0.6 || giveSum > getSum * 1.8) continue;
+          const result = evaluateTrade([get.map((a) => a.value), give.map((a) => a.value)], ctx);
+          if (!(result.verdict === "fair" || (result.verdict === "slight" && result.winner === 1))) continue;
+          const gain = lineupOf([...team.assets.filter((a) => !give.includes(a)), ...get]) - base;
+          if (!rebuild && gain < Math.max(TARGET_MIN_GAIN, p.value * 0.1)) continue; // not worth the shake-up
+          const theirGain = lineupOf([...other.assets.filter((a) => !get.includes(a)), ...give]) - theirBase;
+          if (!partnerHelps(give, other, theirGain)) continue;
+          const ageDrop = avgAge(give) - avgAge(get);
+          const youthGain = ageDrop + (injured ? INJURED_BONUS_YEARS : 0);
+          if (rebuild && youthGain < 2) continue;
+          const raw = rebuild ? youthGain * getSum / 10 + (getSum - giveSum) * 0.5 + theirGain * 0.5 : gain + theirGain * 0.5;
+          const score = raw * partnerFit(give, other) * surplusFit(get, other) * needFit(get) * otherWindow * ageFit(get);
+          if (!best || score > best.score) best = { get, give, partner: other, gain, theirGain, ageDrop, injured, result, score };
+        }
+      }
+      if (best) found.push(best);
+    }
+  }
+
+  // Spread the ideas out: several per position, each from a different
+  // partner and with a different offer, no player targeted twice, and no
+  // asset offered more than TARGETS_PER_ASSET times overall.
+  const perAsset = new Map();
+  const targeted = new Set();
+  const byPos = Object.fromEntries(ROOM_POSITIONS.map((pos) => [pos, []]));
+  for (const s of found.sort((a, b) => b.score - a.score)) {
+    const group = byPos[s.get[0].position];
+    if (!group || group.length >= TARGETS_PER_POSITION) continue;
+    if (group.some((g) => g.partner === s.partner || g.give.some((a) => s.give.includes(a)))) continue;
+    if (s.give.some((a) => (perAsset.get(a) || 0) >= TARGETS_PER_ASSET) || s.get.some((a) => targeted.has(a))) continue;
+    s.give.forEach((a) => perAsset.set(a, (perAsset.get(a) || 0) + 1));
+    s.get.forEach((a) => targeted.add(a));
+    group.push(s);
+  }
+  const picked = ROOM_POSITIONS.flatMap((pos) => byPos[pos]);
+  // Who the new player pushes out of the lineup (besides anyone traded away).
+  const startersOf = (assets) => bestLineup(assets.filter((a) => a.position !== "PICK").map((a) => ({ ...a, value: val(a), orig: a })), slots)
+    .map((l) => l.player?.orig).filter(Boolean);
+  const before = startersOf(team.assets);
+  const rankOf = (t, pos) => posRank[t.rosterId]?.[pos];
+  // Positions in order of this team's need, weakest room first.
+  const positions = [...ROOM_POSITIONS].sort((a, b) => weakness(team, b) - weakness(team, a))
+    .map((pos) => ({ pos, rank: rankOf(team, pos) }));
+  return {
+    rebuild, n, ageLean, positions, list: picked.map((s) => {
+      const after = startersOf([...team.assets.filter((a) => !s.give.includes(a)), ...s.get]);
+      // Why it works for them first: the hole the offer fills, the room they
+      // can spare the target from, and their window; then the need it fills here.
+      const main = s.get[0];
+      const theirLean = leanOf(s.partner)?.label;
+      const fills = [];
+      for (const a of s.give) {
+        if (a.position === "PICK" || forPartner(a, s.partner) <= PARTNER_WEAK || weakness(s.partner, a.position) <= PARTNER_WEAK) continue;
+        const f = fills.find((x) => x.pos === a.position);
+        if (f) f.names.push(a.name); else fills.push({ names: [a.name], pos: a.position, rank: rankOf(s.partner, a.position) });
+      }
+      const youth = theirLean === "Rebuilding" ? s.give.filter((a) => a.position === "PICK" || (a.age ?? 99) <= 24).map((a) => a.name) : [];
+      const sellsVeteran = s.get.some((a) => (a.age ?? 0) >= 26);
+      return {
+        ...s, benched: before.filter((a) => !after.includes(a) && !s.give.includes(a)),
+        fills, youth: youth.filter((nm) => !fills.some((f) => f.names.includes(nm))), sellsVeteran,
+        spare: weakness(s.partner, main.position) <= 1 - PARTNER_WEAK ? { pos: main.position, rank: rankOf(s.partner, main.position) } : null,
+        partnerLean: windowFit(s.partner) === FIT.window.opposite ? theirLean : null,
+        need: weakness(team, main.position) > PARTNER_WEAK ? { pos: main.position, rank: rankOf(team, main.position) } : null,
+      };
+    }),
+  };
+}
+
+/* ---------------- projected standings ---------------- */
+// This season's standings for a Sleeper league (dynasty or not): the record,
+// points for, points against and max points for so far, straight from
+// Sleeper, plus where they're headed. The rest of the regular season is
+// played out from Sleeper's weekly projections, scored in the league's own
+// scoring, against the league's real schedule:
+// - each future week a team scores its best projected lineup (in the
+//   league's slots, K/DEF/IDP included) times how close to its best lineup
+//   it has started so far (PF ÷ max PF, kept between 75% and 100%); that
+//   best lineup is its projected max PF;
+// - a week already under way uses the lineups actually set, with points
+//   already scored in place of projections;
+// - players out for the season (seasonOverIds) score nothing: Sleeper's
+//   weekly projections sit out the four-game IR minimum but then bring a
+//   player back, season-ending or not;
+// - STANDINGS_SIMS seasons are simulated (each team-week drawn around its
+//   projection, STANDINGS_SPREAD of it either way as one standard deviation)
+//   for playoff odds and the average record and points.
+// Seeds go by wins, then points for, like Sleeper's default.
+const STANDINGS_SIMS = 2000;
+const STANDINGS_SPREAD = 0.18;
+const PROJ_SLOTS = {
+  ...SLOT_ELIGIBLE, K: ["K"], DEF: ["DEF"],
+  DL: ["DL"], LB: ["LB"], DB: ["DB"], IDP_FLEX: ["DL", "LB", "DB"],
+};
+
+// One week of Sleeper projections for the given positions, as
+// { player_id: { pos: [fantasy positions], stats } }. Kept for the visit,
+// since a week is a couple of MB and every league reuses it.
+const weekProjectionCache = new Map();
+function fetchWeekProjections(season, week, positions) {
+  const key = `${season}-${week}-${positions.join(",")}`;
+  if (!weekProjectionCache.has(key)) {
+    const qs = positions.map((p) => `position[]=${p}`).join("&");
+    const promise = fetch(`https://api.sleeper.com/projections/nfl/${season}/${week}?season_type=regular&${qs}`)
+      .then((res) => { if (!res.ok) throw new Error(`Sleeper projections failed (${res.status})`); return res.json(); })
+      .then((list) => Object.fromEntries((list || []).filter((r) => r.stats).map((r) => [r.player_id,
+        { pos: r.player?.fantasy_positions || [r.player?.position], stats: r.stats }])));
+    promise.catch(() => weekProjectionCache.delete(key));
+    weekProjectionCache.set(key, promise);
+  }
+  return weekProjectionCache.get(key);
+}
+
+// A projected stat line in the league's scoring.
+const scoreStats = (stats, scoring) =>
+  Object.entries(stats).reduce((s, [k, v]) => s + (typeof v === "number" && scoring[k] ? scoring[k] * v : 0), 0);
+
+// Best lineup by points: strictest slots first, each with the best player left who fits.
+function bestLineupPoints(players, slots) {
+  const left = [...players].sort((a, b) => b.pts - a.pts);
+  let total = 0;
+  for (const slot of slots) {
+    const i = left.findIndex((p) => p.pos.some((x) => PROJ_SLOTS[slot].includes(x)));
+    if (i >= 0) total += left.splice(i, 1)[0].pts;
+  }
+  return total;
+}
+
+const pointsOf = (st, key) => (st?.[key] || 0) + (st?.[`${key}_decimal`] || 0) / 100;
+
+// Standard normal draw (Box-Muller).
+const randomNormal = () => Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(2 * Math.PI * Math.random());
+
+// Sleeper ids of players out for the season: season-ending entries in the
+// hand-kept INJURED_RESERVE list, plus anyone Sleeper has on IR or PUP with a
+// torn ACL or Achilles.
+function seasonOverIds(sleeperPlayers, resolve) {
+  const ids = new Set();
+  for (const r of INJURED_RESERVE) {
+    if (!r.seasonEnding) continue;
+    if (r.id.startsWith("sl-")) { ids.add(r.id.slice(3)); continue; } // extra players carry their Sleeper id
+    const p = samplePlayers.find((x) => x.id === r.id);
+    const id = p && resolve(r.id, p.name, p.position);
+    if (id) ids.add(id);
+  }
+  for (const [id, sp] of Object.entries(sleeperPlayers)) {
+    if (["IR", "PUP"].includes(sp.status) && SEASON_ENDING_INJURY.test(sp.injury || "")) ids.add(id);
+  }
+  return ids;
+}
+
+// Loads the remaining schedule and projections, then simulates the season.
+function useProjectedStandings(raw, enabled) {
+  const resolve = React.useContext(NflIdContext);
+  const sleeperPlayers = useSleeperStatuses();
+  const seasonOver = useMemo(() => seasonOverIds(sleeperPlayers, resolve), [sleeperPlayers, resolve]);
+  const [state, setState] = useState({ status: "idle" });
+  useEffect(() => {
+    if (!enabled || !raw) return;
+    let cancelled = false;
+    const { league, rosters } = raw;
+    const st = league.settings || {};
+    const lastScored = st.last_scored_leg || 0;
+    const firstReg = st.start_week || 1;
+    const lastReg = (st.playoff_week_start || 15) - 1;
+    const weeks = [];
+    for (let w = Math.max(lastScored + 1, firstReg); w <= lastReg; w++) weeks.push(w);
+
+    const now = rosters.map((r) => ({
+      rosterId: r.roster_id, wins: r.settings?.wins || 0, losses: r.settings?.losses || 0, ties: r.settings?.ties || 0,
+      pf: pointsOf(r.settings, "fpts"), pa: pointsOf(r.settings, "fpts_against"), maxPf: pointsOf(r.settings, "ppts"),
+    }));
+    if (!weeks.length) { setState({ status: "ready", now, projected: null, weeks }); return; }
+
+    setState({ status: "loading", now, weeks });
+    (async () => {
+      const slots = (league.roster_positions || []).filter((s) => PROJ_SLOTS[s]);
+      const positions = [...new Set(slots.flatMap((s) => PROJ_SLOTS[s]))];
+      const scoring = league.scoring_settings || {};
+      const [schedules, projections] = await Promise.all([
+        Promise.all(weeks.map((w) => sleeperGet(`/league/${league.league_id}/matchups/${w}`).then((m) => m || []))),
+        Promise.all(weeks.map((w) => fetchWeekProjections(league.season, w, positions))),
+      ]);
+      if (cancelled) return;
+
+      // Each team's expected points, spread and max PF per remaining week.
+      const efficiency = Object.fromEntries(now.map((t) =>
+        [t.rosterId, t.maxPf > 0 ? Math.min(1, Math.max(0.75, t.pf / t.maxPf)) : 0.9]));
+      const games = weeks.map((w, wi) => {
+        const proj = projections[wi];
+        const ptsOf = (id) => (proj[id] && !seasonOver.has(id) ? scoreStats(proj[id].stats, scoring) : 0);
+        const entries = schedules[wi];
+        const started = entries.some((e) => (e.points || 0) > 0);
+        const teams = {};
+        for (const r of rosters) {
+          const e = entries.find((x) => x.roster_id === r.roster_id);
+          const taxi = new Set(r.taxi || []);
+          const pool = (r.players || []).filter((id) => !taxi.has(id) && proj[id])
+            .map((id) => ({ pts: started ? (e?.players_points?.[id] || ptsOf(id)) : ptsOf(id), pos: proj[id].pos }));
+          const maxPf = bestLineupPoints(pool, slots);
+          if (started && e) {
+            // Under way: real lineups, real points where scored, projections for the rest.
+            let mean = 0, open = 0;
+            for (const id of e.starters || []) {
+              const scored = e.players_points?.[id] || 0;
+              if (scored) mean += scored; else { const p = ptsOf(id); mean += p; open += p; }
+            }
+            teams[r.roster_id] = { mean, sd: open * STANDINGS_SPREAD, maxPf: Math.max(maxPf, mean) };
+          } else {
+            const mean = maxPf * efficiency[r.roster_id];
+            teams[r.roster_id] = { mean, sd: mean * STANDINGS_SPREAD, maxPf };
+          }
+        }
+        const byMatchup = {};
+        for (const e of entries) if (e.matchup_id) (byMatchup[e.matchup_id] ||= []).push(e.roster_id);
+        return { teams, pairs: Object.values(byMatchup).filter((p) => p.length === 2) };
+      });
+
+      // Simulate the rest of the season.
+      const ids = now.map((t) => t.rosterId);
+      const n = ids.length;
+      const playoffTeams = Math.min(st.playoff_teams || 0, n);
+      const median = !!st.league_average_match;
+      const sum = Object.fromEntries(ids.map((id) => [id, { wins: 0, losses: 0, ties: 0, pf: 0, pa: 0, playoffs: 0, top: 0, seed: 0 }]));
+      for (let s = 0; s < STANDINGS_SIMS; s++) {
+        const tally = Object.fromEntries(now.map((t) => [t.rosterId, { ...t }]));
+        for (const g of games) {
+          const score = {};
+          for (const id of ids) { const t = g.teams[id]; score[id] = Math.max(0, t.mean + t.sd * randomNormal()); tally[id].pf += score[id]; }
+          for (const [a, b] of g.pairs) {
+            tally[a].pa += score[b]; tally[b].pa += score[a];
+            if (score[a] > score[b]) { tally[a].wins++; tally[b].losses++; }
+            else if (score[b] > score[a]) { tally[b].wins++; tally[a].losses++; }
+            else { tally[a].ties++; tally[b].ties++; }
+          }
+          if (median) {
+            const sorted = ids.map((id) => score[id]).sort((x, y) => x - y);
+            const mid = (sorted[Math.floor((n - 1) / 2)] + sorted[Math.ceil((n - 1) / 2)]) / 2;
+            for (const id of ids) { if (score[id] > mid) tally[id].wins++; else if (score[id] < mid) tally[id].losses++; else tally[id].ties++; }
+          }
+        }
+        const order = [...ids].sort((a, b) =>
+          (tally[b].wins + tally[b].ties / 2) - (tally[a].wins + tally[a].ties / 2) || tally[b].pf - tally[a].pf);
+        order.forEach((id, i) => {
+          const t = tally[id], acc = sum[id];
+          acc.wins += t.wins; acc.losses += t.losses; acc.ties += t.ties; acc.pf += t.pf; acc.pa += t.pa; acc.seed += i + 1;
+          if (i < playoffTeams) acc.playoffs++;
+          if (i === 0) acc.top++;
+        });
+      }
+      const projected = Object.fromEntries(ids.map((id) => {
+        const acc = sum[id];
+        const maxPf = now.find((t) => t.rosterId === id).maxPf + games.reduce((s, g) => s + g.teams[id].maxPf, 0);
+        return [id, {
+          wins: acc.wins / STANDINGS_SIMS, losses: acc.losses / STANDINGS_SIMS, ties: acc.ties / STANDINGS_SIMS,
+          pf: acc.pf / STANDINGS_SIMS, pa: acc.pa / STANDINGS_SIMS, maxPf,
+          playoffs: acc.playoffs / STANDINGS_SIMS, top: acc.top / STANDINGS_SIMS, seed: acc.seed / STANDINGS_SIMS,
+        }];
+      }));
+      setState({ status: "ready", now, projected, weeks, playoffTeams, underway: games.length && schedules[0].some((e) => (e.points || 0) > 0) });
+    })().catch((err) => { if (!cancelled) setState({ status: "error", message: err.message, now, weeks }); });
+    return () => { cancelled = true; };
+  }, [raw, enabled, seasonOver]);
+  return state;
+}
+
+const fmtPts = (x) => x.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const fmtRecord = (w, l, t) => `${w}-${l}${t ? `-${t}` : ""}`;
+// An average simulated record, rounded to whole games that still add up.
+function roundRecord(p) {
+  const games = Math.round(p.wins + p.losses + p.ties);
+  const wins = Math.round(p.wins), ties = Math.round(p.ties);
+  return fmtRecord(wins, Math.max(0, games - wins - ties), ties);
+}
+
+function ProjectedStandings({ raw, teams, myTeam, team, onView }) {
+  const proj = useProjectedStandings(raw, true);
+  const [view, setView] = useState("projected");
+  const nameOf = Object.fromEntries(teams.map((t) => [t.rosterId, t]));
+  const now = proj.now || [];
+  const projected = proj.projected;
+  const showProjected = view === "projected" && projected;
+  const playoffTeams = proj.playoffTeams || Math.min(raw.league.settings?.playoff_teams || 0, now.length);
+  const rows = [...now].sort(showProjected
+    ? (a, b) => projected[a.rosterId].seed - projected[b.rosterId].seed
+    : (a, b) => (b.wins + b.ties / 2) - (a.wins + a.ties / 2) || b.pf - a.pf);
+  const pct = (x) => (x >= 0.995 ? ">99%" : x > 0 && x < 0.005 ? "<1%" : `${Math.round(x * 100)}%`);
+  const weeks = proj.weeks || [];
+  const th = "px-2 py-2 text-xs font-semibold whitespace-nowrap";
+  const thStyle = { color: "var(--text-muted)" };
+  const td = "px-2 py-1.5 tabular-nums text-right whitespace-nowrap";
+
+  const aside = !weeks.length ? "Regular season complete"
+    : proj.status === "loading" ? "Projecting the rest of the season…"
+    : `Weeks ${weeks[0]}-${weeks[weeks.length - 1]} projected${proj.underway ? ` (week ${weeks[0]} under way)` : ""}`;
+
+  return (
+    <ProfileSection title="Standings" aside={aside}>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        {weeks.length > 0 && (
+          <PillGroup options={[{ key: "projected", label: "End of season" }, { key: "current", label: "Today" }]}
+            value={view} onChange={setView} accent="var(--sport)" />
+        )}
+        {playoffTeams > 0 && (
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>Top {playoffTeams} make the playoffs</span>
+        )}
+      </div>
+      {proj.status === "error" && (
+        <p className="text-xs" style={{ color: "var(--series-red)" }}>
+          Couldn't load Sleeper's projections ({proj.message}), so these are today's standings only.
+        </p>
+      )}
+      <div className="overflow-x-auto -mx-1">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr style={{ borderBottom: "1px solid var(--border)" }}>
+              <th className={`${th} text-right`} style={thStyle}>#</th>
+              <th className={`${th} text-left`} style={thStyle}>Team</th>
+              <th className={`${th} text-right`} style={thStyle}>Record</th>
+              <th className={`${th} text-right`} style={thStyle} title="Points for">PF</th>
+              <th className={`${th} text-right`} style={thStyle} title="Points against">PA</th>
+              <th className={`${th} text-right`} style={thStyle} title="Max points for: the best lineup each week could have scored">Max PF</th>
+              {showProjected && <th className={`${th} text-right`} style={thStyle} title="Chance of a playoff spot">Playoffs</th>}
+              {showProjected && <th className={`${th} text-right`} style={thStyle} title="Chance of the 1 seed">1 seed</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((t, i) => {
+              const p = showProjected ? projected[t.rosterId] : null;
+              const info = nameOf[t.rosterId];
+              const mine = info && info === myTeam;
+              const cutoff = playoffTeams > 0 && i === playoffTeams - 1 && i < rows.length - 1;
+              const sub = (a, b) => <span className="block text-xs font-normal" style={{ color: "var(--text-muted)" }}>{a} {b}</span>;
+              return (
+                <tr key={t.rosterId} className="row-hover"
+                  style={{ borderBottom: cutoff ? "2px dashed var(--sport)" : "1px solid var(--border)",
+                    background: info && info === team ? "var(--surface-2)" : undefined }}>
+                  <td className={td} style={{ color: "var(--text-muted)" }}>{i + 1}</td>
+                  <td className="px-2 py-1.5 text-left">
+                    <button type="button" onClick={() => info && onView(t.rosterId)} title={info ? `View ${info.name}` : undefined}
+                      className={`text-left ${mine ? "font-bold" : "font-medium"}`} style={{ color: "var(--text-primary)" }}>
+                      {info?.name || `Team ${t.rosterId}`}
+                      {mine && <span className="text-xs font-normal" style={{ color: "var(--sport)" }}> (you)</span>}
+                    </button>
+                  </td>
+                  {p ? (
+                    <>
+                      <td className={td} title={`Average simulated record: ${p.wins.toFixed(1)}-${p.losses.toFixed(1)}${p.ties >= 0.05 ? `-${p.ties.toFixed(1)}` : ""}`}>
+                        <strong>{roundRecord(p)}</strong>{sub("now", fmtRecord(t.wins, t.losses, t.ties))}
+                      </td>
+                      <td className={td}>{fmtPts(p.pf)}{sub("now", fmtPts(t.pf))}</td>
+                      <td className={td}>{fmtPts(p.pa)}{sub("now", fmtPts(t.pa))}</td>
+                      <td className={td}>{fmtPts(p.maxPf)}{sub("now", fmtPts(t.maxPf))}</td>
+                      <td className={td}><strong>{pct(p.playoffs)}</strong></td>
+                      <td className={td}>{pct(p.top)}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td className={td}><strong>{fmtRecord(t.wins, t.losses, t.ties)}</strong></td>
+                      <td className={td}>{fmtPts(t.pf)}</td>
+                      <td className={td}>{fmtPts(t.pa)}</td>
+                      <td className={td}>{fmtPts(t.maxPf)}</td>
+                    </>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+        {showProjected
+          ? <>End-of-season numbers average {STANDINGS_SIMS.toLocaleString()} simulated seasons on the league's real schedule,
+            using Sleeper's weekly projections in this league's scoring. Each team is assumed to keep starting as close to its
+            best lineup as it has so far (PF ÷ max PF); max PF assumes the best lineup every week. Seeds go by wins, then
+            points for. Rosters are today's, so trades, waivers and injuries will move this.</>
+          : <>Record, points for, points against and max points for (the best lineup each week could have scored), straight
+            from Sleeper through the last scored week.{weeks.length > 0 && proj.status === "loading" && " Projections are loading…"}</>}
+      </p>
+    </ProfileSection>
+  );
+}
+
+function MyLeagues({ settings, setSettings, navigate }) {
+  const [input, setInput] = useState(() => { try { return localStorage.getItem(SLEEPER_USER_KEY) || ""; } catch (e) { return ""; } });
+  const [user, setUser] = useState(null);
+  const [leagues, setLeagues] = useState(null);
+  const [listStatus, setListStatus] = useState({ state: "idle" });
+  const [raw, setRaw] = useState(null);
+  const [status, setStatus] = useState({ state: "idle" });
+  const [mode, setMode] = useState("dynasty");
+  const [focus, setFocus] = useState(null);
+  // #/leagues lists the leagues; #/leagues/<id> is that league's own page.
+  const [leagueId, setLeagueId] = useState(leagueIdFromHash);
+  useEffect(() => {
+    const sync = () => setLeagueId(leagueIdFromHash());
+    window.addEventListener("popstate", sync);
+    window.addEventListener("hashchange", sync);
+    return () => { window.removeEventListener("popstate", sync); window.removeEventListener("hashchange", sync); };
+  }, []);
+  const goTo = (id) => {
+    const hash = id ? `${LEAGUES_HASH}/${id}` : LEAGUES_HASH;
+    try { window.history.pushState(null, "", hash); } catch (e) {}
+    lastRoom.nfl = { hash, label: "Boardroom" };
+    setLeagueId(id ? String(id) : null);
+    window.scrollTo(0, 0);
+  };
+
+  const loadLeague = async (leagueId) => {
+    setStatus({ state: "loading" });
+    try {
+      const [league, rosters, users, traded] = await Promise.all([
+        sleeperGet(`/league/${leagueId}`), sleeperGet(`/league/${leagueId}/rosters`),
+        sleeperGet(`/league/${leagueId}/users`), sleeperGet(`/league/${leagueId}/traded_picks`),
+      ]);
+      if (leagueIdFromHash() !== String(leagueId)) return; // moved on to another page meanwhile
+      if (!league) throw new Error("no Sleeper league with that ID");
+      setRaw({ league, rosters: rosters || [], users: users || [], traded: traded || [] });
+      setMode(settingsFromLeague(league).mode);
+      setFocus(null);
+      setStatus({ state: "ready" });
+    } catch (err) {
+      setStatus({ state: "error", message: err.message });
+    }
+  };
+
+  const loadUser = async (name) => {
+    setListStatus({ state: "loading" });
+    try {
+      const u = await sleeperGet(`/user/${encodeURIComponent(name)}`);
+      if (!u) throw new Error(`no Sleeper user named "${name}"`);
+      const state = await sleeperGet("/state/nfl");
+      const list = (await sleeperGet(`/user/${u.user_id}/leagues/nfl/${state.league_season || state.season}`)) || [];
+      if (list.length === 0) throw new Error(`"${name}" isn't in any football leagues this season`);
+      setUser(u);
+      setLeagues(list);
+      setListStatus({ state: "ready" });
+    } catch (err) {
+      setListStatus({ state: "error", message: err.message });
+    }
+  };
+
+  // Reopen the saved user's leagues (also how a league page knows which team is yours).
+  useEffect(() => {
+    if (input.trim() && !/^\d{9,}$/.test(input.trim())) loadUser(input.trim());
+  }, []);
+  // Load a league when its page opens (kept when going back to the list, so reopening it is instant).
+  useEffect(() => {
+    if (leagueId && raw?.league.league_id !== leagueId) loadLeague(leagueId);
+  }, [leagueId]);
+  useEffect(() => {
+    document.title = leagueId && raw?.league.league_id === leagueId
+      ? `${raw.league.name} · Boardroom · Fantasy Front Office` : "Boardroom · Football · Fantasy Front Office";
+  }, [leagueId, raw]);
+
+  const submit = (e) => {
+    e.preventDefault();
+    const value = input.trim();
+    if (!value) return;
+    try { localStorage.setItem(SLEEPER_USER_KEY, value); } catch (err) {}
+    if (/^\d{9,}$/.test(value)) return goTo(value);
+    loadUser(value);
+  };
+
+  // This league's own settings, in the chosen context.
+  const leagueSettings = useMemo(
+    () => (raw ? { ...DEFAULT_DYNASTY_SETTINGS, ...settingsFromLeague(raw.league), mode } : DEFAULT_DYNASTY_SETTINGS),
+    [raw, mode]
+  );
+  const values = useDynastyValues(leagueSettings, { enabled: !!raw });
+  const byId = useMemo(() => Object.fromEntries(values.rows.map((r) => [r.id, r])), [values.rows]);
+  const teams = useMemo(() => (raw ? buildLeagueTeams(raw, values.rows, byId) : []), [raw, values.rows, byId]);
+
+  const isDynasty = mode === "dynasty";
+  const n = teams.length;
+  const ranks = useMemo(() => ({
+    total: rankTeams(teams, (t) => t.total),
+    starters: rankTeams(teams, (t) => t.starters),
+    now: rankTeams(teams, (t) => t.lineup.reduce((s, l) => s + (l.player?.redraftValue || 0), 0)),
+    pf: rankTeams(teams, (t) => t.record.pf),
+    ...Object.fromEntries(ROOM_POSITIONS.map((p) => [p, rankTeams(teams, (t) => t.byPos[p])])),
+  }), [teams]);
+  // Dynasty ranks the whole roster (picks too); redraft only this season's lineup.
+  const ordered = useMemo(
+    () => [...teams].sort(isDynasty ? (a, b) => b.total - a.total : (a, b) => b.starters - a.starters),
+    [teams, isDynasty]
+  );
+  const myTeam = user && teams.find((t) => t.ownerIds.includes(user.user_id));
+  const team = teams.find((t) => t.rosterId === focus) || myTeam || ordered[0];
+  // Guillotine and other no-matchup leagues score points but have no wins or losses.
+  const hasRecord = teams.some((t) => t.record.wins || t.record.losses || t.record.ties);
+  const hasPoints = teams.some((t) => t.record.pf > 0);
+  const sortValue = (t) => (isDynasty ? t.total : t.starters);
+  const leanOf = (t) => (isDynasty ? teamLean(ranks.now[t.rosterId], ranks.total[t.rosterId], n) : null);
+  const teamLeanLabel = team && leanOf(team)?.label;
+  const resolveNflId = React.useContext(NflIdContext);
+  const sleeperPlayers = useSleeperStatuses();
+  const outForYear = useMemo(() => outForYearIds(values.rows, sleeperPlayers, resolveNflId), [values.rows, sleeperPlayers, resolveNflId]);
+  const targets = useMemo(
+    () => (team && raw ? suggestTrades(team, teams, raw.league, values.rows, mode, leanOf, outForYear) : null),
+    [team, teams, raw, values.rows, mode, teamLeanLabel, outForYear]
+  );
+  const viewTeam = (rosterId) => { setFocus(rosterId); document.getElementById("league-team")?.scrollIntoView({ behavior: "smooth" }); };
+  // Open a suggested trade on the Trade Desk, with this league's settings.
+  const openTrade = (s) => {
+    setSettings((st) => ({ ...st, ...settingsFromLeague(raw.league), mode }));
+    const ids = (list) => list.map((a) => encodeURIComponent(a.id)).join(",");
+    window.location.hash = `#trade=${ids(s.get)}|${ids(s.give)}`;
+    window.scrollTo(0, 0);
+  };
+  const maxSort = Math.max(1, ...teams.map(sortValue));
+
+  const posAvg = Object.fromEntries(ROOM_POSITIONS.map((p) => [p, n ? teams.reduce((s, t) => s + t.byPos[p], 0) / n : 0]));
+  const usedLeague = raw && settingsFromLeague(raw.league);
+
+  const leagueLink = (id) => `${LEAGUES_HASH}/${id}`;
+  const follow = (fn) => (e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); fn(); };
+
+  return (
+    <div className="flex flex-col gap-5">
+      {!leagueId ? (
+        <>
+          <header>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>My Leagues</h2>
+            <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
+              Load your Sleeper leagues, then open one to see where your team stands and who to trade for, valued with that
+              league's own format, size, scoring, TE premium and starting lineup.
+            </p>
+          </header>
+
+          <form onSubmit={submit} className="flex gap-2 flex-wrap">
+            <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Sleeper username or league ID"
+              className="rounded-md border px-3 py-1.5 text-sm flex-1" style={{ ...inputStyle, minWidth: "12rem" }} />
+            <button type="submit" className="btn-primary rounded-md px-4 py-1.5 text-sm font-semibold">Load leagues</button>
+          </form>
+
+          {listStatus.state === "loading" && <p className="text-sm" style={{ color: "var(--text-muted)" }}>Finding leagues on Sleeper…</p>}
+          {listStatus.state === "error" && (
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+              Couldn't load that ({listStatus.message}). This needs the page served over http(s) with network access.
+            </p>
+          )}
+
+          {leagues && (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {leagues.map((l) => (
+                <a key={l.league_id} href={leagueLink(l.league_id)} onClick={follow(() => goTo(l.league_id))}
+                  className="row-btn rounded-lg border px-4 py-3 flex flex-col gap-1"
+                  style={{ borderColor: "var(--border)", background: "var(--surface-1)" }}>
+                  <span className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{l.name}</span>
+                  <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{leagueTags(l)}</span>
+                  <span className="text-xs font-semibold mt-1" style={{ color: "var(--sport)" }}>Open league →</span>
+                </a>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <a href={LEAGUES_HASH} onClick={follow(() => goTo(null))} className="text-sm font-medium self-start" style={{ color: "var(--sport)" }}>
+            ← All leagues
+          </a>
+
+          {status.state === "loading" && <p className="text-sm py-3" style={{ color: "var(--text-muted)" }}>Loading league from Sleeper…</p>}
+          {status.state === "error" && (
+            <p className="text-sm py-3" style={{ color: "var(--text-muted)" }}>
+              Couldn't load that league ({status.message}). This needs the page served over http(s) with network access.
+            </p>
+          )}
+
+          {status.state === "ready" && raw && team && (
+        <>
+          <header className="flex items-end justify-between flex-wrap gap-3">
+            <div className="min-w-0">
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>{raw.league.name}</h2>
+              <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>{leagueTags(raw.league)} · {raw.league.season} season</p>
+            </div>
+            <div className="flex items-end gap-3 flex-wrap">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs" style={{ color: "var(--text-muted)" }}>Value as</span>
+                <PillGroup options={CONTEXT_OPTIONS} value={mode} onChange={setMode} accent="var(--hue-violet)" />
+              </div>
+              <button type="button" className="btn-secondary rounded-md px-3 py-1.5 text-xs font-semibold"
+                title="Set the Value Board, War Room and Trade Desk to this league's settings"
+                onClick={() => {
+                  try { localStorage.setItem(DYNASTY_LEAGUE_KEY, raw.league.league_id); } catch (e) {}
+                  setSettings((s) => ({ ...s, ...settingsFromLeague(raw.league), mode }));
+                  navigate("trade");
+                }}>
+                Use in Trade Desk
+              </button>
+            </div>
+          </header>
+          <AboutData>
+            <DynastyStatusLine data={values} />{" "}
+            Values are FantasyCalc's, picked to match this league's settings (see the settings table at the bottom). "Starters"
+            is the best lineup a roster can field in the league's slots. In dynasty, a team's total also counts the rookie picks
+            it owns (the next three drafts, rounds 1-{LEAGUE_PICK_ROUNDS}, valued as mid-round picks), and its lean compares how
+            good its lineup is this season (FantasyCalc's redraft values) with its long-term value. In redraft, teams are
+            ranked by their lineup alone. Records and points come straight from Sleeper.
+          </AboutData>
+
+          {mode !== usedLeague.mode && (
+            <p className="text-xs -mt-2" style={{ color: "var(--text-muted)" }}>
+              This is a {(LEAGUE_TYPE_LABEL[raw.league.settings?.type] || "redraft").toLowerCase()} league, shown with {mode} values:
+              {isDynasty ? " what each roster is worth for this season and beyond." : " what each roster is worth for this season only."}
+            </p>
+          )}
+
+          <section id="league-team" className="flex flex-col gap-3" style={{ scrollMarginTop: "5rem" }}>
+            <div className="flex items-end justify-between flex-wrap gap-2">
+              <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+                {team === myTeam ? "Your team" : team.name}
+                {team === myTeam && <span className="font-normal" style={{ color: "var(--text-muted)" }}> · {team.name}</span>}
+              </h3>
+              <span className="flex items-center gap-2 flex-wrap">
+              {myTeam && team !== myTeam && (
+                <button type="button" onClick={() => setFocus(myTeam.rosterId)} className="pill text-xs rounded-full px-3 py-1 font-medium"
+                  style={{ "--pill-accent": "var(--sport)" }}>← Your team</button>
+              )}
+              <select value={team.rosterId} onChange={(e) => setFocus(Number(e.target.value))}
+                className="rounded-md border px-2 py-1 text-sm" style={inputStyle} aria-label="Team to look at">
+                {ordered.map((t) => <option key={t.rosterId} value={t.rosterId}>{t.name}{t === myTeam ? " (you)" : ""}</option>)}
+              </select>
+              </span>
+            </div>
+
+            <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+              {isDynasty && <StatTile label="Roster value" value={`${ordinal(ranks.total[team.rosterId])} of ${n}`} sub={`${fmtValue(team.total)} incl. picks`} />}
+              <StatTile label={isDynasty ? "Lineup value" : "Lineup strength"} value={`${ordinal(ranks.starters[team.rosterId])} of ${n}`} sub={fmtValue(team.starters)} />
+              {isDynasty ? (() => {
+                const lean = teamLean(ranks.now[team.rosterId], ranks.total[team.rosterId], n);
+                return <StatTile label="This season" value={`${ordinal(ranks.now[team.rosterId])} of ${n}`} sub={lean.label} subColor={lean.color} />;
+              })() : (
+                <StatTile label="Depth" value={`${ordinal(rankTeams(teams, (t) => t.total - t.starters)[team.rosterId])} of ${n}`}
+                  sub={`${fmtValue(team.total - team.starters)} on the bench`} />
+              )}
+              {hasRecord ? (
+                <StatTile label="Record" value={`${team.record.wins}-${team.record.losses}${team.record.ties ? `-${team.record.ties}` : ""}`}
+                  sub={`${team.record.pf.toFixed(1)} PF · ${ordinal(ranks.pf[team.rosterId])} most`} />
+              ) : (
+                <StatTile label="Points for" value={hasPoints ? team.record.pf.toFixed(1) : "–"}
+                  sub={hasPoints ? `${ordinal(ranks.pf[team.rosterId])} most` : "No games yet"} />
+              )}
+            </div>
+
+            {isDynasty && (
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                {teamLean(ranks.now[team.rosterId], ranks.total[team.rosterId], n).tip}
+              </p>
+            )}
+
+            {targets && (
+              <ProfileSection title="Trade targets"
+                aside={targets.rebuild ? "Young players and injured players back next year, paid for with veterans"
+                  : leanOf(team)?.label === "Contender" ? "Biggest lineup upgrades this season"
+                  : targets.ageLean === "young" ? "Lineup upgrades that fit a young core"
+                  : targets.ageLean === "win-now" ? "Lineup upgrades for a veteran core" : "Biggest lineup upgrades"}>
+                <p className="text-xs -mt-1" style={{ color: "var(--text-muted)" }}>
+                  Deals built around the other team: each offer from {team === myTeam ? "your" : `${team.name}'s`} roster fills one
+                  of their weak spots (or brings a rebuilder youth and picks, or upgrades a contender's lineup), for a player
+                  from a position where they have plenty. Every offer is fair, or a slight overpay, by this app's trade formula.
+                </p>
+                {targets.list.length === 0 ? (
+                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                    No fair upgrades found: nobody available would improve this lineup for what {team === myTeam ? "you" : "they"} can offer.
+                  </p>
+                ) : targets.positions.map(({ pos, rank }) => {
+                  const group = targets.list.filter((s) => s.get[0].position === pos);
+                  return (
+                  <div key={pos} className="flex flex-col gap-2">
+                    <h4 className="text-sm font-semibold flex items-center gap-2">
+                      <PosBadge pos={pos} />
+                      <span className="text-xs font-normal" style={{ color: "var(--text-muted)" }}>
+                        {team === myTeam ? "Your" : `${team.name}'s`} room is {ordinal(rank)} of {targets.n}
+                      </span>
+                    </h4>
+                    {group.length === 0 ? (
+                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>No fair {pos} targets found.</p>
+                    ) : (
+                  <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {group.map((s) => {
+                      const getSum = sumOf(s.get.map((a) => a.value));
+                      return (
+                        <li key={`${s.partner.rosterId}-${s.get[0].id}`} className="rounded-lg border p-3 flex flex-col gap-2"
+                          style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="min-w-0">
+                              {s.get.map((g, j) => (
+                                <span key={j} className="block text-sm">
+                                  {j > 0 && <span className="text-xs" style={{ color: "var(--text-muted)" }}>+ </span>}
+                                  <PlayerLink id={g.id} pos={g.position}>{g.name}</PlayerLink>{" "}
+                                  {g.position === "PICK" ? <PosBadge pos="PICK" /> : <PosBadge pos={g.position} rank={g.posRank} />}
+                                  {g.age && <span className="text-xs" style={{ color: "var(--text-muted)" }}> {g.age}</span>}
+                                </span>
+                              ))}
+                              <button type="button" onClick={() => viewTeam(s.partner.rosterId)} className="text-xs underline"
+                                style={{ color: "var(--text-secondary)" }}>from {s.partner.name}</button>
+                            </span>
+                            <span className="text-xs font-semibold tabular-nums shrink-0 text-right" style={{ color: "var(--trend-up)" }}>
+                              {!targets.rebuild ? `Lineup +${fmtValue(Math.round(s.gain))}`
+                                : s.ageDrop >= 0.5 ? `${s.ageDrop.toFixed(1)} yrs younger` : "Back next year"}
+                            </span>
+                          </div>
+                          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                            <span className="font-semibold" style={{ color: "var(--text-muted)" }}>OFFER </span>
+                            {s.give.map((a, j) => (
+                              <span key={j}>{j > 0 && " + "}{a.name} <span style={{ color: "var(--text-muted)" }}>({fmtValue(a.value)})</span></span>
+                            ))}
+                            <span style={{ color: "var(--text-muted)" }}> for {fmtValue(getSum)}</span>
+                          </p>
+                          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                            {s.injured && (
+                              <span style={{ color: "var(--hue-violet)" }}>
+                                Out for the season{sleeperPlayers[s.get[0].id]?.injury ? ` (${sleeperPlayers[s.get[0].id].injury})` : ""}, back next year: buy while the price is down.{" "}
+                              </span>
+                            )}
+                            <span style={{ color: "var(--text-secondary)" }}>
+                              {s.fills.map((f) => (
+                                <span key={f.pos}>{s.partner.name} is {ordinal(f.rank)} of {targets.n} at {f.pos}: {f.names.join(" and ")} {f.names.length > 1 ? "fill" : "fills"} that. </span>
+                              ))}
+                              {s.youth.length > 0 && <>{s.partner.name} is rebuilding, and {s.youth.join(" and ")} {s.youth.length > 1 ? "are" : "is"} the kind of piece they want. </>}
+                              {s.fills.length === 0 && s.youth.length === 0 && s.theirGain > 0 && <>Upgrades {s.partner.name}'s lineup for their title run. </>}
+                              {s.spare && <>They're {ordinal(s.spare.rank)} at {s.spare.pos}, so they can spare {s.get[0].name}. </>}
+                              {s.partnerLean === "Rebuilding" && s.youth.length === 0 && s.sellsVeteran && <>As a rebuilding team, they should be open to moving veterans. </>}
+                            </span>
+                            {s.need && <>For {team === myTeam ? "you" : team.name}: a {s.need.pos} room that's {ordinal(s.need.rank)} of {targets.n}. </>}
+                            {s.benched.length > 0 && <>Moves {s.benched.map((a) => a.name).join(" and ")} to the bench. </>}
+                            {s.result.verdict === "slight" ? "Slight overpay." : "Fair value."}
+                          </p>
+                          <button type="button" onClick={() => openTrade(s)} className="pill self-start text-xs rounded-full px-3 py-1 font-medium"
+                            style={{ "--pill-accent": "var(--hue-orange)" }}>Open in Trade Desk →</button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                    )}
+                  </div>
+                  );
+                })}
+              </ProfileSection>
+            )}
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <ProfileSection title="Position rooms" aside={`Rank of ${n} · vs league average`}>
+                <ul className="flex flex-col gap-2.5">
+                  {ROOM_POSITIONS.map((p) => {
+                    const rank = ranks[p][team.rosterId];
+                    const vsAvg = posAvg[p] ? team.byPos[p] / posAvg[p] - 1 : 0;
+                    const maxPos = Math.max(1, ...teams.map((t) => t.byPos[p]));
+                    return (
+                      <li key={p} className="flex flex-col gap-1">
+                        <div className="flex items-center justify-between gap-2 text-sm">
+                          <span className="flex items-center gap-2"><PosBadge pos={p} />
+                            <span style={{ color: "var(--text-primary)" }}>{ordinal(rank)}</span>
+                            {rank === 1 && <span className="text-xs" style={{ color: "var(--trend-up)" }}>best in league</span>}
+                            {rank === n && n > 1 && <span className="text-xs" style={{ color: "var(--series-red)" }}>weakest in league</span>}
+                          </span>
+                          <span className="tabular-nums text-xs" style={{ color: vsAvg >= 0 ? "var(--trend-up)" : "var(--series-red)" }}>
+                            {vsAvg >= 0 ? "+" : ""}{Math.round(vsAvg * 100)}%
+                          </span>
+                        </div>
+                        <span className="h-2 rounded" style={{ background: "var(--surface-2)" }}>
+                          <span className="block h-2 rounded" style={{ width: `${(team.byPos[p] / maxPos) * 100}%`, background: POS_COLOR[p] }} />
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </ProfileSection>
+
+              <ProfileSection title="Best lineup" aside={fmtValue(team.starters)}>
+                <ul className="flex flex-col gap-1">
+                  {team.lineup.map((l, i) => (
+                    <li key={i} className="flex items-center justify-between gap-2 text-sm">
+                      <span className="min-w-0 truncate">
+                        <span className="inline-block w-16 text-xs" style={{ color: "var(--text-muted)" }}>{SLOT_LABEL[l.slot] || l.slot}</span>
+                        {l.player ? <><PlayerLink id={l.player.id} pos={l.player.position} className="">{l.player.name}</PlayerLink>{" "}
+                          <PosBadge pos={l.player.position} rank={l.player.posRank} /></>
+                          : <span style={{ color: "var(--series-red)" }}>Empty</span>}
+                      </span>
+                      <span className="tabular-nums text-xs shrink-0" style={{ color: "var(--text-secondary)" }}>{fmtValue(l.player?.value)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </ProfileSection>
+            </div>
+
+            {(() => {
+              const starting = new Set(team.lineup.map((l) => l.player?.id));
+              const bench = team.assets.filter((a) => !starting.has(a.id));
+              if (!bench.length) return null;
+              return (
+                <ProfileSection title={isDynasty ? "Bench and picks" : "Bench"} aside={`${bench.length} valued`}>
+                  <ul className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
+                    {bench.map((a, j) => (
+                      <li key={`${a.id}-${j}`} className="flex items-center justify-between gap-2 text-sm">
+                        <span className="min-w-0 truncate">
+                          <PlayerLink id={a.id} pos={a.position} className="">{a.name}</PlayerLink>{" "}
+                          {a.position === "PICK" ? <PosBadge pos="PICK" /> : <PosBadge pos={a.position} rank={a.posRank} />}
+                          {isDynasty && a.age && <span className="text-xs" style={{ color: "var(--text-muted)" }}> {a.age}</span>}
+                        </span>
+                        <span className="tabular-nums text-xs shrink-0" style={{ color: "var(--text-secondary)" }}>{fmtValue(a.value)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </ProfileSection>
+              );
+            })()}
+
+
+          </section>
+
+          {raw.league.settings?.type !== 3 && raw.league.status !== "pre_draft" && (
+            <ProjectedStandings raw={raw} teams={teams} myTeam={myTeam} team={team} onView={viewTeam} />
+          )}
+
+          <ProfileSection title="Power rankings" aside={`${isDynasty ? "By total value: lineup, bench and picks" : "By this season's best lineup"} · click a team to view it`}>
+            <div className="flex items-center gap-3 flex-wrap">
+              {POS_KEYS.filter((k) => isDynasty || k !== "PICK").map((k) => (
+                <span key={k} className="text-xs flex items-center gap-1" style={{ color: "var(--text-secondary)" }}>
+                  <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: POS_COLOR[k] }} />{POS_LABEL[k]}
+                </span>
+              ))}
+            </div>
+            <ol className="flex flex-col">
+              {ordered.map((t, i) => {
+                const parts = isDynasty ? t.byPos
+                  : Object.fromEntries(ROOM_POSITIONS.map((p) => [p, t.lineup.filter((l) => l.player?.position === p).reduce((s, l) => s + l.player.value, 0)]));
+                const sum = sortValue(t) || 1;
+                const lean = isDynasty && teamLean(ranks.now[t.rosterId], ranks.total[t.rosterId], n);
+                return (
+                  <li key={t.rosterId} className="border-b last:border-b-0" style={{ borderColor: "var(--border)" }}>
+                    <button type="button" onClick={() => viewTeam(t.rosterId)} title={`View ${t.name}`}
+                      className="row-btn w-full text-left py-2 px-1 grid gap-x-3 gap-y-1 items-center"
+                      style={{ gridTemplateColumns: "1.5rem minmax(0, 1fr) auto", background: t === team ? "var(--surface-2)" : undefined }}>
+                      <span className="text-sm tabular-nums text-right" style={{ color: "var(--text-muted)" }}>{i + 1}</span>
+                      <span className="text-sm truncate" style={{ color: "var(--text-primary)" }}>
+                        <span className={t === myTeam ? "font-bold" : "font-medium"}>{t.name}</span>
+                        {t === myTeam && <span className="text-xs" style={{ color: "var(--sport)" }}> (you)</span>}
+                        {hasRecord && <span className="text-xs" style={{ color: "var(--text-muted)" }}> · {t.record.wins}-{t.record.losses}{t.record.ties ? `-${t.record.ties}` : ""}</span>}
+                        {lean && <span className="text-xs" style={{ color: lean.color }}> · {lean.label}</span>}
+                      </span>
+                      <span className="text-sm tabular-nums text-right" style={{ color: "var(--text-primary)" }}>
+                        <strong>{fmtValue(sortValue(t))}</strong>
+                        {isDynasty && <span className="text-xs font-normal" style={{ color: "var(--text-muted)" }}> · starters {fmtValue(t.starters)}</span>}
+                      </span>
+                      <span />
+                      <span className="col-span-2">
+                        <span className="flex h-2.5 gap-0.5" style={{ width: `${(sortValue(t) / maxSort) * 100}%` }}>
+                          {POS_KEYS.filter((k) => parts[k] > 0).map((k, j, arr) => (
+                            <span key={k} title={`${POS_LABEL[k]}: ${fmtValue(parts[k])}`}
+                              style={{
+                                width: `${(parts[k] / sum) * 100}%`, background: POS_COLOR[k],
+                                borderTopLeftRadius: j === 0 ? 4 : 0, borderBottomLeftRadius: j === 0 ? 4 : 0,
+                                borderTopRightRadius: j === arr.length - 1 ? 4 : 0, borderBottomRightRadius: j === arr.length - 1 ? 4 : 0,
+                              }} />
+                          ))}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </ProfileSection>
+
+          <ProfileSection title="League settings" aside="What this league uses, and how it's valued here">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <tbody>
+                  {leagueRules(raw.league, mode).map((r) => (
+                    <tr key={r.label} className="border-t first:border-t-0" style={{ borderColor: "var(--border)" }}>
+                      <td className="py-1.5 pr-3 text-xs font-semibold uppercase tracking-wider whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{r.label}</td>
+                      <td className="py-1.5 pr-3" style={{ color: "var(--text-primary)" }}>{r.value}</td>
+                      <td className="py-1.5 text-xs" style={{ color: "var(--text-secondary)" }}>{r.use}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </ProfileSection>
+        </>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 
@@ -4679,7 +5846,7 @@ function NbaSeasonNote({ data }) {
   if (data.currentHasGames) return null;
   const start = data.state.season_start_date;
   return (
-    <div className="rounded-lg border px-4 py-3 text-sm" style={{ borderColor: "var(--brass)", background: "var(--surface-1)", color: "var(--text-secondary)" }}>
+    <div className="rounded-lg border px-4 py-3 text-sm" style={{ borderColor: "var(--sport)", background: "var(--surface-1)", color: "var(--text-secondary)" }}>
       The {nbaSeasonLabel(data.state.season)} season hasn't tipped off yet{start ? ` (opening night is ${new Date(start + "T12:00:00").toLocaleDateString(undefined, { month: "long", day: "numeric" })})` : ""}, so
       this shows last season, {nbaSeasonLabel(data.state.previous_season)}. It switches over on its own once games are played.
     </div>
@@ -5517,7 +6684,7 @@ function Headshot({ sport, id, pos, size = 96 }) {
 function ProfileHero({ sport, id, name, pos, posLabel, team, number, status, statusColor, facts, back }) {
   return (
     <header className="flex flex-col gap-4">
-      <a href={back.hash} onClick={() => window.scrollTo(0, 0)} className="text-sm font-medium w-fit" style={{ color: "var(--brass)" }}>
+      <a href={back.hash} onClick={() => window.scrollTo(0, 0)} className="text-sm font-medium w-fit" style={{ color: "var(--sport)" }}>
         ← {back.label}
       </a>
       <div className="flex items-center gap-5 flex-wrap">
@@ -5631,7 +6798,7 @@ function SimilarPlayers({ sport, list, index, fmt }) {
 function ProfileMessage({ children, back }) {
   return (
     <div className="flex flex-col gap-4">
-      <a href={back.hash} className="text-sm font-medium w-fit" style={{ color: "var(--brass)" }}>← {back.label}</a>
+      <a href={back.hash} className="text-sm font-medium w-fit" style={{ color: "var(--sport)" }}>← {back.label}</a>
       <div className="rounded-lg border p-8 text-center text-sm" style={{ borderColor: "var(--border)", background: "var(--surface-1)", color: "var(--text-muted)" }}>
         {children}
       </div>
@@ -6217,9 +7384,10 @@ function NbaProfile({ data, settings }) {
 // work. A trade link (#trade=… or #nbatrade=…, see readTradeHash) is that
 // sport's Trade Desk too. Every tool is a room in the office: `short` is the
 // room (nav, folder tabs, page label), `label` says what the tool is.
+// `color` is each sport's Sleeper-style accent (green football, orange basketball).
 const SPORTS = [
-  { key: "nfl", label: "Football", blurb: "Weekly results, waivers and injuries for this season, plus dynasty values, a trade desk and the 2027 class." },
-  { key: "nba", label: "Basketball", blurb: "Season-long points leagues: weekly scores, waivers, injuries, rankings and a trade analyzer." },
+  { key: "nfl", label: "Football", color: "#1fa463", blurb: "Weekly results, waivers and injuries for this season, plus dynasty values, a trade desk and the 2027 class." },
+  { key: "nba", label: "Basketball", color: "#f2711c", blurb: "Season-long points leagues: weekly scores, waivers, injuries, rankings and a trade analyzer." },
 ];
 const SPORT_LABEL = Object.fromEntries(SPORTS.map((s) => [s.key, s.label]));
 const PAGES = [
@@ -6230,6 +7398,8 @@ const PAGES = [
     blurb: "Live Sleeper add/drop trends plus a hand-picked list of this week's best pickups and why." },
   { key: "injuries", sport: "nfl", label: "Injuries", short: "Training Room", hash: "#/injuries", group: "Game week",
     blurb: "The live weekly injury report, who's on IR or PUP, and the earliest week each player can return." },
+  { key: "leagues", sport: "nfl", label: "My Leagues", short: "Boardroom", hash: "#/leagues", group: "Dynasty",
+    blurb: "Your Sleeper leagues, each valued with its own settings and lineup, as dynasty or redraft: power rankings and where your team stands." },
   { key: "dynasty", sport: "nfl", label: "Dynasty Values", short: "Value Board", hash: "#/values", group: "Dynasty",
     blurb: "Trade values for every player and rookie pick, set to your league's format, size, scoring and TE premium." },
   { key: "draftboard", sport: "nfl", label: "Draft Board", short: "War Room", hash: "#/draftboard", group: "Dynasty",
@@ -6275,12 +7445,14 @@ const PAGE_ICONS = {
   forecast: <path d="M3 3v18h18M7 15l4-4 3 3 6-7" />,
   profile: <path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" />,
   board: <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />,
+  leagues: <path d="M3 8h18v12H3zM8 8V5h8v3M3 13h18" />,
 };
 const PAGE_STYLE = {
   home: { hue: "var(--hue-blue)" },
   weekly: { hue: "var(--hue-blue)", icon: PAGE_ICONS.scores },
   waivers: { hue: "var(--hue-aqua)", icon: PAGE_ICONS.waivers },
   injuries: { hue: "var(--hue-red)", icon: PAGE_ICONS.injuries },
+  leagues: { hue: "var(--hue-yellow)", icon: PAGE_ICONS.leagues },
   dynasty: { hue: "var(--hue-violet)", icon: PAGE_ICONS.values },
   draftboard: { hue: "var(--hue-aqua)", icon: PAGE_ICONS.draft },
   player: { hue: "var(--hue-blue)", icon: PAGE_ICONS.profile },
@@ -6306,6 +7478,7 @@ function pageFromHash(hash) {
   if (hash.startsWith("#nbatrade=")) return "nba-trade";
   if (hash.startsWith(PLAYER_HASH.nba)) return "nba-player";
   if (hash.startsWith(PLAYER_HASH.nfl)) return "player";
+  if (hash.startsWith(`${LEAGUES_HASH}/`)) return "leagues";
   return (PAGES.find((p) => p.hash === hash) || PAGE_BY_KEY.home).key;
 }
 
@@ -6329,6 +7502,7 @@ function useRoute() {
     const target = (tradeKey && lastTradeHashes[tradeKey]) || PAGE_BY_KEY[key].hash;
     if (target !== window.location.hash) {
       try { window.history.pushState(null, "", target); } catch (e) { window.location.hash = target; }
+      window.dispatchEvent(new PopStateEvent("popstate")); // pushState doesn't fire it; pages watching the hash need it
     }
     setPage(key);
     window.scrollTo(0, 0);
@@ -6342,7 +7516,11 @@ const SPORT_KEY = "ff-valuediff:sport";
 function useSport(page) {
   const [saved, setSaved] = useState(() => { try { return localStorage.getItem(SPORT_KEY) === "nba" ? "nba" : "nfl"; } catch (e) { return "nfl"; } });
   const sport = PAGE_BY_KEY[page].sport || saved;
-  useEffect(() => { try { localStorage.setItem(SPORT_KEY, sport); } catch (e) {} if (sport !== saved) setSaved(sport); }, [sport]);
+  useEffect(() => {
+    document.documentElement.dataset.sport = sport; // green or orange accents (see --sport)
+    try { localStorage.setItem(SPORT_KEY, sport); } catch (e) {}
+    if (sport !== saved) setSaved(sport);
+  }, [sport]);
   return [sport, setSaved];
 }
 
@@ -6392,7 +7570,7 @@ function SportSwitch({ sport, page, navigate, setSport }) {
     const match = sportPages(to).find((p) => p.short === here.short) || sportPages(to)[0];
     navigate(match.key);
   };
-  return <PillGroup options={SPORTS.map((s) => ({ key: s.key, label: s.label }))} value={sport} onChange={change} accent="var(--brass)" />;
+  return <PillGroup options={SPORTS.map((s) => ({ key: s.key, label: s.label, color: s.color }))} value={sport} onChange={change} accent={SPORTS.find((s) => s.key === sport).color} />;
 }
 
 function NavLink({ p, page, navigate, className = "" }) {
@@ -6539,7 +7717,7 @@ function HomePage({ navigate, scores, dynasty }) {
     <div className="flex flex-col gap-12">
       <section className="hero-glow -mx-4 px-4 pt-10 pb-4 sm:pt-16 text-center flex flex-col items-center gap-5">
         <span className="text-xs font-semibold uppercase tracking-wider rounded-md border px-3 py-1"
-          style={{ borderColor: "var(--brass)", color: "var(--brass)", background: "var(--surface-1)" }}>
+          style={{ borderColor: "var(--sport)", color: "var(--sport)", background: "var(--surface-1)" }}>
           Football{latestWeek ? ` · Week ${latestWeek}` : ""} · Basketball
         </span>
         <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight max-w-3xl" style={{ color: "var(--text-primary)", lineHeight: 1.1 }}>
@@ -6586,7 +7764,7 @@ function HomePage({ navigate, scores, dynasty }) {
               <span className="w-1.5 h-5 rounded-full" style={{ background: "var(--trend-up)" }} />Dynasty risers this month
             </h2>
             <a href="#/values" onClick={(e) => { e.preventDefault(); navigate("dynasty"); }}
-              className="text-sm font-medium" style={{ color: "var(--brass)" }}>Value Board →</a>
+              className="text-sm font-medium" style={{ color: "var(--sport)" }}>Value Board →</a>
           </div>
           <ol className="rounded-xl border divide-y" style={{ borderColor: "var(--border)", background: "var(--surface-1)" }}>
             {risers.map((r, i) => (
@@ -6684,6 +7862,7 @@ function App() {
         {page === "weekly" && <WeeklyScores players={liveScores.players} data={liveScores} />}
         {page === "waivers" && <WaiverTargets />}
         {page === "injuries" && <InjuredReserve players={players} reportPlayers={liveScores.players} data={liveScores} />}
+        {page === "leagues" && <MyLeagues settings={settings} setSettings={setSettings} navigate={navigate} />}
         {page === "dynasty" && <DynastyValues data={dynasty} settings={settings} setSettings={setSettings} />}
         {page === "draftboard" && <DraftBoard data={dynasty} settings={settings} setSettings={setSettings} />}
         {page === "player" && <NflProfile dynasty={dynasty} settings={settings} />}

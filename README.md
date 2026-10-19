@@ -363,8 +363,9 @@ A league page values the league with **its own settings**, not the shared ones a
 value set through the same `useDynastyValues` cache. From top to bottom, the page has your team, trade targets,
 position rooms and lineup, bench, power rankings and the settings table:
 
-- **Value as Dynasty | Redraft** switches context; it starts on the league's own type. Keepers count as dynasty, and
-  guillotine leagues (Sleeper type 3) count as redraft.
+- **Values follow the league's own type** (no switch): dynasty and keeper leagues use dynasty values and show each
+  team's lean (Contender / In the mix / Rebuilding); redraft and guillotine leagues (Sleeper type 3) use redraft
+  values.
 - **Your team** is the user's roster (any team can be picked). It shows ranks among the league for roster value
   (dynasty, including owned picks), lineup value and record/points. Dynasty adds a **This season** rank (the lineup's
   redraft values) and a lean (Contender / In the mix / Rebuilding, `teamLean`). The lean goes by the standings

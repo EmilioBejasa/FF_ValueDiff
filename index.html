@@ -4285,7 +4285,6 @@ const LEAGUES_HASH = "#/leagues";
 const LEAGUE_TYPE_LABEL = { 0: "Redraft", 1: "Keeper", 2: "Dynasty", 3: "Guillotine" };
 const SLOT_LABEL = { FLEX: "Flex", WRRB_FLEX: "W/R flex", REC_FLEX: "W/T flex", SUPER_FLEX: "Superflex", DEF: "DEF", K: "K" };
 const IDP_SLOTS = ["DL", "LB", "DB", "IDP_FLEX"];
-const CONTEXT_OPTIONS = [{ key: "dynasty", label: "Dynasty" }, { key: "redraft", label: "Redraft" }];
 const ROOM_POSITIONS = ["QB", "RB", "WR", "TE"];
 
 const leagueIdFromHash = () => (/^#\/leagues\/(\d+)/.exec(window.location.hash) || [])[1] || null;
@@ -4498,6 +4497,8 @@ function suggestTrades(team, teams, league, rows, mode, leanOf, outForYear = new
   const forPartner = (a, other) => {
     const theirLean = leanOf(other)?.label;
     if (a.position === "PICK") return theirLean === "Rebuilding" ? 1 : theirLean === "Contender" ? 0 : 0.5;
+    // A player out long-term fills no hole this season; a rebuilder might still stash a young one.
+    if (out.has(a.id)) return theirLean === "Rebuilding" && (a.age ?? 99) <= INJURED_MAX_AGE ? 0.5 : 0;
     if (theirLean !== "Rebuilding") return weakness(other, a.position);
     // A rebuilder wants youth; a veteran only half-fixes a hole for them.
     return (a.age ?? 99) <= 24 ? 1 : (a.age ?? 99) >= 27 ? weakness(other, a.position) * 0.4 : weakness(other, a.position);
@@ -4987,7 +4988,8 @@ function MyLeagues({ settings, setSettings, navigate }) {
   const [listStatus, setListStatus] = useState({ state: "idle" });
   const [raw, setRaw] = useState(null);
   const [status, setStatus] = useState({ state: "idle" });
-  const [mode, setMode] = useState("dynasty");
+  // Values follow the league's own type: keepers count as dynasty, guillotine as redraft.
+  const mode = raw ? settingsFromLeague(raw.league).mode : "dynasty";
   const [focus, setFocus] = useState(null);
   // #/leagues lists the leagues; #/leagues/<id> is that league's own page.
   const [leagueId, setLeagueId] = useState(leagueIdFromHash);
@@ -5015,7 +5017,6 @@ function MyLeagues({ settings, setSettings, navigate }) {
       if (leagueIdFromHash() !== String(leagueId)) return; // moved on to another page meanwhile
       if (!league) throw new Error("no Sleeper league with that ID");
       setRaw({ league, rosters: rosters || [], users: users || [], traded: traded || [] });
-      setMode(settingsFromLeague(league).mode);
       setFocus(null);
       setOpenTeams(new Set());
       setStatus({ state: "ready" });
@@ -5143,7 +5144,6 @@ function MyLeagues({ settings, setSettings, navigate }) {
   const maxSort = Math.max(1, ...teams.map(sortValue));
 
   const posAvg = Object.fromEntries(ROOM_POSITIONS.map((p) => [p, n ? teams.reduce((s, t) => s + t.byPos[p], 0) / n : 0]));
-  const usedLeague = raw && settingsFromLeague(raw.league);
 
   const leagueLink = (id) => `${LEAGUES_HASH}/${id}`;
   const follow = (fn) => (e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); fn(); };
@@ -5208,10 +5208,6 @@ function MyLeagues({ settings, setSettings, navigate }) {
               <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>{leagueTags(raw.league)} · {raw.league.season} season</p>
             </div>
             <div className="flex items-end gap-3 flex-wrap">
-              <div className="flex flex-col gap-1">
-                <span className="text-xs" style={{ color: "var(--text-muted)" }}>Value as</span>
-                <PillGroup options={CONTEXT_OPTIONS} value={mode} onChange={setMode} accent="var(--hue-violet)" />
-              </div>
               <button type="button" className="btn-secondary rounded-md px-3 py-1.5 text-xs font-semibold"
                 title="Set the Value Board, War Room and Trade Desk to this league's settings"
                 onClick={() => {
@@ -5234,12 +5230,6 @@ function MyLeagues({ settings, setSettings, navigate }) {
             ranked by their lineup alone. Records and points come straight from Sleeper.
           </AboutData>
 
-          {mode !== usedLeague.mode && (
-            <p className="text-xs -mt-2" style={{ color: "var(--text-muted)" }}>
-              This is a {(LEAGUE_TYPE_LABEL[raw.league.settings?.type] || "redraft").toLowerCase()} league, shown with {mode} values:
-              {isDynasty ? " what each roster is worth for this season and beyond." : " what each roster is worth for this season only."}
-            </p>
-          )}
 
           <section id="league-team" className="flex flex-col gap-3" style={{ scrollMarginTop: "5rem" }}>
             <div className="flex items-end justify-between flex-wrap gap-2">

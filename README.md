@@ -380,7 +380,10 @@ position rooms and lineup, bench, power rankings and the settings table:
   The **Best lineup, week N** card (N is the league's current week) also leaves out players ruled Out (or NA) this
   week and anyone on a bye, and lists the **sidelined starters** with the reason. Doubtful and Questionable players
   still start.
-- **Any team can be viewed**: click it in the power rankings or pick it from the team menu. **← Your team** goes back.
+- **Other teams open as dropdowns** in the power rankings (`RosterBreakdown`): click a team to see its QB, RB, WR
+  and TE (best first) and, in dynasty, its picks, each with value, age and injury tag. Several can be open at once.
+  Team names in the standings and trade ideas open (and scroll to) that team's dropdown. The panel up top is always
+  your team; opened by league ID with no Sleeper user, a **Your team** menu picks which one that is.
 - **Trade targets** (`suggestTrades`) suggest deals for whichever team is shown, grouped by position (QB, RB, WR, TE) with up to three per position, weakest room first. Each deal is a player on another
   team, alone or with a second player from that team, plus an offer from this roster that the Trade Desk's formula
   (`evaluateTrade`, same league size) calls fair or a slight overpay. Offers are the roster's 14 most valuable assets,

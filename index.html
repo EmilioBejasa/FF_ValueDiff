@@ -4096,7 +4096,7 @@ function buildLeagueTeams(raw, rows, byId, sidelined = () => null) {
     const st = r.settings || {};
     return {
       rosterId: r.roster_id, ownerIds: [r.owner_id, ...(r.co_owners || [])], name: teamName[r.roster_id], assets, byPos, lineup,
-      weekLineup, sidelinedStarters, longTermOut: new Set(players.filter((p) => why[p.id]?.longTerm).map((p) => p.id)),
+      weekLineup, sidelinedStarters, sidelined: why, longTermOut: new Set(players.filter((p) => why[p.id]?.longTerm).map((p) => p.id)),
       total: assets.reduce((s, a) => s + a.value, 0),
       starters: lineup.reduce((s, l) => s + (l.player?.value || 0), 0),
       record: { wins: st.wins || 0, losses: st.losses || 0, ties: st.ties || 0, pf: (st.fpts || 0) + (st.fpts_decimal || 0) / 100 },
@@ -4941,6 +4941,45 @@ function ProjectedStandings({ proj, raw, teams, myTeam, team, onView }) {
   );
 }
 
+// A team's roster, opened from the power rankings: its QB, RB, WR and TE
+// (best first) and, in dynasty, its picks, with values and injury tags.
+function RosterBreakdown({ team, isDynasty }) {
+  const groups = POS_KEYS.filter((k) => isDynasty || k !== "PICK")
+    .map((k) => [k, team.assets.filter((a) => a.position === k)])
+    .filter(([, list]) => list.length);
+  return (
+    <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 px-1 pt-1 pb-3">
+      {groups.map(([k, list]) => (
+        <div key={k} className="flex flex-col gap-0.5">
+          <span className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+            <span className="inline-block w-2 h-2 rounded-sm" style={{ background: POS_COLOR[k] }} />{POS_LABEL[k]}
+            <span className="font-normal normal-case tracking-normal">· {fmtValue(sumOf(list.map((a) => a.value)))}</span>
+          </span>
+          {list.map((a, j) => {
+            const why = team.sidelined?.[a.id];
+            return (
+              <span key={`${a.id}-${j}`} className="flex items-center justify-between gap-2 text-sm">
+                <span className="min-w-0 truncate">
+                  <PlayerLink id={a.id} pos={a.position} className="">{a.name}</PlayerLink>{" "}
+                  {a.position === "PICK" ? null : <PosBadge pos={a.position} rank={a.posRank} />}
+                  {isDynasty && a.age && <span className="text-xs" style={{ color: "var(--text-muted)" }}> {a.age}</span>}
+                  {why && (
+                    <span className="text-xs font-semibold ml-1"
+                      style={{ color: why.label === "Bye" ? "var(--text-muted)" : REPORT_STATUS_COLOR[why.label] || "var(--series-red)" }}>
+                      {why.label}
+                    </span>
+                  )}
+                </span>
+                <span className="tabular-nums text-xs shrink-0" style={{ color: "var(--text-secondary)" }}>{fmtValue(a.value)}</span>
+              </span>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function MyLeagues({ settings, setSettings, navigate }) {
   const [input, setInput] = useState(() => { try { return localStorage.getItem(SLEEPER_USER_KEY) || ""; } catch (e) { return ""; } });
   const [user, setUser] = useState(null);
@@ -4978,6 +5017,7 @@ function MyLeagues({ settings, setSettings, navigate }) {
       setRaw({ league, rosters: rosters || [], users: users || [], traded: traded || [] });
       setMode(settingsFromLeague(league).mode);
       setFocus(null);
+      setOpenTeams(new Set());
       setStatus({ state: "ready" });
     } catch (err) {
       setStatus({ state: "error", message: err.message });
@@ -5068,7 +5108,7 @@ function MyLeagues({ settings, setSettings, navigate }) {
     [teams, isDynasty]
   );
   const myTeam = user && teams.find((t) => t.ownerIds.includes(user.user_id));
-  const team = teams.find((t) => t.rosterId === focus) || myTeam || ordered[0];
+  const team = myTeam || teams.find((t) => t.rosterId === focus) || ordered[0];
   // Guillotine and other no-matchup leagues score points but have no wins or losses.
   const hasRecord = teams.some((t) => t.record.wins || t.record.losses || t.record.ties);
   const hasPoints = teams.some((t) => t.record.pf > 0);
@@ -5081,7 +5121,18 @@ function MyLeagues({ settings, setSettings, navigate }) {
     () => (team && raw ? suggestTrades(team, teams, raw.league, values.rows, mode, leanOf, outForYear) : null),
     [team, teams, raw, values.rows, mode, teamLeanLabel, outForYear, standingOf]
   );
-  const viewTeam = (rosterId) => { setFocus(rosterId); document.getElementById("league-team")?.scrollIntoView({ behavior: "smooth" }); };
+  // Other teams open as dropdowns in the power rankings; yours is the panel up top.
+  const [openTeams, setOpenTeams] = useState(() => new Set());
+  const toggleTeam = (rosterId) => setOpenTeams((s) => {
+    const next = new Set(s);
+    if (next.has(rosterId)) next.delete(rosterId); else next.add(rosterId);
+    return next;
+  });
+  const viewTeam = (rosterId) => {
+    if (rosterId === team?.rosterId) return document.getElementById("league-team")?.scrollIntoView({ behavior: "smooth" });
+    setOpenTeams((s) => new Set(s).add(rosterId));
+    setTimeout(() => document.getElementById(`team-${rosterId}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+  };
   // Open a suggested trade on the Trade Desk, with this league's settings.
   const openTrade = (s) => {
     setSettings((st) => ({ ...st, ...settingsFromLeague(raw.league), mode }));
@@ -5193,19 +5244,19 @@ function MyLeagues({ settings, setSettings, navigate }) {
           <section id="league-team" className="flex flex-col gap-3" style={{ scrollMarginTop: "5rem" }}>
             <div className="flex items-end justify-between flex-wrap gap-2">
               <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-                {team === myTeam ? "Your team" : team.name}
-                {team === myTeam && <span className="font-normal" style={{ color: "var(--text-muted)" }}> · {team.name}</span>}
+                Your team
+                <span className="font-normal" style={{ color: "var(--text-muted)" }}> · {team.name}</span>
               </h3>
-              <span className="flex items-center gap-2 flex-wrap">
-              {myTeam && team !== myTeam && (
-                <button type="button" onClick={() => setFocus(myTeam.rosterId)} className="pill text-xs rounded-full px-3 py-1 font-medium"
-                  style={{ "--pill-accent": "var(--sport)" }}>← Your team</button>
+              {!myTeam && (
+                // Opened by league ID with no Sleeper user: pick which team is yours.
+                <label className="flex items-center gap-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                  Your team
+                  <select value={team.rosterId} onChange={(e) => setFocus(Number(e.target.value))}
+                    className="rounded-md border px-2 py-1 text-sm" style={inputStyle}>
+                    {ordered.map((t) => <option key={t.rosterId} value={t.rosterId}>{t.name}</option>)}
+                  </select>
+                </label>
               )}
-              <select value={team.rosterId} onChange={(e) => setFocus(Number(e.target.value))}
-                className="rounded-md border px-2 py-1 text-sm" style={inputStyle} aria-label="Team to look at">
-                {ordered.map((t) => <option key={t.rosterId} value={t.rosterId}>{t.name}{t === myTeam ? " (you)" : ""}</option>)}
-              </select>
-              </span>
             </div>
 
             <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
@@ -5418,7 +5469,7 @@ function MyLeagues({ settings, setSettings, navigate }) {
             <ProjectedStandings proj={standings} raw={raw} teams={teams} myTeam={myTeam} team={team} onView={viewTeam} />
           )}
 
-          <ProfileSection title="Power rankings" aside={`${isDynasty ? "By total value: lineup, bench and picks" : "By this season's best lineup"} · click a team to view it`}>
+          <ProfileSection title="Power rankings" aside={`${isDynasty ? "By total value: lineup, bench and picks" : "By this season's best lineup"} · click a team to see its roster`}>
             <div className="flex items-center gap-3 flex-wrap">
               {POS_KEYS.filter((k) => isDynasty || k !== "PICK").map((k) => (
                 <span key={k} className="text-xs flex items-center gap-1" style={{ color: "var(--text-secondary)" }}>
@@ -5433,12 +5484,17 @@ function MyLeagues({ settings, setSettings, navigate }) {
                 const sum = sortValue(t) || 1;
                 const lean = isDynasty && leanFor(t);
                 return (
-                  <li key={t.rosterId} className="border-b last:border-b-0" style={{ borderColor: "var(--border)" }}>
-                    <button type="button" onClick={() => viewTeam(t.rosterId)} title={`View ${t.name}`}
+                  <li key={t.rosterId} id={`team-${t.rosterId}`} className="border-b last:border-b-0"
+                    style={{ borderColor: "var(--border)", scrollMarginTop: "5rem" }}>
+                    <button type="button" onClick={() => toggleTeam(t.rosterId)} aria-expanded={openTeams.has(t.rosterId)}
+                      title={`${openTeams.has(t.rosterId) ? "Hide" : "Show"} ${t.name}'s roster`}
                       className="row-btn w-full text-left py-2 px-1 grid gap-x-3 gap-y-1 items-center"
-                      style={{ gridTemplateColumns: "1.5rem minmax(0, 1fr) auto", background: t === team ? "var(--surface-2)" : undefined }}>
+                      style={{ gridTemplateColumns: "1.5rem minmax(0, 1fr) auto", background: t === team || openTeams.has(t.rosterId) ? "var(--surface-2)" : undefined }}>
                       <span className="text-sm tabular-nums text-right" style={{ color: "var(--text-muted)" }}>{i + 1}</span>
                       <span className="text-sm truncate" style={{ color: "var(--text-primary)" }}>
+                        <span className="inline-block w-3 text-xs" style={{ color: "var(--text-muted)" }} aria-hidden="true">
+                          {openTeams.has(t.rosterId) ? "▾" : "▸"}
+                        </span>
                         <span className={t === myTeam ? "font-bold" : "font-medium"}>{t.name}</span>
                         {t === myTeam && <span className="text-xs" style={{ color: "var(--sport)" }}> (you)</span>}
                         {hasRecord && <span className="text-xs" style={{ color: "var(--text-muted)" }}> · {t.record.wins}-{t.record.losses}{t.record.ties ? `-${t.record.ties}` : ""}</span>}
@@ -5462,6 +5518,7 @@ function MyLeagues({ settings, setSettings, navigate }) {
                         </span>
                       </span>
                     </button>
+                    {openTeams.has(t.rosterId) && <RosterBreakdown team={t} isDynasty={isDynasty} />}
                   </li>
                 );
               })}

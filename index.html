@@ -4038,7 +4038,11 @@ function bestLineup(players, rosterPositions) {
   });
 }
 
-function buildLeagueTeams(raw, rows, byId) {
+// `sidelined(player)` is sidelinedReason for this league's current week.
+// `lineup` (ranks, trade ideas) leaves out players who are out long-term;
+// `weekLineup` also leaves out this week's Outs and byes, and `sidelinedStarters`
+// lists who'd otherwise start, and why.
+function buildLeagueTeams(raw, rows, byId, sidelined = () => null) {
   const { league, rosters, users, traded } = raw;
   const teamName = {};
   for (const r of rosters) {
@@ -4084,10 +4088,15 @@ function buildLeagueTeams(raw, rows, byId) {
       .filter((p) => p.id);
     const assets = [...players, ...picks].sort((a, b) => b.value - a.value);
     const byPos = Object.fromEntries(POS_KEYS.map((k) => [k, assets.filter((a) => a.position === k).reduce((s, a) => s + a.value, 0)]));
-    const lineup = bestLineup(players, league.roster_positions);
+    const why = Object.fromEntries(players.map((p) => [p.id, sidelined(p)]));
+    const lineup = bestLineup(players.filter((p) => !why[p.id]?.longTerm), league.roster_positions);
+    const weekLineup = bestLineup(players.filter((p) => !why[p.id]), league.roster_positions);
+    const sidelinedStarters = bestLineup(players, league.roster_positions)
+      .filter((l) => l.player && why[l.player.id]).map((l) => ({ player: l.player, reason: why[l.player.id] }));
     const st = r.settings || {};
     return {
       rosterId: r.roster_id, ownerIds: [r.owner_id, ...(r.co_owners || [])], name: teamName[r.roster_id], assets, byPos, lineup,
+      weekLineup, sidelinedStarters, longTermOut: new Set(players.filter((p) => why[p.id]?.longTerm).map((p) => p.id)),
       total: assets.reduce((s, a) => s + a.value, 0),
       starters: lineup.reduce((s, l) => s + (l.player?.value || 0), 0),
       record: { wins: st.wins || 0, losses: st.losses || 0, ties: st.ties || 0, pf: (st.fpts || 0) + (st.fpts_decimal || 0) / 100 },
@@ -4334,9 +4343,37 @@ function leagueRules(league, mode) {
 const rankTeams = (teams, f) =>
   Object.fromEntries([...teams].sort((a, b) => f(b) - f(a)).map((t, i) => [t.rosterId, i + 1]));
 
-// Dynasty lean: how good the lineup is this season (FantasyCalc's redraft
-// values) against the whole roster's long-term value.
-function teamLean(nowRank, futureRank, n) {
+// Dynasty lean. Where the team stands this season comes first: one the
+// projected standings give LEAN_CONTEND_ODDS or better to make the playoffs
+// is a contender even with a bottom-half roster, and one at LEAN_TANK_ODDS or
+// worse should sell even with a top-half roster. Without projections (season
+// over, or they didn't load), after LEAN_MIN_GAMES games: a winning record in
+// a playoff spot, or the bottom third of the standings. Otherwise it's how
+// good the lineup is this season (redraft values) against the whole roster's
+// long-term value. `standing`: { playoffs (odds or null), seed, games, winPct, playoffTeams }.
+const LEAN_CONTEND_ODDS = 0.6;
+const LEAN_TANK_ODDS = 0.2;
+const LEAN_MIN_GAMES = 3;
+
+function teamLean(nowRank, futureRank, n, standing) {
+  if (standing) {
+    const { playoffs, seed, games, winPct, playoffTeams } = standing;
+    const topHalf = futureRank <= Math.ceil(n / 2);
+    const where = playoffs != null ? `${Math.round(playoffs * 100)}% playoff odds` : `${ordinal(seed)} in the standings`;
+    const worth = `${ordinal(futureRank)} of ${n} in roster value`;
+    const contending = playoffs != null ? playoffs >= LEAN_CONTEND_ODDS
+      : games >= LEAN_MIN_GAMES && seed <= playoffTeams && winPct > 0.5;
+    const tanking = playoffs != null ? playoffs <= LEAN_TANK_ODDS
+      : games >= LEAN_MIN_GAMES && seed > n - Math.floor(n / 3);
+    if (contending) return { label: "Contender", color: "var(--hue-orange)",
+      tip: topHalf
+        ? `In the playoff hunt (${where}) with one of the more valuable rosters. Win-now veterans and depth at your weakest spot are worth paying for.`
+        : `The roster is only ${worth}, but you're in the playoff hunt (${where}). Make the push: buy win-now veterans with picks and prospects who won't help this year.` };
+    if (tanking) return { label: "Rebuilding", color: "var(--hue-violet)",
+      tip: topHalf
+        ? `The roster is ${worth}, but this season is slipping away (${where}). Sell veterans whose value won't last until you contend again, for picks and young players.`
+        : `This season is slipping away (${where}) and the long-term value is thin too (${worth}). Sell older starters for picks and young players.` };
+  }
   if (nowRank <= Math.ceil(n / 3)) return { label: "Contender", color: "var(--hue-orange)",
     tip: "Your lineup is one of the best this season. Win-now veterans and depth at your weakest spot are worth paying for." };
   if (nowRank > Math.floor((2 * n) / 3)) return { label: "Rebuilding", color: "var(--hue-violet)",
@@ -4431,7 +4468,9 @@ function suggestTrades(team, teams, league, rows, mode, leanOf, outForYear = new
   const lean = leanOf(team);
   const rebuild = mode === "dynasty" && lean?.label === "Rebuilding";
   const val = mode === "dynasty" && lean?.label === "Contender" ? (a) => a.redraftValue ?? a.value : (a) => a.value;
-  const lineupOf = (assets) => lineupTotal(assets, slots, val);
+  // Players out long-term (on either roster) can't help a lineup.
+  const out = new Set(teams.flatMap((t) => [...(t.longTermOut || [])]));
+  const lineupOf = (assets) => lineupTotal(assets.filter((a) => !out.has(a.id)), slots, val);
   // The same context the Trade Desk uses for this league, so "Open in Trade
   // Desk" shows the same verdict.
   const ctx = {
@@ -4656,6 +4695,21 @@ function seasonOverIds(sleeperPlayers, resolve) {
   return ids;
 }
 
+// Why a player can't start (or null), the same designations as the Injuries
+// page: out for the season (seasonOverIds), or on Sleeper's IR, PUP or
+// suspended list, all `longTerm`; or just this week, ruled Out (or NA) or on
+// a bye. Doubtful and Questionable players still start.
+const LONG_TERM_STATUS = { IR: "IR", PUP: "PUP", Sus: "Suspended" };
+const byeWeekOf = (team) => BYE_WEEKS[team] ?? BYE_WEEKS[{ WAS: "WSH", WSH: "WAS" }[team]];
+function sidelinedReason(p, sleeperPlayers, seasonOver, week) {
+  if (seasonOver.has(p.id)) return { label: "Out for season", longTerm: true };
+  const status = sleeperPlayers[p.id]?.status;
+  if (LONG_TERM_STATUS[status]) return { label: LONG_TERM_STATUS[status], longTerm: true };
+  if (status === "Out" || status === "NA") return { label: "Out", longTerm: false };
+  if (week && byeWeekOf(p.team) === week) return { label: "Bye", longTerm: false };
+  return null;
+}
+
 // Loads the remaining schedule and projections, then simulates the season.
 function useProjectedStandings(raw, enabled) {
   const resolve = React.useContext(NflIdContext);
@@ -4780,8 +4834,7 @@ function roundRecord(p) {
   return fmtRecord(wins, Math.max(0, games - wins - ties), ties);
 }
 
-function ProjectedStandings({ raw, teams, myTeam, team, onView }) {
-  const proj = useProjectedStandings(raw, true);
+function ProjectedStandings({ proj, raw, teams, myTeam, team, onView }) {
   const [view, setView] = useState("projected");
   const nameOf = Object.fromEntries(teams.map((t) => [t.rosterId, t]));
   const now = proj.now || [];
@@ -4976,7 +5029,29 @@ function MyLeagues({ settings, setSettings, navigate }) {
   );
   const values = useDynastyValues(leagueSettings, { enabled: !!raw });
   const byId = useMemo(() => Object.fromEntries(values.rows.map((r) => [r.id, r])), [values.rows]);
-  const teams = useMemo(() => (raw ? buildLeagueTeams(raw, values.rows, byId) : []), [raw, values.rows, byId]);
+  const resolveNflId = React.useContext(NflIdContext);
+  const sleeperPlayers = useSleeperStatuses();
+  const seasonOver = useMemo(() => seasonOverIds(sleeperPlayers, resolveNflId), [sleeperPlayers, resolveNflId]);
+  const teams = useMemo(() => {
+    if (!raw) return [];
+    const week = raw.league.settings?.leg;
+    return buildLeagueTeams(raw, values.rows, byId, (p) => sidelinedReason(p, sleeperPlayers, seasonOver, week));
+  }, [raw, values.rows, byId, sleeperPlayers, seasonOver]);
+  // This season's standings and projections (also what the dynasty lean leans on first).
+  const showStandings = !!raw && raw.league.settings?.type !== 3 && raw.league.status !== "pre_draft";
+  const standings = useProjectedStandings(raw, showStandings);
+  const standingOf = useMemo(() => {
+    const now = standings.now || [];
+    const playoffTeams = Math.min(raw?.league.settings?.playoff_teams || 0, now.length);
+    const order = [...now].sort((a, b) => (b.wins + b.ties / 2) - (a.wins + a.ties / 2) || b.pf - a.pf);
+    return Object.fromEntries(order.map((t, i) => {
+      const games = t.wins + t.losses + t.ties;
+      return [t.rosterId, {
+        seed: i + 1, games, winPct: games ? (t.wins + t.ties / 2) / games : 0, playoffTeams,
+        playoffs: standings.projected?.[t.rosterId]?.playoffs ?? null,
+      }];
+    }));
+  }, [standings, raw]);
 
   const isDynasty = mode === "dynasty";
   const n = teams.length;
@@ -4998,14 +5073,13 @@ function MyLeagues({ settings, setSettings, navigate }) {
   const hasRecord = teams.some((t) => t.record.wins || t.record.losses || t.record.ties);
   const hasPoints = teams.some((t) => t.record.pf > 0);
   const sortValue = (t) => (isDynasty ? t.total : t.starters);
-  const leanOf = (t) => (isDynasty ? teamLean(ranks.now[t.rosterId], ranks.total[t.rosterId], n) : null);
+  const leanFor = (t) => teamLean(ranks.now[t.rosterId], ranks.total[t.rosterId], n, standingOf[t.rosterId]);
+  const leanOf = (t) => (isDynasty ? leanFor(t) : null);
   const teamLeanLabel = team && leanOf(team)?.label;
-  const resolveNflId = React.useContext(NflIdContext);
-  const sleeperPlayers = useSleeperStatuses();
   const outForYear = useMemo(() => outForYearIds(values.rows, sleeperPlayers, resolveNflId), [values.rows, sleeperPlayers, resolveNflId]);
   const targets = useMemo(
     () => (team && raw ? suggestTrades(team, teams, raw.league, values.rows, mode, leanOf, outForYear) : null),
-    [team, teams, raw, values.rows, mode, teamLeanLabel, outForYear]
+    [team, teams, raw, values.rows, mode, teamLeanLabel, outForYear, standingOf]
   );
   const viewTeam = (rosterId) => { setFocus(rosterId); document.getElementById("league-team")?.scrollIntoView({ behavior: "smooth" }); };
   // Open a suggested trade on the Trade Desk, with this league's settings.
@@ -5102,8 +5176,10 @@ function MyLeagues({ settings, setSettings, navigate }) {
             <DynastyStatusLine data={values} />{" "}
             Values are matched to this league's format and QB setting (see the settings table at the bottom). "Starters"
             is the best lineup a roster can field in the league's slots. In dynasty, a team's total also counts the rookie picks
-            it owns (the next three drafts, rounds 1-{LEAGUE_PICK_ROUNDS}, valued as mid-round picks), and its lean compares how
-            good its lineup is this season (redraft values) with its long-term value. In redraft, teams are
+            it owns (the next three drafts, rounds 1-{LEAGUE_PICK_ROUNDS}, valued as mid-round picks). Its lean goes by the
+            standings first: {Math.round(LEAN_CONTEND_ODDS * 100)}%+ playoff odds makes a contender and{" "}
+            {Math.round(LEAN_TANK_ODDS * 100)}% or less a seller, whatever the roster is worth. Otherwise it compares how good
+            its lineup is this season (redraft values) with its long-term value. In redraft, teams are
             ranked by their lineup alone. Records and points come straight from Sleeper.
           </AboutData>
 
@@ -5136,7 +5212,7 @@ function MyLeagues({ settings, setSettings, navigate }) {
               {isDynasty && <StatTile label="Roster value" value={`${ordinal(ranks.total[team.rosterId])} of ${n}`} sub={`${fmtValue(team.total)} incl. picks`} />}
               <StatTile label={isDynasty ? "Lineup value" : "Lineup strength"} value={`${ordinal(ranks.starters[team.rosterId])} of ${n}`} sub={fmtValue(team.starters)} />
               {isDynasty ? (() => {
-                const lean = teamLean(ranks.now[team.rosterId], ranks.total[team.rosterId], n);
+                const lean = leanFor(team);
                 return <StatTile label="This season" value={`${ordinal(ranks.now[team.rosterId])} of ${n}`} sub={lean.label} subColor={lean.color} />;
               })() : (
                 <StatTile label="Depth" value={`${ordinal(rankTeams(teams, (t) => t.total - t.starters)[team.rosterId])} of ${n}`}
@@ -5153,7 +5229,7 @@ function MyLeagues({ settings, setSettings, navigate }) {
 
             {isDynasty && (
               <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                {teamLean(ranks.now[team.rosterId], ranks.total[team.rosterId], n).tip}
+                {leanFor(team).tip}
               </p>
             )}
 
@@ -5276,9 +5352,10 @@ function MyLeagues({ settings, setSettings, navigate }) {
                 </ul>
               </ProfileSection>
 
-              <ProfileSection title="Best lineup" aside={fmtValue(team.starters)}>
+              <ProfileSection title={`Best lineup${raw.league.settings?.leg ? `, week ${raw.league.settings.leg}` : ""}`}
+                aside={fmtValue(team.weekLineup.reduce((s, l) => s + (l.player?.value || 0), 0))}>
                 <ul className="flex flex-col gap-1">
-                  {team.lineup.map((l, i) => (
+                  {team.weekLineup.map((l, i) => (
                     <li key={i} className="flex items-center justify-between gap-2 text-sm">
                       <span className="min-w-0 truncate">
                         <span className="inline-block w-16 text-xs" style={{ color: "var(--text-muted)" }}>{SLOT_LABEL[l.slot] || l.slot}</span>
@@ -5290,11 +5367,30 @@ function MyLeagues({ settings, setSettings, navigate }) {
                     </li>
                   ))}
                 </ul>
+                {team.sidelinedStarters.length > 0 && (
+                  <div className="border-t pt-2 flex flex-col gap-1" style={{ borderColor: "var(--border)" }}>
+                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+                      Sidelined starters · <a href="#/injuries" className="underline normal-case font-normal tracking-normal">Injuries</a>
+                    </span>
+                    {team.sidelinedStarters.map(({ player: p, reason }) => (
+                      <span key={p.id} className="flex items-center justify-between gap-2 text-sm">
+                        <span className="min-w-0 truncate">
+                          <PlayerLink id={p.id} pos={p.position} className="">{p.name}</PlayerLink>{" "}
+                          <PosBadge pos={p.position} rank={p.posRank} />
+                        </span>
+                        <span className="text-xs font-semibold shrink-0"
+                          style={{ color: reason.label === "Bye" ? "var(--text-muted)" : REPORT_STATUS_COLOR[reason.label] || "var(--series-red)" }}>
+                          {reason.label}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </ProfileSection>
             </div>
 
             {(() => {
-              const starting = new Set(team.lineup.map((l) => l.player?.id));
+              const starting = new Set([...team.weekLineup.map((l) => l.player?.id), ...team.sidelinedStarters.map((s) => s.player.id)]);
               const bench = team.assets.filter((a) => !starting.has(a.id));
               if (!bench.length) return null;
               return (
@@ -5318,8 +5414,8 @@ function MyLeagues({ settings, setSettings, navigate }) {
 
           </section>
 
-          {raw.league.settings?.type !== 3 && raw.league.status !== "pre_draft" && (
-            <ProjectedStandings raw={raw} teams={teams} myTeam={myTeam} team={team} onView={viewTeam} />
+          {showStandings && (
+            <ProjectedStandings proj={standings} raw={raw} teams={teams} myTeam={myTeam} team={team} onView={viewTeam} />
           )}
 
           <ProfileSection title="Power rankings" aside={`${isDynasty ? "By total value: lineup, bench and picks" : "By this season's best lineup"} · click a team to view it`}>
@@ -5335,7 +5431,7 @@ function MyLeagues({ settings, setSettings, navigate }) {
                 const parts = isDynasty ? t.byPos
                   : Object.fromEntries(ROOM_POSITIONS.map((p) => [p, t.lineup.filter((l) => l.player?.position === p).reduce((s, l) => s + l.player.value, 0)]));
                 const sum = sortValue(t) || 1;
-                const lean = isDynasty && teamLean(ranks.now[t.rosterId], ranks.total[t.rosterId], n);
+                const lean = isDynasty && leanFor(t);
                 return (
                   <li key={t.rosterId} className="border-b last:border-b-0" style={{ borderColor: "var(--border)" }}>
                     <button type="button" onClick={() => viewTeam(t.rosterId)} title={`View ${t.name}`}

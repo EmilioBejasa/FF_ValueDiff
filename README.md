@@ -367,9 +367,19 @@ position rooms and lineup, bench, power rankings and the settings table:
   guillotine leagues (Sleeper type 3) count as redraft.
 - **Your team** is the user's roster (any team can be picked). It shows ranks among the league for roster value
   (dynasty, including owned picks), lineup value and record/points. Dynasty adds a **This season** rank (the lineup's
-  FantasyCalc redraft values) and a lean (Contender / In the mix / Rebuilding, by thirds of the league,
-  `teamLean`). Redraft shows bench depth instead. It also shows each position room's rank against the league
+  redraft values) and a lean (Contender / In the mix / Rebuilding, `teamLean`). The lean goes by the standings
+  first: 60%+ projected playoff odds (`LEAN_CONTEND_ODDS`) makes a contender even with a bottom-half roster, and 20%
+  or less (`LEAN_TANK_ODDS`) a seller even with a top-half roster. Without projections (season over, or they didn't
+  load), after 3 games a winning record in a playoff spot or the bottom third of the standings does the same.
+  Otherwise it's by thirds of the league on this season's lineup. The lean also steers the trade targets. Redraft
+  shows bench depth instead. It also shows each position room's rank against the league
   average, the best lineup in the league's slots (`bestLineup`), and the bench.
+- **Injuries count** (`sidelinedReason`, the same designations as the Injuries tab). Players out long-term (out for the
+  season per `seasonOverIds`, or on Sleeper's IR, PUP or suspended list) are left out of the lineup behind the
+  lineup-value and this-season ranks, power rankings and trade ideas (a target out long-term adds nothing to a lineup).
+  The **Best lineup, week N** card (N is the league's current week) also leaves out players ruled Out (or NA) this
+  week and anyone on a bye, and lists the **sidelined starters** with the reason. Doubtful and Questionable players
+  still start.
 - **Any team can be viewed**: click it in the power rankings or pick it from the team menu. **← Your team** goes back.
 - **Trade targets** (`suggestTrades`) suggest deals for whichever team is shown, grouped by position (QB, RB, WR, TE) with up to three per position, weakest room first. Each deal is a player on another
   team, alone or with a second player from that team, plus an offer from this roster that the Trade Desk's formula

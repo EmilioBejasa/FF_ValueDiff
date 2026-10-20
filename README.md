@@ -193,7 +193,7 @@ depth-chart moves, snap counts) comes in.
 
 If `WAIVER_TARGETS` is ever emptied out, the page shows an explicit
 "nothing added yet" state rather than a guess. As of this writing (2026-10-05) it holds
-20 Week 5 targets, based on Week 1-4 usage, Sleeper's injury designations
+19 Week 5 targets (Doubs dropped 2026-10-20 after going on IR), based on Week 1-4 usage, Sleeper's injury designations
 and its most-added list rather than preseason guesses: injury vacancies
 (Jadarian Price and A.J. Brown to IR; Chase, Barkley, Bigsby, DeVonta Smith, Goedert
 and Breece Hall out), target/snap share winners, and streamers. CAR and KC

@@ -1414,13 +1414,13 @@ const EXTRA_PLAYERS = [
   { id: "sl-9757", name: "Kendre Miller", team: "NO", position: "RB", extra: true },
 ];
 
-// Players on injured reserve (or reserve/PUP) as of 2026-10-19, plus the ones
+// Players on injured reserve (or reserve/PUP) as of 2026-10-20, plus the ones
 // whose seasons are over, from Sleeper's injury designations and team news.
 // Both lists carry a four-game minimum, so the grid shows "IR" from
 // `sinceWeek` through the earliest week they're allowed back (see irReturnWeek),
 // or through Week 18 when `seasonEnding` is set. `sinceWeek` is the first game
 // of their current absence — 1 for players who started the season there.
-const INJURED_RESERVE_UPDATED_ON = "2026-10-19";
+const INJURED_RESERVE_UPDATED_ON = "2026-10-20";
 const INJURED_RESERVE = [
   { id: "achane", list: "IR", injury: "Torn ACL", sinceWeek: 4, seasonEnding: true },
   { id: "dart", list: "IR", injury: "Knee (MCL, PCL, meniscus surgery)", sinceWeek: 3, seasonEnding: true },
@@ -1454,6 +1454,8 @@ const INJURED_RESERVE = [
   { id: "bigsby", list: "IR", injury: "Core muscle (surgery)", sinceWeek: 5 },
   { id: "mcmillan-jalen", list: "IR", injury: "Knee (PCL sprain)", sinceWeek: 4 },
   { id: "ferguson-terrance", list: "IR", injury: "Ankle sprain", sinceWeek: 4 },
+  { id: "croskeymerritt", list: "IR", injury: "Groin (re-aggravated)", sinceWeek: 6 },
+  { id: "doubs", list: "IR", injury: "Shoulder", sinceWeek: 7 },
   { id: "sl-11577", list: "IR", injury: "Foot (plantar fasciitis)", sinceWeek: 6 },
   { id: "sl-11630", list: "IR", injury: "Finger", sinceWeek: 6 },
   { id: "sl-10226", list: "IR", injury: "Thumb (ligament surgery)", sinceWeek: 3 },
@@ -3661,7 +3663,8 @@ function BoardGrid({ sport, players, teams, roundChoices, defaultRounds, highlig
   );
 }
 
-// Football: FantasyCalc values for the shared league settings. Rookie picks
+// Football: the Value Board's values (KeepTradeCut by default) for the shared
+// league settings, so it updates whenever they do. Rookie picks
 // are left out, since this is a board of players. Dynasty startups run deep,
 // so dynasty boards go to 30 rounds.
 const BOARD_HIGHLIGHT_OPTIONS = ["ALL", "QB", "RB", "WR", "TE"].map((p) => ({ key: p, label: p, color: posPillColor(p) }));

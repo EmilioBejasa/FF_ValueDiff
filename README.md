@@ -218,8 +218,9 @@ and, unless it's season-ending, the **earliest return** week: four team
 games after `sinceWeek`, skipping the team's bye (`irReturnWeek`). That
 date is a minimum, and many players take longer.
 
-As of 2026-10-19 it holds 48 players, from Sleeper's injury designations
-(IR/PUP) plus team news. Nine are season-ending: Achane (torn ACL), Dart
+As of 2026-10-20 it holds 50 players, from Sleeper's injury designations
+(IR/PUP) plus team news (newest: Croskey-Merritt, groin, back Week 11 at
+the earliest; Doubs, shoulder, back Week 12). Nine are season-ending: Achane (torn ACL), Dart
 (knee surgery), Jayden Higgins (torn ACL), Pearsall (PCL surgery), Hurts
 (blood clots), Jayden Reed (neck surgery), Jaylin Lane (ankle fracture),
 Durham Smythe (torn Achilles) and Josh Oliver (torn biceps). Entries can

@@ -192,12 +192,13 @@ edited by hand — update `WAIVER_TARGETS` as real in-season news (injuries,
 depth-chart moves, snap counts) comes in.
 
 If `WAIVER_TARGETS` is ever emptied out, the page shows an explicit
-"nothing added yet" state rather than a guess. As of this writing (2026-10-05) it holds
-19 Week 5 targets (Doubs dropped 2026-10-20 after going on IR), based on Week 1-4 usage, Sleeper's injury designations
+"nothing added yet" state rather than a guess. As of this writing (2026-10-20) it holds
+20 Week 7 targets, based on Week 3-6 usage, Sleeper's injury designations
 and its most-added list rather than preseason guesses: injury vacancies
-(Jadarian Price and A.J. Brown to IR; Chase, Barkley, Bigsby, DeVonta Smith, Goedert
-and Breece Hall out), target/snap share winners, and streamers. CAR and KC
-are on bye in Week 5, so none of their players are listed.
+(Davante Adams out 6-10 weeks; Pittman, Doubs, Shipley and Bigsby on IR; Barkley,
+Monangai and Bateman out; Hurts out for the season), target/snap share winners,
+and streamers. BUF, JAX, LAC and WSH are on bye in Week 7, so none of their
+players are listed.
 
 ## Injuries
 

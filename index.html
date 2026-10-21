@@ -6489,20 +6489,28 @@ function NbaInjuries({ data, settings }) {
   const [scope, setScope] = useState("relevant");
   const season = data.activeSeason;
   const byId = useMemo(() => Object.fromEntries((data.seasons[season] || []).map((p) => [p.id, p])), [data, season]);
+  // The Trade Desk's FPG, which blends in last season until a player has
+  // enough games, so injured regulars still count early in the season.
+  const fpgById = useMemo(
+    () => Object.fromEntries(nbaTradeRows(data, settings.scoring).rows.map((r) => [r.id, r.fpg])),
+    [data, settings.scoring]
+  );
 
   const rows = useMemo(() => Object.entries(data.players)
     .filter(([, p]) => NBA_STATUSES.includes(p.status) && nbaPosMatch(p, pos))
-    .map(([id, p]) => ({ id, ...p, season: byId[id], fpg: nbaFpg(byId[id], settings.scoring) }))
+    .map(([id, p]) => ({ id, ...p, season: byId[id], fpg: fpgById[id] ?? null }))
     .filter((r) => scope === "all" || r.fpg >= 15)
-    .sort((a, b) => NBA_STATUSES.indexOf(a.status) - NBA_STATUSES.indexOf(b.status) || b.fpg - a.fpg),
-  [data.players, byId, pos, scope, settings.scoring]);
+    .sort((a, b) => NBA_STATUSES.indexOf(a.status) - NBA_STATUSES.indexOf(b.status) || (b.fpg ?? 0) - (a.fpg ?? 0)),
+  [data.players, byId, fpgById, pos, scope]);
 
   return (
     <div className="flex flex-col gap-5">
       <NbaPageHeader title="Injury Report" lead="Every NBA player with an injury designation right now, most serious first.">
         Live from Sleeper's NBA player data (refreshed every few hours). Out and IR are the most serious, then suspended,
         doubtful and questionable; GTD is a game-time decision and DTD day-to-day. "Fantasy-relevant" means 15+ fantasy
-        points per game in {nbaSeasonLabel(season)} ({settings.scoring === "espn" ? "ESPN" : "Standard"} scoring).
+        points per game ({settings.scoring === "espn" ? "ESPN" : "Standard"} scoring), the same blend the Trade Desk uses:
+        this season, with last season mixed in until a player has {NBA_BLEND_GAMES} games. GP is games played
+        in {nbaSeasonLabel(season)}.
       </NbaPageHeader>
 
       <div className="flex items-end flex-wrap gap-x-4 gap-y-3">
@@ -6542,8 +6550,8 @@ function NbaInjuries({ data, settings }) {
                 <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>
                   {[r.injury, r.notes].filter(Boolean).join(" — ") || "–"}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums font-semibold" style={{ color: "var(--text-primary)" }}>{r.season ? fmt1(r.fpg) : "–"}</td>
-                <td className="px-3 py-2 text-right tabular-nums" style={{ color: "var(--text-secondary)" }}>{r.season ? r.season.gp : "–"}</td>
+                <td className="px-3 py-2 text-right tabular-nums font-semibold" style={{ color: "var(--text-primary)" }}>{fmt1(r.fpg)}</td>
+                <td className="px-3 py-2 text-right tabular-nums" style={{ color: "var(--text-secondary)" }}>{r.season ? r.season.gp : r.fpg != null ? 0 : "–"}</td>
               </tr>
             ))}
           </tbody>

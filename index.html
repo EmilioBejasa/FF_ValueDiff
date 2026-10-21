@@ -3586,7 +3586,7 @@ function DynastyValues({ data, settings, setSettings }) {
 // the most valuable player, and so on, snaking (or not) across one column per
 // team. Football and basketball each feed it their own players and values.
 const SLEEPER_POS_COLOR = {
-  QB: "#ff2a6d", RB: "#00ceb8", WR: "#58a7ff", TE: "#ffae58",
+  QB: "#ff2a6d", RB: "#00ceb8", WR: "#58a7ff", TE: "#ffae58", PICK: "#b98cff",
   PG: "#58a7ff", SG: "#00ceb8", SF: "#ffae58", PF: "#ff2a6d", C: "#b98cff", G: "#58a7ff", F: "#ffae58",
 };
 const BOARD_ORDER_OPTIONS = [{ key: "snake", label: "Snake" }, { key: "linear", label: "Linear" }];
@@ -3601,12 +3601,14 @@ function splitName(name) {
 // The board itself plus its Rounds / Order / Highlight / search controls.
 // `players` must already be sorted best first; `stat(p)` is the number shown
 // in each card's corner and `tip(p)` the hover text; `matchPos(p, pos)` says
-// whether a player counts for the Highlight filter.
-function BoardGrid({ sport, players, teams, roundChoices, defaultRounds, highlightOptions, matchPos, stat, tip }) {
+// whether a player counts for the Highlight filter. `extraControls` go in the
+// controls row before Highlight.
+function BoardGrid({ sport, players, teams, roundChoices, defaultRounds, highlightOptions, matchPos, stat, tip, extraControls }) {
   const [pickedRounds, setRounds] = useState(defaultRounds);
   const rounds = roundChoices.some((o) => o.key === pickedRounds) ? pickedRounds : defaultRounds;
   const [order, setOrder] = useState("snake");
-  const [highlight, setHighlight] = useState("ALL");
+  const [pickedHighlight, setHighlight] = useState("ALL");
+  const highlight = highlightOptions.some((o) => o.key === pickedHighlight) ? pickedHighlight : "ALL";
   const [query, setQuery] = useState("");
 
   // One { label, player } per pick, in board order (row by row).
@@ -3623,6 +3625,10 @@ function BoardGrid({ sport, players, teams, roundChoices, defaultRounds, highlig
     return out;
   }, [players, rounds, teams, order]);
 
+  // A new board (rounds, order, teams, picks on/off) starts back at 1.01.
+  const boardRef = useRef(null);
+  useEffect(() => { boardRef.current?.scrollTo(0, 0); }, [cells]);
+
   const q = query.trim().toLowerCase();
 
   return (
@@ -3630,12 +3636,13 @@ function BoardGrid({ sport, players, teams, roundChoices, defaultRounds, highlig
       <div className="flex items-end flex-wrap gap-x-4 gap-y-2">
         <LabeledControl label="Rounds"><PillGroup options={roundChoices} value={rounds} onChange={setRounds} /></LabeledControl>
         <LabeledControl label="Order"><PillGroup options={BOARD_ORDER_OPTIONS} value={order} onChange={setOrder} /></LabeledControl>
+        {extraControls}
         <LabeledControl label="Highlight"><PillGroup options={highlightOptions} value={highlight} onChange={setHighlight} /></LabeledControl>
         <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a player"
           className="rounded-md border px-3 py-1.5 text-sm w-full sm:w-48 sm:ml-auto" style={inputStyle} />
       </div>
 
-      <div className="draft-board">
+      <div className="draft-board" ref={boardRef}>
         <div className="draft-grid" style={{ gridTemplateColumns: `repeat(${teams}, minmax(86px, 1fr))` }}>
           {Array.from({ length: teams }, (_, t) => (
             <div key={`h${t}`} className="db-head">Team {t + 1}<span>Pick {t + 1}</span></div>
@@ -3653,7 +3660,7 @@ function BoardGrid({ sport, players, teams, roundChoices, defaultRounds, highlig
                 <span className="db-first">{first}</span>
                 <span className="db-last">{last}</span>
                 <span className="db-meta">
-                  <span>{p.position}-{p.team || "FA"}</span>
+                  <span>{p.position === "PICK" ? "PICK" : `${p.position}-${p.team || "FA"}`}</span>
                   <span>{stat(p)}</span>
                 </span>
               </a>
@@ -3666,17 +3673,30 @@ function BoardGrid({ sport, players, teams, roundChoices, defaultRounds, highlig
 }
 
 // Football: the Value Board's values (KeepTradeCut by default) for the shared
-// league settings, so it updates whenever they do. Rookie picks
-// are left out, since this is a board of players. Dynasty startups run deep,
-// so dynasty boards go to 30 rounds.
+// league settings, so it updates whenever they do. Dynasty boards can mix in
+// rookie picks (on by default, with a toggle to leave them off). Dynasty
+// startups run deep, so dynasty boards go to 30 rounds.
 const BOARD_HIGHLIGHT_OPTIONS = ["ALL", "QB", "RB", "WR", "TE"].map((p) => ({ key: p, label: p, color: posPillColor(p) }));
+const BOARD_PICK_HIGHLIGHT = { key: "PICK", label: "Picks", color: posPillColor("PICK") };
+const BOARD_PICKS_OPTIONS = [{ key: "on", label: "On" }, { key: "off", label: "Off" }];
+
+// The picks a startup would draft: Early/Mid/Late picks where FantasyCalc
+// values them by slot, the plain round pick only for years it doesn't.
+function boardPicks(rows) {
+  const picks = rows.filter((r) => r.position === "PICK").map((r) => ({ r, p: window.FantasyCalc?.parsePick(r.name) }));
+  const slotted = new Set(picks.filter(({ p }) => p?.slot).map(({ p }) => `${p.year}-${p.round}`));
+  return picks.filter(({ p }) => !p || p.slot || !slotted.has(`${p.year}-${p.round}`)).map(({ r }) => r);
+}
 const FOOTBALL_ROUNDS = { dynasty: roundOptions([10, 15, 20, 25, 30]), redraft: roundOptions([5, 10, 15, 20]) };
 
 function DraftBoard({ data, settings, setSettings }) {
   const isDynasty = settings.mode === "dynasty";
+  const [picksSetting, setPicks] = useState("on");
+  const withPicks = isDynasty && picksSetting === "on";
   const players = useMemo(
-    () => data.rows.filter((r) => r.position !== "PICK").sort((a, b) => b.value - a.value),
-    [data.rows]
+    () => [...data.rows.filter((r) => r.position !== "PICK"), ...(withPicks ? boardPicks(data.rows) : [])]
+      .sort((a, b) => b.value - a.value),
+    [data.rows, withPicks]
   );
 
   return (
@@ -3688,8 +3708,10 @@ function DraftBoard({ data, settings, setSettings }) {
           left: 1.01 is the top player on the Value Board, and so on down.
         </p>
         <AboutData>
-          <DynastyStatusLine data={data} /> Rookie picks are left off the board. If the value list runs out before the
-          board does, the last picks are left empty.
+          <DynastyStatusLine data={data} /> {isDynasty
+            ? "Rookie picks are drafted by value too (Early/Mid/Late where they're valued by slot); turn Picks off to leave them off."
+            : "Rookie picks are left off the board."} If the value list runs out before the board does, the last picks are
+          left empty.
         </AboutData>
       </header>
 
@@ -3697,9 +3719,13 @@ function DraftBoard({ data, settings, setSettings }) {
 
       <BoardGrid key={settings.mode} sport="nfl" players={players} teams={settings.teams}
         roundChoices={FOOTBALL_ROUNDS[settings.mode]} defaultRounds={isDynasty ? 25 : 15}
-        highlightOptions={BOARD_HIGHLIGHT_OPTIONS} matchPos={(p, pos) => p.position === pos}
+        highlightOptions={withPicks ? [...BOARD_HIGHLIGHT_OPTIONS, BOARD_PICK_HIGHLIGHT] : BOARD_HIGHLIGHT_OPTIONS}
+        matchPos={(p, pos) => p.position === pos}
+        extraControls={isDynasty && (
+          <LabeledControl label="Picks"><PillGroup options={BOARD_PICKS_OPTIONS} value={picksSetting} onChange={setPicks} /></LabeledControl>
+        )}
         stat={(p) => fmtValue(p.value)}
-        tip={(p) => `${p.name} · ${p.position}${p.posRank} · value ${fmtValue(p.value)}${p.age ? ` · age ${p.age}` : ""}`} />
+        tip={(p) => `${p.name} · ${p.position === "PICK" ? "rookie pick" : `${p.position}${p.posRank}`} · value ${fmtValue(p.value)}${p.age ? ` · age ${p.age}` : ""}`} />
     </div>
   );
 }

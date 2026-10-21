@@ -219,9 +219,9 @@ and, unless it's season-ending, the **earliest return** week: four team
 games after `sinceWeek`, skipping the team's bye (`irReturnWeek`). That
 date is a minimum, and many players take longer.
 
-As of 2026-10-20 it holds 50 players, from Sleeper's injury designations
-(IR/PUP) plus team news (newest: Croskey-Merritt, groin, back Week 11 at
-the earliest; Doubs, shoulder, back Week 12). Nine are season-ending: Achane (torn ACL), Dart
+As of 2026-10-21 it holds 51 players, from Sleeper's injury designations
+(IR/PUP) plus team news (newest: Davante Adams, ruptured hamstring and
+surgery, back Week 12 at the earliest after the Rams' Week 11 bye). Nine are season-ending: Achane (torn ACL), Dart
 (knee surgery), Jayden Higgins (torn ACL), Pearsall (PCL surgery), Hurts
 (blood clots), Jayden Reed (neck surgery), Jaylin Lane (ankle fracture),
 Durham Smythe (torn Achilles) and Josh Oliver (torn biceps). Entries can

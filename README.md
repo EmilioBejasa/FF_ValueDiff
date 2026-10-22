@@ -61,6 +61,7 @@ The page is laid out like a website, themed as an **executive front office**
   | Scoreboard | Weekly Scores |
   | Waiver Desk | Waiver Wire Targets |
   | Training Room | Injuries |
+  | Film Room | Weekly Rankings (and Start / Sit) |
   | Boardroom | My Leagues |
   | Value Board | Dynasty Values |
   | Trade Desk | Trade Calculator |
@@ -97,6 +98,20 @@ The page is laid out like a website, themed as an **executive front office**
   back button, bookmarks and reloads all work. A trade link (`#trade=…`, or
   `#nbatrade=…` for basketball) opens that Trade Desk with the trade, and
   leaving and coming back keeps it.
+- **Player search (the Front Desk):** a "Search players" box in the header
+  (a magnifier icon on smaller screens), also opened with Ctrl/Cmd+K or `/`
+  from any page (`PlayerSearch`). Results show a headshot, position, team and
+  injury tag; arrow keys and Enter open the player's file. A Football | Basketball
+  switch picks which players it searches. Football searches Sleeper's player
+  list plus the dynasty values, and valued players rank first. Basketball
+  loads the NBA data the first time it's searched, and ranks by points this
+  season. A name matches when each word you type starts one of its words
+  ("jef", "jus jef"), then when the name just contains it.
+- **Phone tab bar:** below 768px a navy bar at the bottom of the screen links
+  the rooms people open most (`MobileTabBar`, `TAB_BAR`). Football: Scoreboard,
+  Waiver Desk, Film Room, Trade Desk, Boardroom. Basketball: Scoreboard, Waiver
+  Desk, Big Board, Trade Desk, Training Room. The hamburger still lists every
+  room.
 - A **footer** with links to every room and the data sources (Sleeper,
   FantasyCalc, DraftSharks, Yahoo Sports).
 - **Color:** each tool keeps its own color and icon (`PAGE_STYLE`), used on
@@ -166,6 +181,23 @@ by-week table. Weeks inside an Injured Reserve stint show **IR** instead,
 including future weeks up to the player's earliest possible return (or the
 rest of the season for season-ending injuries). OUT and IR weeks don't
 count toward GP or AVG.
+
+## Weekly Rankings (Film Room)
+
+`#/rankings` (`NflRankings`) ranks every QB, RB, WR and TE by Sleeper's
+projected points for the week (`fetchWeekProjections`), in the shared
+Scoring setting: Sleeper's own `pts_ppr`, `pts_half_ppr` or `pts_std`. TE
+premium adds its bonus for each projected TE catch (`projectedPoints`).
+Each row shows the position rank, team, opponent and the player's Sleeper
+injury designation. Players on bye have no projection, so they aren't
+listed. It opens on the current week (`/state/nfl`), with the next week one
+click away, and shows the top 150 for the chosen position.
+
+**Start / Sit** sits above the table. Add two to four players, from the
+search box or each row's **+**. The best projection among those who can play
+gets **Start**. The rest get **Sit**, with how many points they trail by.
+Anyone out for the season, on IR, PUP or the suspended list, or ruled Out is
+marked to sit with the reason (`sidelinedReason`), whatever their projection.
 
 ## Waiver Wire Targets
 
@@ -357,6 +389,18 @@ it. Expand a team and use **+A / +B** to drop any player or pick into the
 trade.
 
 ### My Leagues
+
+**Week N matchup** (`useWeekMatchups`, `WeekMatchup`), on every league page
+from the draft until the end of the season, above the standings. It shows the
+league's current week (`settings.leg`) from the lineups the managers have set.
+Your starters and your opponent's line up slot by slot. Bold points are
+already scored. Italic points are Sleeper's projection in the league's own
+scoring (`starterProjection`, also used by the standings sims). Each team
+has a projected total and its win odds (`winOdds`): a normal model with
+`STANDINGS_SPREAD` of each side's unplayed points as the spread. Below that,
+"Around the league" lists every other matchup with its projected scores and
+the favorite's odds. Team names open that team's roster. It re-checks with
+the page's refresh tick, so live scores move.
 
 The **Boardroom** (`MyLeagues`) has two kinds of page:
 

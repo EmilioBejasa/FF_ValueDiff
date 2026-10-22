@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Fantasy Front Office</title>
 <meta name="description" content="Fantasy Front Office: run your fantasy football team like a GM. Weekly scores, waiver targets, injuries, dynasty trade values, a trade calculator and a 2027 rookie class preview." />
 <meta name="theme-color" content="#14213d" />
@@ -308,7 +308,26 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 10px 30px -18px rgba(0, 0, 0, .35); }
   main thead tr { background: var(--surface-2); }
   main thead th { background: var(--surface-2) !important; }
+  /* Header search button and the Front Desk search dialog. */
+  .search-trigger { border: 1px solid rgba(255, 255, 255, 0.16); background: rgba(255, 255, 255, 0.06);
+    color: color-mix(in srgb, var(--header-text) 70%, transparent); transition: background-color .15s, color .15s, border-color .15s; }
+  .search-trigger:hover { background: rgba(255, 255, 255, 0.1); color: var(--header-text); border-color: var(--sport); }
+  .kbd { font: 600 10px/1 Inter, sans-serif; padding: 4px 5px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.2);
+    color: color-mix(in srgb, var(--header-text) 60%, transparent); }
+  .search-backdrop { background: rgba(10, 16, 32, 0.55); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+  .search-panel { animation: menu-in .14s ease-out; }
+
+  /* Phone tab bar: the header's navy, with the sport trim on top. */
+  .tab-bar { background: color-mix(in srgb, var(--header-bg) 97%, transparent); border-top: 2px solid var(--sport);
+    padding-bottom: env(safe-area-inset-bottom); backdrop-filter: saturate(1.4) blur(10px); -webkit-backdrop-filter: saturate(1.4) blur(10px); }
+  .tab-bar a { color: color-mix(in srgb, var(--header-text) 60%, transparent); transition: color .15s; }
+  .tab-bar a[aria-current="page"] { color: var(--header-text); }
+  .tab-bar a[aria-current="page"] svg { color: var(--sport); }
+  .has-tab-bar { padding-bottom: calc(3.75rem + env(safe-area-inset-bottom)); }
+  @media (min-width: 768px) { .has-tab-bar { padding-bottom: 0; } }
+
   @media (prefers-reduced-motion: reduce) {
+    .search-panel { animation: none; }
     .seg-indicator, .seg, .nav-trigger svg, .nav-menu > div { transition: none; animation: none; }
     .card-link, .card-arrow, .nav-link, .pill, .btn-primary, .btn-secondary { transition: none; }
     .card-link:hover, .pill:active, .btn-primary:hover, .btn-secondary:hover { transform: none; }
@@ -4687,8 +4706,8 @@ const PROJ_SLOTS = {
 };
 
 // One week of Sleeper projections for the given positions, as
-// { player_id: { pos: [fantasy positions], stats } }. Kept for the visit,
-// since a week is a couple of MB and every league reuses it.
+// { player_id: { pos: [fantasy positions], position, name, team, opp, status, stats } }.
+// Kept for the visit, since a week is a couple of MB and every league reuses it.
 const weekProjectionCache = new Map();
 function fetchWeekProjections(season, week, positions) {
   const key = `${season}-${week}-${positions.join(",")}`;
@@ -4696,8 +4715,12 @@ function fetchWeekProjections(season, week, positions) {
     const qs = positions.map((p) => `position[]=${p}`).join("&");
     const promise = fetch(`https://api.sleeper.com/projections/nfl/${season}/${week}?season_type=regular&${qs}`)
       .then((res) => { if (!res.ok) throw new Error(`Sleeper projections failed (${res.status})`); return res.json(); })
-      .then((list) => Object.fromEntries((list || []).filter((r) => r.stats).map((r) => [r.player_id,
-        { pos: r.player?.fantasy_positions || [r.player?.position], stats: r.stats }])));
+      .then((list) => Object.fromEntries((list || []).filter((r) => r.stats).map((r) => [r.player_id, {
+        pos: r.player?.fantasy_positions || [r.player?.position], position: r.player?.position || null,
+        name: [r.player?.first_name, r.player?.last_name].filter(Boolean).join(" "),
+        team: r.team || r.player?.team || null, opp: r.opponent || null, status: r.player?.injury_status || null,
+        stats: r.stats,
+      }])));
     promise.catch(() => weekProjectionCache.delete(key));
     weekProjectionCache.set(key, promise);
   }
@@ -4723,6 +4746,37 @@ const pointsOf = (st, key) => (st?.[key] || 0) + (st?.[`${key}_decimal`] || 0) /
 
 // Standard normal draw (Box-Muller).
 const randomNormal = () => Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(2 * Math.PI * Math.random());
+
+// Standard normal CDF (Abramowitz-Stegun 7.1.26, good to about 1e-7).
+function normalCdf(z) {
+  const t = 1 / (1 + 0.3275911 * Math.abs(z) / Math.SQRT2);
+  const erf = 1 - t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))))
+    * Math.exp(-z * z / 2);
+  return z >= 0 ? (1 + erf) / 2 : (1 - erf) / 2;
+}
+
+// A team's week from the lineup it has set: points already scored, plus
+// projections for the starters still to play (`open`), slot by slot.
+function starterProjection(entry, ptsOf) {
+  let mean = 0, open = 0;
+  const rows = (entry?.starters || []).map((id) => {
+    const scored = entry.players_points?.[id] || 0;
+    const proj = scored ? 0 : ptsOf(id);
+    mean += scored || proj;
+    open += proj;
+    return { id, scored, proj };
+  });
+  return { mean, open, rows };
+}
+
+// Odds that team a outscores team b, each drawn around its projection with
+// STANDINGS_SPREAD of its unplayed points as one standard deviation (as in the sims).
+function winOdds(a, b) {
+  const sd = STANDINGS_SPREAD * Math.hypot(a.open, b.open);
+  const diff = a.mean - b.mean;
+  if (sd < 0.01) return diff > 0 ? 1 : diff < 0 ? 0 : 0.5;
+  return normalCdf(diff / sd);
+}
 
 // Sleeper ids of players out for the season: season-ending entries in the
 // hand-kept INJURED_RESERVE list, plus anyone Sleeper has on IR or PUP with a
@@ -4808,11 +4862,7 @@ function useProjectedStandings(raw, enabled) {
           const maxPf = bestLineupPoints(pool, slots);
           if (started && e) {
             // Under way: real lineups, real points where scored, projections for the rest.
-            let mean = 0, open = 0;
-            for (const id of e.starters || []) {
-              const scored = e.players_points?.[id] || 0;
-              if (scored) mean += scored; else { const p = ptsOf(id); mean += p; open += p; }
-            }
+            const { mean, open } = starterProjection(e, ptsOf);
             teams[r.roster_id] = { mean, sd: open * STANDINGS_SPREAD, maxPf: Math.max(maxPf, mean) };
           } else {
             const mean = maxPf * efficiency[r.roster_id];
@@ -4990,6 +5040,346 @@ function ProjectedStandings({ proj, raw, teams, myTeam, team, onView }) {
 
 // A team's roster, opened from the power rankings: its QB, RB, WR and TE
 // (best first) and, in dynasty, its picks, with values and injury tags.
+/* ---------------- Film Room: weekly rankings and start/sit ---------------- */
+// Every skill player ranked by Sleeper's projection for the week, in the
+// shared scoring setting (Sleeper's own pts_ppr / pts_half_ppr / pts_std),
+// plus TE premium as the setting's bonus per TE catch. Players on bye have no
+// projection, so they don't appear.
+const PROJ_PTS_KEY = { 1: "pts_ppr", 0.5: "pts_half_ppr", 0: "pts_std" };
+const projectedPoints = (stats, position, settings) =>
+  (stats[PROJ_PTS_KEY[settings.ppr] || "pts_ppr"] || 0) + (position === "TE" ? (settings.tep || 0) * (stats.rec || 0) : 0);
+const FILM_ROOM_LIMIT = 150;
+
+function NflRankings({ settings, setSettings }) {
+  const sleeperPlayers = useSleeperStatuses();
+  const resolve = React.useContext(NflIdContext);
+  const seasonOver = useMemo(() => seasonOverIds(sleeperPlayers, resolve), [sleeperPlayers, resolve]);
+  const [nfl, setNfl] = useState({ status: "loading" });
+  useEffect(() => {
+    sleeperGet("/state/nfl").then((s) => setNfl({ status: "ready", ...s })).catch((err) => setNfl({ status: "error", message: err.message }));
+  }, []);
+  const currentWeek = nfl.status === "ready" ? Math.min(18, Math.max(1, nfl.week || 1)) : null;
+  const [pickedWeek, setWeek] = useState(null);
+  const week = pickedWeek ?? currentWeek;
+  const [res, setRes] = useState({ status: "loading" });
+  useEffect(() => {
+    if (!week) return;
+    let cancelled = false;
+    setRes({ status: "loading" });
+    fetchWeekProjections(nfl.season, week, SKILL_POSITIONS)
+      .then((proj) => { if (!cancelled) setRes({ status: "ready", proj }); })
+      .catch((err) => { if (!cancelled) setRes({ status: "error", message: err.message }); });
+    return () => { cancelled = true; };
+  }, [nfl.season, week]);
+
+  const rows = useMemo(() => {
+    if (res.status !== "ready") return [];
+    const list = Object.entries(res.proj)
+      .map(([id, p]) => {
+        const sp = sleeperPlayers[id];
+        const position = p.position || sp?.position;
+        const r = { id, name: sp?.name || p.name, position, team: p.team || sp?.team, opp: p.opp, status: sp?.status || p.status,
+          pts: projectedPoints(p.stats, position, settings) };
+        r.reason = sidelinedReason(r, sleeperPlayers, seasonOver, week);
+        return r;
+      })
+      .filter((r) => SKILL_POSITIONS.includes(r.position) && r.pts >= 0.5)
+      .sort((a, b) => b.pts - a.pts);
+    const counts = {};
+    for (const r of list) r.posRank = (counts[r.position] = (counts[r.position] || 0) + 1);
+    return list;
+  }, [res, sleeperPlayers, seasonOver, settings.ppr, settings.tep, week]);
+  const byId = useMemo(() => Object.fromEntries(rows.map((r) => [r.id, r])), [rows]);
+
+  const [positionFilter, setPositionFilter] = useState("ALL");
+  const shown = rows.filter((r) => positionFilter === "ALL" || r.position === positionFilter).slice(0, FILM_ROOM_LIMIT);
+
+  // Start/Sit: two to four players, best healthy projection starts.
+  const [compare, setCompare] = useState([]);
+  const pickRows = useMemo(() => rows.map((r) => ({ ...r, value: Number(r.pts.toFixed(1)) })), [rows]);
+  const picked = compare.map((id) => byId[id]).filter(Boolean);
+  const ranked = [...picked].sort((a, b) => (!!a.reason - !!b.reason) || b.pts - a.pts);
+  const best = ranked[0] && !ranked[0].reason ? ranked[0] : null;
+
+  const weekOptions = currentWeek ? [currentWeek, currentWeek + 1].filter((w) => w <= 18) : [];
+
+  return (
+    <div className="flex flex-col gap-5">
+      <header>
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Weekly Rankings</h2>
+        <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
+          Every quarterback, running back, receiver and tight end ranked by projected fantasy points for the week, plus a
+          start/sit call for the lineup decisions you're stuck on.
+        </p>
+        <AboutData>
+          Projections are Sleeper's, refreshed as the week goes on, in the scoring set below (TE premium adds its bonus for each
+          projected TE catch). Players on bye have no projection and don't appear. Injury tags are Sleeper's designations; anyone
+          ruled Out or on IR, PUP or the suspended list is marked to sit, whatever their projection.
+        </AboutData>
+      </header>
+
+      <div className="flex items-end flex-wrap gap-x-4 gap-y-2">
+        <LeagueSettings settings={settings} setSettings={setSettings} fields={["ppr", "tep"]} />
+        {weekOptions.length > 1 && (
+          <LabeledControl label="Week">
+            <PillGroup options={weekOptions.map((w) => ({ key: w, label: `Week ${w}` }))} value={week} onChange={setWeek} />
+          </LabeledControl>
+        )}
+      </div>
+
+      {nfl.status === "error" && <p className="text-sm" style={{ color: "var(--text-muted)" }}>Couldn't reach Sleeper ({nfl.message}). This needs the page served over http(s) with network access.</p>}
+      {res.status === "error" && <p className="text-sm" style={{ color: "var(--text-muted)" }}>Couldn't load Sleeper's projections ({res.message}).</p>}
+
+      <ProfileSection title="Start / Sit" aside={best ? "Film Room verdict" : "Add two to four players to compare"}>
+        <div className="max-w-sm">
+          {compare.length < 4 && (
+            <AssetPicker rows={pickRows} exclude={new Set(compare)} onPick={(id) => setCompare((c) => [...c, id])} />
+          )}
+        </div>
+        {ranked.length > 0 && (
+          <ul className="flex flex-col">
+            {ranked.map((r) => {
+              const start = r === best;
+              return (
+                <li key={r.id} className="flex items-center justify-between gap-3 py-2 border-b last:border-b-0" style={{ borderColor: "var(--border)" }}>
+                  <span className="flex items-center gap-2 min-w-0">
+                    <span className="text-[11px] font-bold uppercase tracking-wider rounded px-2 py-1 shrink-0"
+                      style={start ? { background: "var(--sport)", color: "#fff" } : { background: "var(--surface-2)", color: "var(--text-muted)" }}>
+                      {start ? "Start" : "Sit"}
+                    </span>
+                    <span className="min-w-0 truncate text-sm">
+                      <PlayerLink id={r.id} pos={r.position}>{r.name}</PlayerLink>{" "}
+                      <PosBadge pos={r.position} rank={r.posRank} />{" "}
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>{r.team}{r.opp ? ` vs ${r.opp}` : ""}</span>
+                      {r.reason && <span className="text-xs font-semibold" style={{ color: "var(--series-red)" }}> · {r.reason.label}</span>}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-3 shrink-0">
+                    <span className="tabular-nums text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{fmtPts(r.pts)}</span>
+                    {best && !start && !r.reason && (
+                      <span className="tabular-nums text-xs" style={{ color: "var(--text-muted)" }}>−{fmtPts(best.pts - r.pts)}</span>
+                    )}
+                    <button type="button" className="pill rounded-md px-2 py-0.5 text-xs" aria-label={`Remove ${r.name}`}
+                      onClick={() => setCompare((c) => c.filter((x) => x !== r.id))}>✕</button>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </ProfileSection>
+
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <PillGroup options={POSITION_OPTIONS} value={positionFilter} onChange={setPositionFilter} />
+        {week && (
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            Week {week} · {SETTING_OPTIONS.ppr.find((o) => o.key === settings.ppr)?.label || "PPR"}
+            {settings.tep ? ` · TE ${SETTING_OPTIONS.tep.find((o) => o.key === settings.tep)?.label}` : ""}
+            {shown.length === FILM_ROOM_LIMIT ? ` · top ${FILM_ROOM_LIMIT}` : ""}
+          </span>
+        )}
+      </div>
+
+      <div className="rounded-lg border overflow-x-auto" style={{ borderColor: "var(--border)", background: "var(--surface-1)" }}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+              <th className="px-3 py-2 w-10 text-right">#</th>
+              <th className="px-3 py-2">Player</th>
+              <th className="px-3 py-2">Team</th>
+              <th className="px-3 py-2">Opp</th>
+              <th className="px-3 py-2 text-right">Proj</th>
+              <th className="px-3 py-2 w-12" />
+            </tr>
+          </thead>
+          <tbody>
+            {res.status === "loading" && (
+              <tr><td colSpan={6} className="px-3 py-6 text-center" style={{ color: "var(--text-muted)" }}>Loading projections from Sleeper…</td></tr>
+            )}
+            {shown.map((r, i) => (
+              <tr key={r.id} className="border-t" style={{ borderColor: "var(--border)" }}>
+                <td className="px-3 py-2 text-right tabular-nums" style={{ color: "var(--text-muted)" }}>{i + 1}</td>
+                <td className="px-3 py-2">
+                  <span className="flex items-center gap-2 min-w-0">
+                    <PlayerLink id={r.id} pos={r.position}>{r.name}</PlayerLink>
+                    <PosBadge pos={r.position} rank={r.posRank} />
+                    {(r.reason || REPORT_STATUS_COLOR[r.status]) && (
+                      <span className="text-xs font-semibold" style={{ color: r.reason ? "var(--series-red)" : REPORT_STATUS_COLOR[r.status] }}>
+                        {r.reason ? r.reason.label : REPORT_STATUS_LABEL[r.status] || r.status}
+                      </span>
+                    )}
+                  </span>
+                </td>
+                <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>{r.team || "FA"}</td>
+                <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>{r.opp || "–"}</td>
+                <td className="px-3 py-2 text-right tabular-nums font-semibold" style={{ color: "var(--text-primary)" }}>{fmtPts(r.pts)}</td>
+                <td className="px-3 py-2 text-right">
+                  <button type="button" className="pill rounded-md px-2 py-0.5 text-xs" disabled={compare.includes(r.id) || compare.length >= 4}
+                    title="Add to Start / Sit" onClick={() => setCompare((c) => [...c, r.id])}>+</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- this week's matchups ---------------- */
+// The league's current week (settings.leg) head to head, from the lineups the
+// managers have set: points already scored, Sleeper's projections (in the
+// league's scoring) for everyone still to play, and each side's win odds
+// (winOdds). Re-checked on useRefreshTick so live scores move.
+function useWeekMatchups(raw, enabled) {
+  const resolve = React.useContext(NflIdContext);
+  const sleeperPlayers = useSleeperStatuses();
+  const seasonOver = useMemo(() => seasonOverIds(sleeperPlayers, resolve), [sleeperPlayers, resolve]);
+  const tick = useRefreshTick();
+  const [state, setState] = useState({ status: "idle" });
+  const week = raw?.league.settings?.leg;
+  useEffect(() => {
+    if (!enabled || !raw || !week) return;
+    let cancelled = false;
+    const { league, rosters } = raw;
+    const slots = (league.roster_positions || []).filter((s) => PROJ_SLOTS[s]);
+    const positions = [...new Set(slots.flatMap((s) => PROJ_SLOTS[s]))];
+    const scoring = league.scoring_settings || {};
+    setState((s) => (s.week === week && s.status === "ready" ? s : { status: "loading", week }));
+    Promise.all([
+      sleeperGet(`/league/${league.league_id}/matchups/${week}`).then((m) => m || []),
+      fetchWeekProjections(league.season, week, positions),
+    ]).then(([entries, proj]) => {
+      if (cancelled) return;
+      const ptsOf = (id) => (proj[id] && !seasonOver.has(id) ? scoreStats(proj[id].stats, scoring) : 0);
+      const teams = {};
+      for (const r of rosters) {
+        const e = entries.find((x) => x.roster_id === r.roster_id);
+        if (e) teams[r.roster_id] = starterProjection(e, ptsOf);
+      }
+      const byMatchup = {};
+      for (const e of entries) if (e.matchup_id) (byMatchup[e.matchup_id] ||= []).push(e.roster_id);
+      const pairs = Object.values(byMatchup).filter((p) => p.length === 2);
+      setState({ status: "ready", week, slots: (league.roster_positions || []).filter((s) => s !== "BN" && s !== "IR" && s !== "TAXI"), teams, pairs, proj });
+    }).catch((err) => { if (!cancelled) setState((s) => (s.status === "ready" ? s : { status: "error", week, message: err.message })); });
+    return () => { cancelled = true; };
+  }, [raw, enabled, week, seasonOver, tick]);
+  return state;
+}
+
+const fmtOdds = (p) => `${Math.round(p * 100)}%`;
+
+function MatchupPlayer({ id, proj, sleeperPlayers, align }) {
+  if (!id || id === "0") return <span className="text-sm" style={{ color: "var(--series-red)" }}>Empty</span>;
+  const info = proj[id] || {};
+  const sp = sleeperPlayers[id];
+  const name = sp?.name || info.name || id;
+  const pos = sp?.position || info.position;
+  const status = sp?.status || info.status;
+  return (
+    <span className={`min-w-0 truncate text-sm flex items-center gap-1.5 ${align === "right" ? "flex-row-reverse" : ""}`}>
+      {SKILL_POSITIONS.includes(pos) ? <PlayerLink id={id} pos={pos} className="truncate">{name}</PlayerLink>
+        : <span className="truncate" style={{ color: "var(--text-primary)" }}>{name}</span>}
+      {status && REPORT_STATUS_COLOR[status] && (
+        <span className="text-[10px] font-bold shrink-0" style={{ color: REPORT_STATUS_COLOR[status] }} title={status}>{status[0]}</span>
+      )}
+    </span>
+  );
+}
+
+function MatchupPoints({ row }) {
+  return row.scored
+    ? <span className="tabular-nums text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{fmtPts(row.scored)}</span>
+    : <span className="tabular-nums text-sm italic" style={{ color: "var(--text-muted)" }} title="Projected">{fmtPts(row.proj)}</span>;
+}
+
+function WeekMatchup({ mu, teams, myTeam, team, onView }) {
+  const sleeperPlayers = useSleeperStatuses();
+  const nameOf = (id) => teams.find((t) => t.rosterId === id)?.name || `Team ${id}`;
+  if (mu.status === "loading" || mu.status === "idle") {
+    return <ProfileSection title={`Week ${mu.week || ""} matchup`}><p className="text-sm" style={{ color: "var(--text-muted)" }}>Loading this week's lineups from Sleeper…</p></ProfileSection>;
+  }
+  if (mu.status === "error") {
+    return <ProfileSection title={`Week ${mu.week} matchup`}><p className="text-sm" style={{ color: "var(--text-muted)" }}>Couldn't load this week's matchups ({mu.message}).</p></ProfileSection>;
+  }
+  if (!mu.pairs.length) return null;
+  const mine = mu.pairs.find((p) => p.includes(team.rosterId));
+  const [a, b] = mine ? (mine[0] === team.rosterId ? mine : [mine[1], mine[0]]) : [];
+  const others = mu.pairs.filter((p) => p !== mine);
+  const odds = mine ? winOdds(mu.teams[a], mu.teams[b]) : null;
+  const who = team === myTeam ? "Your" : `${team.name}'s`;
+
+  return (
+    <ProfileSection title={`Week ${mu.week} matchup`} aside="Bold points are in; italic points are Sleeper's projection">
+      {mine ? (
+        <>
+          <div className="grid items-end gap-3" style={{ gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)" }}>
+            {[a, b].map((id, side) => (
+              <div key={id} className={`min-w-0 flex flex-col ${side ? "items-end text-right" : ""}`} style={{ order: side ? 3 : 1 }}>
+                <button type="button" onClick={() => onView(id)} className={`text-sm font-semibold truncate max-w-full hover:underline ${side ? "text-right" : "text-left"}`}
+                  style={{ color: "var(--text-primary)" }}>{nameOf(id)}{id === myTeam?.rosterId && <span style={{ color: "var(--sport)" }}> (you)</span>}</button>
+                <span className="font-display text-3xl font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>{fmtPts(mu.teams[id].mean)}</span>
+                <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  {fmtPts(mu.teams[id].mean - mu.teams[id].open)} in · {fmtPts(mu.teams[id].open)} to come
+                </span>
+              </div>
+            ))}
+            <span className="text-xs font-semibold uppercase tracking-wider pb-6" style={{ order: 2, color: "var(--text-muted)" }}>vs</span>
+          </div>
+          <div className="flex flex-col gap-1">
+            <div className="flex h-2.5 rounded-full overflow-hidden" style={{ background: "var(--surface-2)" }}
+              role="img" aria-label={`${who} win odds ${fmtOdds(odds)}`}>
+              <span style={{ width: `${odds * 100}%`, background: "var(--sport)" }} />
+            </div>
+            <div className="flex justify-between text-xs font-semibold tabular-nums">
+              <span style={{ color: "var(--sport)" }}>{fmtOdds(odds)} to win</span>
+              <span style={{ color: "var(--text-muted)" }}>{fmtOdds(1 - odds)}</span>
+            </div>
+          </div>
+          <ul className="flex flex-col">
+            {mu.slots.map((slot, i) => {
+              const ra = mu.teams[a].rows[i], rb = mu.teams[b].rows[i];
+              if (!ra && !rb) return null;
+              return (
+                <li key={i} className="grid items-center gap-2 py-1.5 border-b last:border-b-0"
+                  style={{ gridTemplateColumns: "minmax(0, 1fr) 3rem 4.5rem 3rem minmax(0, 1fr)", borderColor: "var(--border)" }}>
+                  <MatchupPlayer id={ra?.id} proj={mu.proj} sleeperPlayers={sleeperPlayers} />
+                  <span className="text-right">{ra && <MatchupPoints row={ra} />}</span>
+                  <span className="text-[11px] font-semibold uppercase text-center" style={{ color: "var(--text-muted)" }}>{SLOT_LABEL[slot] || slot}</span>
+                  <span>{rb && <MatchupPoints row={rb} />}</span>
+                  <MatchupPlayer id={rb?.id} proj={mu.proj} sleeperPlayers={sleeperPlayers} align="right" />
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      ) : (
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>{team.name} has no matchup this week.</p>
+      )}
+      {others.length > 0 && (
+        <div className="border-t pt-3 flex flex-col gap-1" style={{ borderColor: "var(--border)" }}>
+          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Around the league</span>
+          {others.map(([x, y]) => {
+            const p = winOdds(mu.teams[x], mu.teams[y]);
+            return (
+              <div key={`${x}-${y}`} className="grid items-center gap-2 text-sm py-1"
+                style={{ gridTemplateColumns: "minmax(0, 1fr) auto auto auto minmax(0, 1fr)" }}>
+                <button type="button" onClick={() => onView(x)} className="truncate text-left hover:underline"
+                  style={{ color: "var(--text-primary)", fontWeight: p >= 0.5 ? 600 : 400 }}>{nameOf(x)}</button>
+                <span className="tabular-nums">{fmtPts(mu.teams[x].mean)}</span>
+                <span className="text-xs tabular-nums w-16 text-center" style={{ color: "var(--text-muted)" }}>{fmtOdds(Math.max(p, 1 - p))} {p >= 0.5 ? "◂" : "▸"}</span>
+                <span className="tabular-nums">{fmtPts(mu.teams[y].mean)}</span>
+                <button type="button" onClick={() => onView(y)} className="truncate text-right hover:underline"
+                  style={{ color: "var(--text-primary)", fontWeight: p < 0.5 ? 600 : 400 }}>{nameOf(y)}</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </ProfileSection>
+  );
+}
+
 function RosterBreakdown({ team, isDynasty }) {
   const groups = POS_KEYS.filter((k) => isDynasty || k !== "PICK")
     .map((k) => [k, team.assets.filter((a) => a.position === k)])
@@ -5127,6 +5517,7 @@ function MyLeagues({ settings, setSettings, navigate }) {
   // This season's standings and projections (also what the dynasty lean leans on first).
   const showStandings = !!raw && raw.league.settings?.type !== 3 && raw.league.status !== "pre_draft";
   const standings = useProjectedStandings(raw, showStandings);
+  const matchups = useWeekMatchups(raw, showStandings);
   const standingOf = useMemo(() => {
     const now = standings.now || [];
     const playoffTeams = Math.min(raw?.league.settings?.playoff_teams || 0, now.length);
@@ -5500,6 +5891,8 @@ function MyLeagues({ settings, setSettings, navigate }) {
 
 
           </section>
+
+          {showStandings && <WeekMatchup mu={matchups} teams={teams} myTeam={myTeam} team={team} onView={viewTeam} />}
 
           {showStandings && (
             <ProjectedStandings proj={standings} raw={raw} teams={teams} myTeam={myTeam} team={team} onView={viewTeam} />
@@ -7698,6 +8091,8 @@ const PAGES = [
     blurb: "Live Sleeper add/drop trends plus a hand-picked list of this week's best pickups and why." },
   { key: "injuries", sport: "nfl", label: "Injuries", short: "Training Room", hash: "#/injuries", group: "Game week",
     blurb: "The live weekly injury report, who's on IR or PUP, and the earliest week each player can return." },
+  { key: "nfl-rankings", sport: "nfl", label: "Weekly Rankings", short: "Film Room", hash: "#/rankings", group: "Game week",
+    blurb: "Every player ranked by this week's projected points in your scoring, plus a start/sit call for tough lineup spots." },
   { key: "leagues", sport: "nfl", label: "My Leagues", short: "Boardroom", hash: "#/leagues", group: "Dynasty",
     blurb: "Your Sleeper leagues, each valued with its own settings and lineup, as dynasty or redraft: power rankings and where your team stands." },
   { key: "dynasty", sport: "nfl", label: "Dynasty Values", short: "Value Board", hash: "#/values", group: "Dynasty",
@@ -7752,6 +8147,7 @@ const PAGE_STYLE = {
   weekly: { hue: "var(--hue-blue)", icon: PAGE_ICONS.scores },
   waivers: { hue: "var(--hue-aqua)", icon: PAGE_ICONS.waivers },
   injuries: { hue: "var(--hue-red)", icon: PAGE_ICONS.injuries },
+  "nfl-rankings": { hue: "var(--hue-magenta)", icon: PAGE_ICONS.forecast },
   leagues: { hue: "var(--hue-yellow)", icon: PAGE_ICONS.leagues },
   dynasty: { hue: "var(--hue-violet)", icon: PAGE_ICONS.values },
   draftboard: { hue: "var(--hue-aqua)", icon: PAGE_ICONS.draft },
@@ -7844,6 +8240,7 @@ const Icon = {
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   close: <path d="M6 6l12 12M18 6 6 18" />,
   chevron: <path d="m6 9 6 6 6-6" />,
+  search: <path d="m21 21-4.3-4.3M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z" />,
 };
 const Svg = ({ children, size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
@@ -7947,7 +8344,150 @@ function NavDropdown({ sport, group, page, navigate }) {
   );
 }
 
-function SiteHeader({ page, navigate, sport, setSport, theme, toggleTheme }) {
+/* ---------------- Front Desk: player search ---------------- */
+// Opens from the header (or Ctrl/Cmd+K, or "/") on any page and jumps to a
+// player's profile. Football searches Sleeper's player list plus the dynasty
+// values (valued players rank first); basketball loads the NBA data the first
+// time it's searched.
+const foldName = (s) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9 ]+/g, "");
+
+// Best matches first: every word of the query starts a word of the name
+// ("jef", "jus jef"), then the name merely contains it; within each, the more
+// valuable (or productive) player first, so "jef" finds Justin Jefferson.
+function searchPlayers(list, query, limit = 10) {
+  const q = foldName(query).trim().replace(/\s+/g, " ");
+  if (!q) return [];
+  const tokens = q.split(" ");
+  const hits = [];
+  for (const p of list) {
+    const words = p.folded.split(" ");
+    const score = tokens.every((t) => words.some((w) => w.startsWith(t))) ? 0 : p.folded.includes(q) ? 1 : -1;
+    if (score >= 0) hits.push([score, p]);
+  }
+  return hits.sort((a, b) => a[0] - b[0] || b[1].rank - a[1].rank).slice(0, limit).map((h) => h[1]);
+}
+
+function useSearchShortcut(open) {
+  useEffect(() => {
+    const onKey = (e) => {
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
+      if ((e.key === "k" && (e.ctrlKey || e.metaKey)) || (e.key === "/" && !typing)) { e.preventDefault(); open(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+}
+
+function PlayerSearch({ sport, dynasty, sleeperPlayers, nba, onNeedNba, onClose }) {
+  const [scope, setScope] = useState(sport);
+  const [query, setQuery] = useState("");
+  const [active, setActive] = useState(0);
+  useEffect(() => { if (scope === "nba") onNeedNba(); }, [scope]);
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
+  const nflList = useMemo(() => {
+    const valued = Object.fromEntries(dynasty.rows.filter((r) => r.position !== "PICK").map((r) => [r.id, r]));
+    const list = Object.entries(sleeperPlayers).map(([id, p]) =>
+      ({ id, name: p.name, position: p.position, team: p.team, status: p.status, value: valued[id]?.value }));
+    const listed = new Set(list.map((p) => p.id));
+    for (const r of Object.values(valued)) if (!listed.has(r.id)) list.push({ id: r.id, name: r.name, position: r.position, team: r.team, value: r.value });
+    return list.map((p) => ({ ...p, rank: p.value || 0, folded: foldName(p.name) }));
+  }, [sleeperPlayers, dynasty.rows]);
+  const nbaList = useMemo(() => {
+    const pts = Object.fromEntries((nba.seasons?.[nba.activeSeason] || []).map((p) => [p.id, p.stats?.pts || 0]));
+    return Object.entries(nba.players || {}).map(([id, p]) =>
+      ({ id, name: p.name, position: p.position, team: p.team, status: p.status, rank: pts[id] || 0, folded: foldName(p.name) }));
+  }, [nba.players, nba.seasons, nba.activeSeason]);
+
+  const results = useMemo(() => searchPlayers(scope === "nba" ? nbaList : nflList, query), [scope, nflList, nbaList, query]);
+  useEffect(() => setActive(0), [query, scope]);
+  const open = (p) => {
+    window.location.hash = playerHash(scope, p.id);
+    window.scrollTo(0, 0);
+    onClose();
+  };
+  const onKeyDown = (e) => {
+    if (e.key === "ArrowDown") { e.preventDefault(); setActive((i) => Math.min(results.length - 1, i + 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => Math.max(0, i - 1)); }
+    else if (e.key === "Enter" && results[active]) { e.preventDefault(); open(results[active]); }
+  };
+  const nbaLoading = scope === "nba" && nba.status !== "live";
+  const muted = { color: "var(--text-muted)" };
+
+  return (
+    <div className="search-backdrop fixed inset-0 z-50 flex items-start justify-center px-4 pt-[10vh]"
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div role="dialog" aria-modal="true" aria-label="Search players"
+        className="search-panel w-full max-w-lg rounded-xl border shadow-2xl overflow-hidden"
+        style={{ background: "var(--surface-1)", borderColor: "var(--border)" }}>
+        <div className="flex items-center gap-2 px-3 py-2.5 border-b" style={{ borderColor: "var(--border)" }}>
+          <span style={muted}><Svg>{Icon.search}</Svg></span>
+          <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={onKeyDown}
+            placeholder={`Search ${scope === "nba" ? "basketball" : "football"} players`} aria-label="Player name"
+            className="flex-1 min-w-0 bg-transparent outline-none text-base" style={{ color: "var(--text-primary)" }} />
+          <PillGroup options={SPORTS.map((s) => ({ key: s.key, label: s.key.toUpperCase(), color: s.color }))} value={scope} onChange={setScope} />
+        </div>
+        <ul className="max-h-[60vh] overflow-y-auto p-1.5" role="listbox">
+          {results.map((p, i) => (
+            <li key={p.id} role="option" aria-selected={i === active}>
+              <button type="button" onMouseEnter={() => setActive(i)} onClick={() => open(p)}
+                className="menu-row w-full text-left flex items-center gap-3 rounded-lg px-2.5 py-2"
+                style={i === active ? { background: "var(--surface-2)" } : undefined}>
+                <Headshot sport={scope} id={p.id} pos={p.position} size={32} />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{p.name}</span>
+                  <span className="flex items-center gap-1.5 text-xs" style={muted}>
+                    <PosBadge pos={p.position} /> {p.team || "FA"}
+                    {p.status && <span style={{ color: REPORT_STATUS_COLOR[p.status] || "var(--series-red)" }}>· {p.status}</span>}
+                  </span>
+                </span>
+                {scope === "nfl" && p.value > 0 && <span className="text-xs tabular-nums shrink-0" style={{ color: "var(--text-secondary)" }}>{fmtValue(p.value)}</span>}
+              </button>
+            </li>
+          ))}
+          {!query.trim() && <li className="px-3 py-4 text-sm" style={muted}>Type a name to open any player's file.</li>}
+          {query.trim() && !results.length && (
+            <li className="px-3 py-4 text-sm" style={muted}>{nbaLoading ? "Loading basketball players…" : "No players match that name."}</li>
+          )}
+        </ul>
+        <div className="flex items-center justify-between gap-3 px-3 py-2 border-t text-[11px]" style={{ borderColor: "var(--border)", ...muted }}>
+          <span className="font-display font-semibold tracking-wide">Front Desk</span>
+          <span className="hidden sm:inline">↑ ↓ to move · Enter to open · Esc to close</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Phones get an app-style bar of the rooms people open most; the hamburger
+// still lists every room.
+const TAB_BAR = {
+  nfl: ["weekly", "waivers", "nfl-rankings", "trade", "leagues"],
+  nba: ["nba-weekly", "nba-waivers", "nba-rankings", "nba-trade", "nba-injuries"],
+};
+function MobileTabBar({ sport, page, navigate }) {
+  return (
+    <nav className="tab-bar md:hidden fixed bottom-0 inset-x-0 z-40 grid grid-cols-5" aria-label="Quick links">
+      {TAB_BAR[sport].map((key) => {
+        const p = PAGE_BY_KEY[key];
+        return (
+          <a key={key} href={p.hash} aria-current={page === key ? "page" : undefined}
+            onClick={(e) => { e.preventDefault(); navigate(key); }}
+            className="flex flex-col items-center gap-1 pt-2 pb-1.5 px-0.5 text-[10.5px] font-semibold min-w-0">
+            <Svg size={20}>{PAGE_STYLE[key].icon}</Svg>
+            <span className="truncate max-w-full">{p.short}</span>
+          </a>
+        );
+      })}
+    </nav>
+  );
+}
+
+function SiteHeader({ page, navigate, sport, setSport, theme, toggleTheme, onSearch }) {
   const [open, setOpen] = useState(false);
   const go = (key) => { setOpen(false); navigate(key); };
   return (
@@ -7961,6 +8501,12 @@ function SiteHeader({ page, navigate, sport, setSport, theme, toggleTheme }) {
           {SPORT_GROUPS[sport].map((g) => <NavDropdown key={g} sport={sport} group={g} page={page} navigate={go} />)}
         </nav>
         <div className="ml-auto flex items-center gap-1">
+          <button type="button" onClick={onSearch} className="search-trigger hidden lg:inline-flex items-center gap-2 rounded-md pl-2.5 pr-1.5 py-1.5 text-sm mr-1">
+            <Svg size={16}>{Icon.search}</Svg>Search players<kbd className="kbd">Ctrl K</kbd>
+          </button>
+          <button type="button" onClick={onSearch} className="nav-link rounded-md p-2 lg:hidden" aria-label="Search players">
+            <Svg>{Icon.search}</Svg>
+          </button>
           <a href={PAGE_BY_KEY[SPORT_TRADE_PAGE[sport]].hash} onClick={(e) => { e.preventDefault(); go(SPORT_TRADE_PAGE[sport]); }}
             className="btn-primary hidden lg:inline-flex rounded-md px-3 py-1.5 text-sm font-semibold mr-1">Trade Desk</a>
           <button type="button" onClick={toggleTheme} className="nav-link rounded-md p-2"
@@ -8145,13 +8691,18 @@ function App() {
     try { localStorage.setItem(NBA_SETTINGS_KEY, JSON.stringify(nbaSettings)); } catch (e) {}
   }, [nbaSettings]);
   const current = PAGE_BY_KEY[page];
-  const nba = useNbaData(current.sport === "nba");
+  // The player search can ask for basketball data from a football page.
+  const [searchOpen, setSearchOpen] = useState(false);
+  useSearchShortcut(() => setSearchOpen(true));
+  const [nbaWanted, setNbaWanted] = useState(false);
+  const nba = useNbaData(current.sport === "nba" || nbaWanted);
   const nbaProps = { data: nba, settings: nbaSettings, setSettings: setNbaSettings };
 
   return (
     <NflIdContext.Provider value={resolveNflId}>
-    <div className="min-h-screen flex flex-col">
-      <SiteHeader page={page} navigate={navigate} sport={sport} setSport={setSport} theme={theme} toggleTheme={toggleTheme} />
+    <div className="has-tab-bar min-h-screen flex flex-col">
+      <SiteHeader page={page} navigate={navigate} sport={sport} setSport={setSport} theme={theme} toggleTheme={toggleTheme}
+        onSearch={() => setSearchOpen(true)} />
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-8 flex flex-col gap-2">
         {current.group && (
           <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: PAGE_STYLE[page].hue }}>
@@ -8162,6 +8713,7 @@ function App() {
         {page === "weekly" && <WeeklyScores players={liveScores.players} data={liveScores} />}
         {page === "waivers" && <WaiverTargets />}
         {page === "injuries" && <InjuredReserve players={players} reportPlayers={liveScores.players} data={liveScores} />}
+        {page === "nfl-rankings" && <NflRankings settings={settings} setSettings={setSettings} />}
         {page === "leagues" && <MyLeagues settings={settings} setSettings={setSettings} navigate={navigate} />}
         {page === "dynasty" && <DynastyValues data={dynasty} settings={settings} setSettings={setSettings} />}
         {page === "draftboard" && <DraftBoard data={dynasty} settings={settings} setSettings={setSettings} />}
@@ -8184,6 +8736,11 @@ function App() {
         )}
       </main>
       <SiteFooter navigate={navigate} />
+      <MobileTabBar sport={sport} page={page} navigate={navigate} />
+      {searchOpen && (
+        <PlayerSearch sport={sport} dynasty={dynasty} sleeperPlayers={sleeperPlayers} nba={nba}
+          onNeedNba={() => setNbaWanted(true)} onClose={() => setSearchOpen(false)} />
+      )}
     </div>
     </NflIdContext.Provider>
   );

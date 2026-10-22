@@ -1,0 +1,15 @@
+{
+  "name": "Fantasy Front Office",
+  "short_name": "Front Office",
+  "description": "Run your fantasy team like a GM: weekly rankings, waiver targets, injuries, dynasty trade values and Sleeper league tools for football and basketball.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#14213d",
+  "theme_color": "#14213d",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

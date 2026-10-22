@@ -4,9 +4,28 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Fantasy Front Office</title>
-<meta name="description" content="Fantasy Front Office: run your fantasy football team like a GM. Weekly scores, waiver targets, injuries, dynasty trade values, a trade calculator and a 2027 rookie class preview." />
+<meta name="description" content="Run your fantasy team like a GM: weekly rankings and start/sit, waiver targets, injuries, live dynasty trade values, a trade calculator and your Sleeper leagues, for football and basketball." />
 <meta name="theme-color" content="#14213d" />
+<link rel="canonical" href="https://emiliobejasa.github.io/fantasy-front-office/" />
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+<!-- Link previews (Discord, iMessage, X...). Crawlers need absolute URLs. -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Fantasy Front Office" />
+<meta property="og:title" content="Fantasy Front Office" />
+<meta property="og:description" content="Run your fantasy team like a GM: weekly rankings, waiver targets, dynasty trade values and Sleeper league tools for football and basketball." />
+<meta property="og:url" content="https://emiliobejasa.github.io/fantasy-front-office/" />
+<meta property="og:image" content="https://emiliobejasa.github.io/fantasy-front-office/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Fantasy Front Office: run your fantasy team like a GM" />
+<meta name="twitter:card" content="summary_large_image" />
+<!-- Add to Home Screen: opens full screen like an app. -->
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Front Office" />
 <script>
   // Apply a saved light/dark choice (and sport accent) before anything renders, so there's no flash.
   try {
@@ -148,6 +167,7 @@
 
   /* Site chrome: a navy header with a trim line in the sport color. */
   .site-header { background: color-mix(in srgb, var(--header-bg) 95%, transparent); border-bottom: 2px solid var(--sport);
+    padding-top: env(safe-area-inset-top); /* under the status bar when installed on a phone */
     backdrop-filter: saturate(1.4) blur(10px); -webkit-backdrop-filter: saturate(1.4) blur(10px); }
   .brand-text { color: var(--text-primary); }
   .site-header .brand-text { color: var(--header-text); }

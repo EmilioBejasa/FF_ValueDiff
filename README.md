@@ -1,8 +1,8 @@
 # Fantasy Front Office
 
-*Run your fantasy team like a GM.* (Formerly FF ValueDiff. The repo
-folder, the `ff-valuediff:` browser-storage keys and the dormant
-`extension/` still use the old name, so saved settings carry over.)
+*Run your fantasy team like a GM.* (Formerly FF ValueDiff. The local repo
+folder and the `ff-valuediff:` browser-storage keys still use the old name,
+so saved settings carry over.)
 
 A fantasy football companion. Three tabs cover this season, on one shared player pool:
 **Weekly Scores** (real results by week, or a full-season grid),
@@ -26,6 +26,17 @@ tells Pages to serve the files as they are). Every push to `master`
 redeploys it, including the daily data-refresh Actions, so the live site
 picks up new scores and values on its own.
 
+**On a phone:** open the live site, then Share → **Add to Home Screen**
+(Safari) or ⋮ → **Install app** (Chrome). It opens full screen like an
+app, with the FFO icon. That's set up by `manifest.webmanifest` and the
+`icon-*.png` / `apple-touch-icon.png` files; there's no service worker, since
+the site needs live data anyway.
+
+**Link previews:** the Open Graph tags in `<head>` give the link a title card
+with `og-image.png` (1200×630) when it's pasted in Discord, iMessage or X.
+The tags use absolute URLs to the live site, so update them if the address
+ever changes.
+
 To run it locally instead: no build step, no install. Just open `index.html` in a browser (double-click it,
 or drag it into a browser window). It loads React and Babel from a CDN and
 transforms the JSX in-browser.
@@ -38,13 +49,6 @@ works, e.g. `python -m http.server` from this directory, then open
 `http://localhost:8000/index.html`. Everything else in the app (Weekly
 Scores, the hand-picked Waiver Wire list, Injured Reserve) works fine from a
 plain double-clicked file too.
-
-There's also a Chrome extension version in `extension/` — same idea, no
-React/Babel/CDN (a separate vanilla-JS rewrite, since extension pages block
-both), packaged so you can pin it in your toolbar instead of opening a file.
-See `extension/README.md` to load it. (Note: the extension was built around
-this app's original ADP-comparison tool, since removed from `index.html` —
-see "History" below.)
 
 ## Site layout
 
@@ -692,10 +696,7 @@ and FantasyPros' consensus, refreshed live from BeatADP via
 has since been **removed** from `index.html` in favor of the three
 results/target-driven tabs described above.
 
-`scripts/refresh-adp.js`, `scripts/lib/parse-beatadp.js`, and the `extension/`
-folder still exist and still work exactly as before (see their own inline
-docs/`extension/README.md`) — they just no longer have anything reading
-their output inside `index.html`, since the tab that displayed platform ADP
-is gone. They're left in place rather than deleted, in case ADP comparison
-is ever brought back or reused elsewhere; treat them as available-but-dormant
-tooling, not part of the active app.
+Its refresh script (`scripts/refresh-adp.js`, `scripts/lib/parse-beatadp.js`)
+and the Chrome extension version of the tool (`extension/`) stayed behind,
+unused, until they were deleted on 2026-10-22. All three are in git history
+if ADP comparison is ever brought back.

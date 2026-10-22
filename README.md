@@ -20,7 +20,13 @@ the header moves between the two sports.
 
 ## Running it
 
-No build step, no install. Just open `index.html` in a browser (double-click it,
+**Live site:** https://emiliobejasa.github.io/FF_ValueDiff/ — hosted free on
+GitHub Pages, deployed from the root of `master` (the empty `.nojekyll` file
+tells Pages to serve the files as they are). Every push to `master`
+redeploys it, including the daily data-refresh Actions, so the live site
+picks up new scores and values on its own.
+
+To run it locally instead: no build step, no install. Just open `index.html` in a browser (double-click it,
 or drag it into a browser window). It loads React and Babel from a CDN and
 transforms the JSX in-browser.
 

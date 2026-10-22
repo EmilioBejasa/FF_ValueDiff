@@ -20,7 +20,7 @@ the header moves between the two sports.
 
 ## Running it
 
-**Live site:** https://emiliobejasa.github.io/FF_ValueDiff/ — hosted free on
+**Live site:** https://emiliobejasa.github.io/fantasy-front-office/ — hosted free on
 GitHub Pages, deployed from the root of `master` (the empty `.nojekyll` file
 tells Pages to serve the files as they are). Every push to `master`
 redeploys it, including the daily data-refresh Actions, so the live site
